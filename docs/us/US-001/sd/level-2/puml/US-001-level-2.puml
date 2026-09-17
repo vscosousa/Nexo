@@ -1,0 +1,9 @@
+@startuml
+actor "Prospective Admin" as Admin
+participant "Web UI" as UI
+participant "OrganizationsController" as Controller
+Admin -> UI: Submit organization and admin details
+UI -> Controller: POST /organizations (RegisterOrganizationDto)
+Controller --> UI: 201 Created (OrganizationDto) or 400/409
+UI --> Admin: Show result and sign in on success
+@enduml

@@ -10,12 +10,13 @@ This is the starting point for Nexo's project and technical documentation. Use t
 
 | Area | Contents |
 | --- | --- |
-| [Requirements](requirements/README.md) | Scope, stakeholders, user stories, acceptance criteria, and quality requirements |
+| [Requirements](requirements/README.md) | Scope, stakeholders, user stories, HLD/LLD design docs, acceptance criteria, and quality requirements |
 | [Glossary](glossary/README.md) | Shared domain terms and abbreviations |
 | [Domain models](domain-models/README.md) | Business concepts, relationships, and rules |
-| [System sequence diagrams (SSD)](ssd/README.md) | Actor interactions with the system as a black box |
+| [User story design (US)](us/README.md) | SSD and SD diagrams grouped by story (levels 1-3) |
+| [System sequence diagrams (SSD)](ssd/README.md) | Convention and template for level 1 diagrams |
 | [Architecture](architecture/README.md) | System boundaries, components, dependencies, and deployment |
-| [Sequence diagrams (SD)](sd/README.md) | Internal collaborations that implement a scenario |
+| [Sequence diagrams (SD)](sd/README.md) | Convention and template for level 2-3 diagrams |
 | [Database design](database/README.md) | Data models, schema, constraints, indexes, and migrations |
 | [Architecture decisions](decisions/README.md) | Decision records, alternatives, and consequences |
 | [Design](design/README.md) | User journeys, wireframes, and interface conventions |
@@ -26,7 +27,7 @@ This is the starting point for Nexo's project and technical documentation. Use t
 ## Reading paths
 
 - **Understand the problem:** requirements → glossary → domain models.
-- **Follow a feature:** requirement → SSD → SD → database design → test evidence.
+- **Follow a feature:** requirement → HLD → SSD/SD (user story design) → LLD → database design → test evidence.
 - **Understand implementation choices:** architecture → decision records.
 - **Work with the project:** guides → technical reference → testing.
 

@@ -4,9 +4,11 @@
 
 Describe observable interactions between actors and Nexo. Treat the system as a single participant; internal components belong in [sequence diagrams](../sd/README.md).
 
+Instances live grouped by user story under [`docs/us/`](../us/README.md), as level 1 of that story's design (see there for the full folder layout and the list of stories).
+
 ## Scenario template
 
-Create `US-001-short-title.md` for each documented scenario, matching its requirement ID.
+Inside `docs/us/US-001/ssd/level-1/`, document:
 
 **Requirement:** [link to the user story].
 **Actor:** [external user or system].
@@ -19,5 +21,5 @@ Create `US-001-short-title.md` for each documented scenario, matching its requir
 
 **Alternative and failure flows:** [validation failures and other outcomes].
 **Postconditions:** [observable state after completion].
-**Diagram:** [add the SSD using the actor and a single Nexo participant].
-**Internal design:** [link to the corresponding SD when available].
+**Diagram:** `[![SSD](svg/US-001-level-1.svg)](puml/US-001-level-1.puml)`
+**Internal design:** [link to the corresponding SD levels].

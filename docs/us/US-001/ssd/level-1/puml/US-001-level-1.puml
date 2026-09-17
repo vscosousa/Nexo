@@ -1,0 +1,11 @@
+@startuml
+actor "Prospective Admin" as Admin
+participant "Nexo" as System
+Admin -> System: Register organization and admin account (org name, admin email, admin name)
+System -> System: Validate details and check email uniqueness
+alt Valid and email available
+    System --> Admin: Organization and admin account created; signed in
+else Invalid details or email already in use
+    System --> Admin: Registration rejected (validation or conflict error)
+end
+@enduml
