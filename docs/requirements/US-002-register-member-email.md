@@ -10,9 +10,9 @@
 
 **Acceptance criteria:**
 
-- Given a valid email not yet registered to any organization, when the admin submits it, then the email is added to the organization's eligible list, still without an account.
-- Given the organization's plan limit is reached (e.g., 20 accounts on the Free plan), when the admin tries to register another email, then the system rejects it with a limit-reached error.
-- Given an email already registered to this or another organization, when the admin submits it, then the system rejects it with a conflict error.
+- Given a valid email not yet registered to any organization, when the admin submits it, then a pending account is created for that email, scoped to the organization, with no credentials until the person activates it.
+- Given the organization's plan limit is reached (e.g., 20 active accounts on the Free plan), when the admin tries to register another email, then the system rejects it with a limit-reached error.
+- Given an email already registered to this or another organization, whether pending or already active, when the admin submits it, then the system rejects it with a conflict error.
 - Given a user without the admin role, when they attempt to register an email, then the system rejects the request with an authorization error.
 
 **Exceptions:**
@@ -22,4 +22,4 @@
 - Email already registered elsewhere.
 - Unauthorized user attempting the action.
 
-**Related artifacts:** [Domain model](../domain-models/README.md), [HLD](US-002-HLD.md), [LLD](US-002-LLD.md), [SSD/SD diagrams](../us/US-002/README.md), [database design](../database/README.md) (not yet created), tests (not yet created).
+**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [HLD](US-002-HLD.md), [LLD](US-002-LLD.md), [SSD/SD diagrams](../us/US-002/README.md), [database design](../database/README.md) (not yet created), tests (not yet created).

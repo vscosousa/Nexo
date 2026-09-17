@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [HLD](US-001-HLD.md)
 
-Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-001/README.md#level-3---sd-detailed) for the call sequence.
+Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-001/README.md#level-3---backend) for the call sequence.
 
 ## Domain
 
@@ -21,8 +21,9 @@ Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and struc
 | --- | --- | --- |
 | `Id` | Guid | Generated on creation |
 | `Email` | string | Required, valid format, unique across all accounts |
-| `Name` | string | Required, non-empty |
+| `Name` | string, nullable | Required for this feature; null for an account still `Invited` (see [US-002-LLD](US-002-LLD.md)) |
 | `Role` | enum (`Admin`, `Member`) | `Admin` when created via this feature |
+| `Status` | enum (`Invited`, `Active`) | `Active` immediately for an admin account (this feature); a member account starts `Invited` (see [US-002-LLD](US-002-LLD.md)) and becomes `Active` on activation (see [US-003-LLD](US-003-LLD.md)). Only `Active` accounts count toward the organization's `MemberLimit` |
 | `OrganizationId` | Guid | Foreign key to `Organization` |
 
 ## Service logic (`OrganizationService.Register`)
@@ -30,7 +31,7 @@ Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and struc
 1. Validate `RegisterOrganizationDto`: `OrganizationName`, `AdminName` non-empty; `AdminEmail` a valid email format. Fail with a validation error (→ 400) otherwise.
 2. Call `IAccountRepository.FindByEmailAsync(dto.AdminEmail)`. If an account already exists, fail with a conflict error (→ 409); do not proceed.
 3. Map the DTO to a new `Organization` (`OrganizationMapper.ToOrganization`), with `Plan = Free` and `MemberLimit = 20`.
-4. Map the DTO and the new organization to a new `Account` (`OrganizationMapper.ToAdminAccount`), with `Role = Admin`.
+4. Map the DTO and the new organization to a new `Account` (`OrganizationMapper.ToAdminAccount`), with `Role = Admin` and `Status = Active`.
 5. Add both via `IOrganizationRepository.Add` and `IAccountRepository.Add`.
 6. Call `NexoDbContext.SaveChangesAsync()` once, committing both inserts atomically.
 7. Map the persisted `Organization` to `OrganizationDto` and return it (→ 201).

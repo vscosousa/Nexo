@@ -6,7 +6,7 @@
 
 As a person whose email was registered by an admin, I want to create my account with either email/password or Google/Microsoft, so that I can use the system as a member of that organization. Full acceptance criteria: [US-003](US-003-create-member-account.md).
 
-This HLD/LLD covers the email/password path in full detail. The Google/Microsoft path is decided at [ADR-006](../decisions/ADR-006-authentication.md) (same invite-gate rule, no password set, an `ExternalLogin` linked instead); its concrete endpoint is not yet designed.
+This activates the pending `Account` row that [US-002](US-002-HLD.md) already created (`Status = Invited`): it sets `Name` and credentials and flips `Status` to `Active`. It does not insert a new `Account`. This HLD/LLD covers the email/password path in full detail. The Google/Microsoft path is decided at [ADR-006](../decisions/ADR-006-authentication.md) (same rule: an `Invited` account must exist for the OAuth email); its concrete endpoint is not yet designed.
 
 ## Folder structure
 
@@ -14,25 +14,21 @@ New files this feature adds to `api/`:
 
 ```text
 api/
-├── Controllers/AccountsController.cs
-├── Domain/
-│   ├── Models/Account.cs (existing, extended: nullable PasswordHash)
-│   └── Dtos/CreateMemberAccountDto.cs
-├── Dtos/AccountDto.cs
-├── Mappers/AccountMapper.cs
-├── Services/
-│   ├── IAccountService.cs
-│   └── AccountService.cs
-└── Infrastructure/Repositories/
-    ├── IEligibleEmailRepository.cs (existing, reused)
-    └── IAccountRepository.cs (existing, reused)
+├── Controllers/AccountActivationsController.cs
+├── Domain/Dtos/ActivateAccountDto.cs
+├── Mappers/AccountMapper.cs (existing, extended: ApplyActivation)
+└── Services/
+    ├── IAccountActivationService.cs
+    └── AccountActivationService.cs
 ```
+
+Reuses `Dtos/AccountDto.cs` and `Infrastructure/Repositories/IAccountRepository` from [US-002](US-002-HLD.md).
 
 ## API contract
 
-**`POST /accounts`**
+**`POST /accounts/activation`**
 
-Request body (`CreateMemberAccountDto`):
+Request body (`ActivateAccountDto`):
 
 ```json
 {
@@ -46,10 +42,10 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 201 Created | `AccountDto` (id, email, name, role, organizationId) | Member account created |
+| 200 OK | `AccountDto` (id, email, name, role, status: Active, organizationId) | Pending account activated |
 | 400 Bad Request | Validation errors | Missing or invalid fields |
-| 403 Forbidden | Error detail | `email` is not registered to any organization |
-| 409 Conflict | Error detail | `email` already has an account |
+| 403 Forbidden | Error detail | No account (`Invited` or otherwise) exists for `email` |
+| 409 Conflict | Error detail | The account for `email` is already `Active` |
 
 ## Related artifacts
 

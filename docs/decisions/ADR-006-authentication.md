@@ -22,7 +22,7 @@ Use ASP.NET Core Identity's authentication building blocks only: `PasswordHasher
 
 The API issues its own JWT after a successful sign-in (password or social), independent of the provider. The `web/` SPA stores it the same way regardless of how the user signed in, using the shared Axios client already wired in [ADR-004](ADR-004-frontend-architecture.md).
 
-Social login is available on both entry points: creating the first admin account ([US-001](../requirements/US-001-create-organization-admin.md)) and signing in to an existing account ([US-005](../requirements/US-005-sign-in.md)). The organization-membership rule from [US-002](../requirements/US-002-register-member-email.md)/[US-003](../requirements/US-003-create-member-account.md) (an email must be registered to an organization before an account can be created for it) applies identically whether the email arrives via a password sign-up form or a verified OAuth callback.
+Social login is available on both entry points: creating the first admin account ([US-001](../requirements/US-001-create-organization-admin.md)) and signing in to an existing account ([US-005](../requirements/US-005-sign-in.md)). The organization-membership rule from [US-002](../requirements/US-002-register-member-email.md)/[US-003](../requirements/US-003-create-member-account.md) (an email must be registered to an organization, as a pending account, before that account can be activated) applies identically whether the email arrives via a password sign-up form or a verified OAuth callback.
 
 Token strategy: a single JWT per session, with a fixed expiry (no refresh token). Simpler to build and reason about for a local prototype; add refresh tokens only if session length becomes a real problem.
 

@@ -1,0 +1,101 @@
+@startuml
+title DOMAIN MODEL - LEVEL 2
+
+hide empty members
+
+skinparam class {
+    BackgroundColor<<valueObject>> #D6EAF8
+    BackgroundColor #FEF9E7
+    ArrowColor Black
+}
+
+entity Organization <<entity>> {}
+class Name <<valueObject>> <<(V, #FF8B40)>> {}
+class Plan <<valueObject>> <<(V, #FF8B40)>> {}
+class MemberLimit <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity Account <<entity>> {}
+class Email <<valueObject>> <<(V, #FF8B40)>> {}
+class PasswordHash <<valueObject>> <<(V, #FF8B40)>> {}
+class Role <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity ExternalLogin <<entity>> {}
+class Provider <<valueObject>> <<(V, #FF8B40)>> {}
+class ProviderKey <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity Resource <<entity>> {}
+class Type <<valueObject>> <<(V, #FF8B40)>> {}
+class Description <<valueObject>> <<(V, #FF8B40)>> {}
+class Status <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity Reservation <<entity>> {}
+class StartAt <<valueObject>> <<(V, #FF8B40)>> {}
+class EndAt <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity Loan <<entity>> {}
+class RequestedAt <<valueObject>> <<(V, #FF8B40)>> {}
+class DeliveredAt <<valueObject>> <<(V, #FF8B40)>> {}
+class ReturnedAt <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity Incident <<entity>> {}
+
+entity HistoryEntry <<entity>> {}
+class EntityName <<valueObject>> <<(V, #FF8B40)>> {}
+class EntityId <<valueObject>> <<(V, #FF8B40)>> {}
+class ChangeType <<valueObject>> <<(V, #FF8B40)>> {}
+class ChangedAt <<valueObject>> <<(V, #FF8B40)>> {}
+
+entity Notification <<entity>> {}
+class Message <<valueObject>> <<(V, #FF8B40)>> {}
+class SentAt <<valueObject>> <<(V, #FF8B40)>> {}
+
+Organization "1" --> "1" Name : has
+Organization "1" --> "1" Plan : has
+Organization "1" --> "1" MemberLimit : has
+Organization "1" --> "*" Account : has
+Organization "1" --> "*" Resource : has
+
+Account "1" --> "1" Email : has
+Account "1" --> "1" Name : has
+Account "1" --> "1" PasswordHash : has
+Account "1" --> "1" Role : has
+Account "1" --> "1" Status : has
+Account "1" --> "*" ExternalLogin : has
+Account "1" --> "*" Reservation : requests
+Account "1" --> "*" Loan : requests
+Account "1" --> "*" Incident : reports
+Account "1" --> "*" HistoryEntry : changes
+Account "1" --> "*" Notification : receives
+
+ExternalLogin "1" --> "1" Provider : has
+ExternalLogin "1" --> "1" ProviderKey : has
+
+Resource "1" --> "1" Name : has
+Resource "1" --> "1" Type : has
+Resource "1" --> "1" Description : has
+Resource "1" --> "1" Status : has
+Resource "1" --> "*" Reservation : is reserved via
+Resource "1" --> "*" Loan : is loaned via
+Resource "1" --> "*" Incident : is affected by
+
+Reservation "1" --> "1" StartAt : has
+Reservation "1" --> "1" EndAt : has
+Reservation "1" --> "1" Status : has
+
+Loan "1" --> "1" Status : has
+Loan "1" --> "1" RequestedAt : has
+Loan "1" --> "1" DeliveredAt : has
+Loan "1" --> "1" ReturnedAt : has
+
+Incident "1" --> "1" Description : has
+Incident "1" --> "1" Status : has
+
+HistoryEntry "1" --> "1" EntityName : has
+HistoryEntry "1" --> "1" EntityId : has
+HistoryEntry "1" --> "1" ChangeType : has
+HistoryEntry "1" --> "1" ChangedAt : has
+
+Notification "1" --> "1" Message : has
+Notification "1" --> "1" SentAt : has
+
+@enduml

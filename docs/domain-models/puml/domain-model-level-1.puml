@@ -1,0 +1,35 @@
+@startuml
+title DOMAIN MODEL - LEVEL 1
+
+hide empty members
+
+skinparam class {
+    BackgroundColor #FEF9E7
+    ArrowColor Black
+}
+
+entity Organization <<entity>> {}
+entity Account <<entity>> {}
+entity ExternalLogin <<entity>> {}
+entity Resource <<entity>> {}
+entity Reservation <<entity>> {}
+entity Loan <<entity>> {}
+entity Incident <<entity>> {}
+entity HistoryEntry <<entity>> {}
+entity Notification <<entity>> {}
+
+Organization "1" --> "*" Account : has
+Organization "1" --> "*" Resource : has
+
+Account "1" --> "*" ExternalLogin : has
+Account "1" --> "*" Reservation : requests
+Account "1" --> "*" Loan : requests
+Account "1" --> "*" Incident : reports
+Account "1" --> "*" HistoryEntry : changes
+Account "1" --> "*" Notification : receives
+
+Resource "1" --> "*" Reservation : is reserved via
+Resource "1" --> "*" Loan : is loaned via
+Resource "1" --> "*" Incident : is affected by
+
+@enduml
