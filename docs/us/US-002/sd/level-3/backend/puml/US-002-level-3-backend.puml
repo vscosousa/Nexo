@@ -1,0 +1,67 @@
+@startuml
+participant "Web App" as FE
+participant "AccountInvitationsController" as Controller
+participant "AccountInvitationService" as Service
+participant "IAccountRepository" as AccountRepo
+participant "IOrganizationRepository" as OrgRepo
+participant "AccountMapper" as Mapper
+participant "NexoDbContext" as DbContext
+participant "Database" as DB
+
+activate FE
+FE -> Controller: POST /organizations/{organizationId}/invitations (dto)
+activate Controller
+Controller -> Service: Invite(organizationId, callerAccountId, dto)
+activate Service
+Service -> AccountRepo: GetById(callerAccountId)
+activate AccountRepo
+AccountRepo --> Service: caller Account
+deactivate AccountRepo
+alt Caller is not Admin of organizationId
+    Service --> Controller: throw ForbiddenException
+    Controller --> FE: 403 Forbidden
+else Caller authorized
+    Service -> OrgRepo: GetById(organizationId)
+    activate OrgRepo
+    OrgRepo --> Service: Organization (MemberLimit)
+    deactivate OrgRepo
+    Service -> AccountRepo: CountByOrganizationAndStatus(organizationId, Active)
+    activate AccountRepo
+    AccountRepo --> Service: current active account count
+    deactivate AccountRepo
+    alt Active-member limit reached
+        Service --> Controller: throw ConflictException (limit reached)
+        Controller --> FE: 409 Conflict
+    else Under limit
+        Service -> AccountRepo: FindByEmail(dto.Email)
+        activate AccountRepo
+        AccountRepo --> Service: existing Account or null
+        deactivate AccountRepo
+        alt Email already has an account (Invited or Active)
+            Service --> Controller: throw ConflictException (already registered)
+            Controller --> FE: 409 Conflict
+        else Email available
+            Service -> Mapper: ToInvitedAccount(dto, organizationId)
+            activate Mapper
+            Mapper --> Service: new Account(email, role: Member, status: Invited, organization)
+            deactivate Mapper
+            Service -> AccountRepo: Add(account)
+            activate AccountRepo
+            deactivate AccountRepo
+            Service -> DbContext: SaveChangesAsync()
+            activate DbContext
+            DbContext -> DB: INSERT Account
+            activate DB
+            DB --> DbContext: rows affected
+            deactivate DB
+            DbContext --> Service: committed
+            deactivate DbContext
+            Service --> Controller: AccountDto
+            Controller --> FE: 201 Created (AccountDto)
+        end
+    end
+end
+deactivate Service
+deactivate Controller
+deactivate FE
+@enduml

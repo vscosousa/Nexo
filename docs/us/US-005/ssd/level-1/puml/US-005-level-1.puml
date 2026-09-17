@@ -2,10 +2,12 @@
 actor "Account Holder" as User
 participant "Nexo" as System
 User -> System: Sign in (email, password)
+activate System
 System -> System: Verify credentials
 alt Correct email and password
     System --> User: Session issued; signed in
 else Incorrect password or no matching account
     System --> User: Sign-in rejected (no detail on which)
 end
+deactivate System
 @enduml

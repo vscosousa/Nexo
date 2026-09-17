@@ -4,37 +4,50 @@
 
 ## Level 1 - SSD
 
-**Actor:** Invited person (email registered by an admin, no account yet).
-**Preconditions:** The person's email was registered to an organization (per [US-002](../../requirements/US-002-register-member-email.md)) and has no account yet.
+**Actor:** Invited person (has a pending, `Invited` account, per [US-002](../../requirements/US-002-register-member-email.md)).
+**Preconditions:** The person's email was registered to an organization (per [US-002](../../requirements/US-002-register-member-email.md)) and its account has not been activated yet.
 **Trigger:** The person submits account details.
 
 | Step | Actor input | System response |
 | --- | --- | --- |
-| 1 | Email, name, password | Checks the email is registered to an organization and has no account yet |
-| 2 | n/a | Creates the member account, signs the person in |
+| 1 | Email, name, password | Checks a pending account exists for the email and is not already active |
+| 2 | n/a | Activates the account (sets name and credentials, `Status = Active`), signs the person in |
 
-**Alternative and failure flows:** Email not registered to any organization, or email already has an account, reject with no account created.
-**Postconditions:** A member account exists scoped to the organization; the person is signed in.
+**Alternative and failure flows:** No account exists for the email, or it is already active, reject with no change made.
+**Postconditions:** The account is `Active`, scoped to the organization with the `Member` role; the person is signed in.
 **Diagram:** [![SSD](ssd/level-1/svg/US-003-level-1.svg)](ssd/level-1/puml/US-003-level-1.puml)
 
 ## Level 2 - SD (coarse)
 
-**Participants:** `Web UI`, `AccountsController`.
+**Participants:** `Web UI`, `Nexo API` (the backend, as a whole).
 **Diagram:** [![SD level 2](sd/level-2/svg/US-003-level-2.svg)](sd/level-2/puml/US-003-level-2.puml)
 
-## Level 3 - SD (detailed)
+## Level 3 - Backend
 
-**Participants:** `AccountsController`, `AccountService`, `IEligibleEmailRepository`, `IAccountRepository`, `AccountMapper`, `NexoDbContext`.
-**Diagram:** [![SD level 3](sd/level-3/svg/US-003-level-3.svg)](sd/level-3/puml/US-003-level-3.puml)
+**Participants:** `Web App` (the frontend, as a whole), `AccountActivationsController`, `AccountActivationService`, `IAccountRepository`, `AccountMapper`, `NexoDbContext`, `Database`.
+**Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-003-level-3-backend.svg)](sd/level-3/backend/puml/US-003-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation | Outcome |
 | --- | --- | --- | --- |
-| 1 | UI → Controller | `POST /accounts` | Delegates to `AccountService.Register` |
-| 2 | Service → EligibleEmailRepository | `FindByEmail` | Checks the email is registered to an organization |
-| 3 | Service → AccountRepository | `FindByEmail` | Checks no account already exists for the email |
-| 4 | Service → Mapper | `ToMemberAccount` | Builds the domain `Account` (Member role, hashed password) |
-| 5 | Service → repositories → DbContext | `Add`, `Remove`, `SaveChangesAsync` | Persists the account and consumes the eligible email in one transaction |
+| 1 | Web App → Controller | `POST /accounts/activation` | Delegates to `AccountActivationService.Activate` |
+| 2 | Service → AccountRepository | `FindByEmail` | Loads the pending account for the email |
+| 3 | Service → Mapper | `ApplyActivation` | Sets name and hashed password, flips `Status` to `Active` |
+| 4 | Service → DbContext → Database | `SaveChangesAsync` | Persists the mutation on the existing row |
 
-**Failure handling:** An email not on the eligible list, or already having an account, short-circuits before any persistence and returns its respective error to the controller.
-**Transaction boundaries:** The account insert and the eligible-email removal happen in a single `SaveChangesAsync` call; no partial state is possible.
-**Related design:** [Architecture](../../architecture/README.md), [Domain model](../../domain-models/README.md#accounts-and-organizations), [ADR-006](../../decisions/ADR-006-authentication.md).
+**Failure handling:** No account for the email, or an already-`Active` account, short-circuits before any persistence and returns its respective error to the controller.
+**Transaction boundaries:** The activation is a single-row update in one `SaveChangesAsync` call.
+
+## Level 3 - Frontend
+
+**Participants:** `ActivateAccountPage`, `ActivateAccountForm`, `accountsService`, `HttpClient`, `Nexo API` (the backend, as a whole).
+**Diagram:** [![SD level 3 frontend](sd/level-3/frontend/svg/US-003-level-3-frontend.svg)](sd/level-3/frontend/puml/US-003-level-3-frontend.puml)
+
+| Step | Sender → receiver | Operation | Outcome |
+| --- | --- | --- | --- |
+| 1 | Actor → View → Component | Submit name and password | View forwards the actor's input to the form component |
+| 2 | Component → Service | `accountsService.activate(email, name, password)` | Feature module builds the request |
+| 3 | Service → HttpClient | `POST /accounts/activation` | Shared Axios instance sends the request |
+| 4 | HttpClient → Nexo API | HTTP request | Reaches the backend (detailed in [Level 3 - Backend](#level-3---backend)) |
+
+**Failure handling:** A thrown 403/409 propagates back through the service to the form, which renders the eligibility or conflict message.
+**Related design:** [Architecture](../../architecture/README.md), [Domain model](../../domain-models/README.md#accounts-and-organizations), [ADR-006](../../decisions/ADR-006-authentication.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md).

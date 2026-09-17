@@ -1,11 +1,13 @@
 @startuml
 actor "Invited Person" as Person
 participant "Nexo" as System
-Person -> System: Create account (email, name, password)
-System -> System: Check the email is registered to an organization and has no account yet
-alt Email eligible and available
-    System --> Person: Member account created and signed in
-else Email not eligible or already has an account
-    System --> Person: Account creation rejected (not eligible or conflict error)
+Person -> System: Activate account (email, name, password)
+activate System
+System -> System: Check a pending account exists for the email and is not already active
+alt Pending account found and not yet active
+    System --> Person: Account activated and signed in
+else No account for the email, or already active
+    System --> Person: Activation rejected (not eligible or conflict error)
 end
+deactivate System
 @enduml

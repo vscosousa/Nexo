@@ -2,10 +2,12 @@
 actor "Association Staff" as Staff
 participant "Nexo" as System
 Staff -> System: Register resource (name, type, description)
+activate System
 System -> System: Validate details and check permission to manage resources
 alt Valid and authorized
     System --> Staff: Resource created with status "Available"
 else Invalid details or unauthorized
     System --> Staff: Registration rejected (validation or authorization error)
 end
+deactivate System
 @enduml

@@ -1,0 +1,51 @@
+@startuml
+participant "Web App" as FE
+participant "AuthController" as Controller
+participant "AuthService" as Service
+participant "IAccountRepository" as AccountRepo
+participant "PasswordHasher<Account>" as Hasher
+participant "ITokenService" as TokenService
+participant "NexoDbContext" as DbContext
+participant "Database" as DB
+
+activate FE
+FE -> Controller: POST /auth/sign-in (dto)
+activate Controller
+Controller -> Service: SignIn(dto)
+activate Service
+Service -> AccountRepo: FindByEmail(dto.Email)
+activate AccountRepo
+AccountRepo -> DbContext: query Account by Email
+activate DbContext
+DbContext -> DB: SELECT Account WHERE Email = ...
+activate DB
+DB --> DbContext: Account row or none
+deactivate DB
+DbContext --> AccountRepo: Account or null
+deactivate DbContext
+AccountRepo --> Service: Account or null
+deactivate AccountRepo
+alt No account, or account has no password set
+    Service --> Controller: throw UnauthorizedException (generic)
+    Controller --> FE: 401 Unauthorized
+else Account has a password
+    Service -> Hasher: VerifyHashedPassword(account, account.PasswordHash, dto.Password)
+    activate Hasher
+    Hasher --> Service: match or mismatch
+    deactivate Hasher
+    alt Password does not match
+        Service --> Controller: throw UnauthorizedException (generic)
+        Controller --> FE: 401 Unauthorized
+    else Password matches
+        Service -> TokenService: GenerateToken(account)
+        activate TokenService
+        TokenService --> Service: JWT
+        deactivate TokenService
+        Service --> Controller: SessionDto
+        Controller --> FE: 200 OK (SessionDto)
+    end
+end
+deactivate Service
+deactivate Controller
+deactivate FE
+@enduml

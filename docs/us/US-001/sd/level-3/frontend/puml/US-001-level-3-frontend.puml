@@ -1,0 +1,29 @@
+@startuml
+actor "Prospective Admin" as Admin
+participant "RegisterOrganizationPage" as View
+participant "RegisterOrganizationForm" as Component
+participant "organizationsService" as Service
+participant "HttpClient" as Http
+participant "Nexo API" as API
+
+Admin -> View: Submit organization and admin details
+activate View
+View -> Component: handleSubmit(organizationName, adminName, adminEmail)
+activate Component
+Component -> Service: register(organizationName, adminName, adminEmail)
+activate Service
+Service -> Http: POST /organizations (RegisterOrganizationDto)
+activate Http
+Http -> API: HTTP request
+activate API
+API --> Http: 201 Created (OrganizationDto) or 400/409
+deactivate API
+Http --> Service: response
+deactivate Http
+Service --> Component: OrganizationDto, or thrown error
+deactivate Service
+Component --> View: Show result and sign in on success
+deactivate Component
+View --> Admin: Show result
+deactivate View
+@enduml

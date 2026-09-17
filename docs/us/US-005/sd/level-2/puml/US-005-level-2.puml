@@ -1,9 +1,13 @@
 @startuml
 actor "Account Holder" as User
 participant "Web UI" as UI
-participant "AuthController" as Controller
+participant "Nexo API" as API
 User -> UI: Submit email and password
-UI -> Controller: POST /auth/sign-in (SignInDto)
-Controller --> UI: 200 OK (SessionDto) or 400/401
+activate UI
+UI -> API: POST /auth/sign-in (SignInDto)
+activate API
+API --> UI: 200 OK (SessionDto) or 400/401
+deactivate API
 UI --> User: Show result and store session on success
+deactivate UI
 @enduml

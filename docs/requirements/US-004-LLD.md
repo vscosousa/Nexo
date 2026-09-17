@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-004](US-004-register-resource.md) · [HLD](US-004-HLD.md)
 
-Full technical detail, building on the [HLD](US-004-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-004/README.md#level-3---sd-detailed) for the call sequence.
+Full technical detail, building on the [HLD](US-004-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-004/README.md#level-3---backend) for the call sequence.
 
 ## Domain
 

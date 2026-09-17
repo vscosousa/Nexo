@@ -2,10 +2,12 @@
 actor "Admin" as Admin
 participant "Nexo" as System
 Admin -> System: Register a member's email to the organization (email)
-System -> System: Validate email, check authorization, plan limit, and uniqueness
+activate System
+System -> System: Validate email, check authorization, active-member limit, and uniqueness
 alt Valid, authorized, under limit, and email available
-    System --> Admin: Email added to the organization's eligible list
+    System --> Admin: Pending account created (Invited)
 else Invalid, unauthorized, limit reached, or email already registered
     System --> Admin: Registration rejected (validation, authorization, limit, or conflict error)
 end
+deactivate System
 @enduml

@@ -1,0 +1,52 @@
+@startuml
+participant "Web App" as FE
+participant "OrganizationsController" as Controller
+participant "OrganizationService" as Service
+participant "IAccountRepository" as AccountRepo
+participant "IOrganizationRepository" as OrgRepo
+participant "OrganizationMapper" as Mapper
+participant "NexoDbContext" as DbContext
+participant "Database" as DB
+
+activate FE
+FE -> Controller: POST /organizations (RegisterOrganizationDto dto)
+activate Controller
+Controller -> Service: Register(dto)
+activate Service
+Service -> AccountRepo: FindByEmail(dto.AdminEmail)
+activate AccountRepo
+AccountRepo --> Service: existing Account or null
+deactivate AccountRepo
+alt Email already has an account
+    Service --> Controller: throw ConflictException
+    Controller --> FE: 409 Conflict
+else Email available
+    Service -> Mapper: ToOrganization(dto)
+    activate Mapper
+    Mapper --> Service: new Organization(name, plan: Free)
+    deactivate Mapper
+    Service -> Mapper: ToAdminAccount(dto, organization)
+    activate Mapper
+    Mapper --> Service: new Account(email, role: Admin, organization)
+    deactivate Mapper
+    Service -> OrgRepo: Add(organization)
+    activate OrgRepo
+    deactivate OrgRepo
+    Service -> AccountRepo: Add(account)
+    activate AccountRepo
+    deactivate AccountRepo
+    Service -> DbContext: SaveChangesAsync()
+    activate DbContext
+    DbContext -> DB: INSERT Organization, Account
+    activate DB
+    DB --> DbContext: rows affected
+    deactivate DB
+    DbContext --> Service: committed
+    deactivate DbContext
+    Service --> Controller: OrganizationDto
+    Controller --> FE: 201 Created (OrganizationDto)
+end
+deactivate Service
+deactivate Controller
+deactivate FE
+@enduml

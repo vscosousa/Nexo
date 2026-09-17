@@ -1,0 +1,29 @@
+@startuml
+actor "Account Holder" as User
+participant "LoginPage" as View
+participant "SignInForm" as Component
+participant "authService" as Service
+participant "HttpClient" as Http
+participant "Nexo API" as API
+
+User -> View: Submit email and password
+activate View
+View -> Component: handleSubmit(email, password)
+activate Component
+Component -> Service: signIn(email, password)
+activate Service
+Service -> Http: POST /auth/sign-in (SignInDto)
+activate Http
+Http -> API: HTTP request
+activate API
+API --> Http: 200 OK (SessionDto) or 400/401
+deactivate API
+Http --> Service: response
+deactivate Http
+Service --> Component: SessionDto, or thrown error
+deactivate Service
+Component --> View: Show result and store session on success
+deactivate Component
+View --> User: Show result
+deactivate View
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+actor "Invited Person" as Person
+participant "ActivateAccountPage" as View
+participant "ActivateAccountForm" as Component
+participant "accountsService" as Service
+participant "HttpClient" as Http
+participant "Nexo API" as API
+
+Person -> View: Submit name and password
+activate View
+View -> Component: handleSubmit(name, password)
+activate Component
+Component -> Service: activate(email, name, password)
+activate Service
+Service -> Http: POST /accounts/activation (ActivateAccountDto)
+activate Http
+Http -> API: HTTP request
+activate API
+API --> Http: 200 OK (AccountDto) or 400/403/409
+deactivate API
+Http --> Service: response
+deactivate Http
+Service --> Component: AccountDto, or thrown error
+deactivate Service
+Component --> View: Show result and sign in on success
+deactivate Component
+View --> Person: Show result
+deactivate View
+@enduml

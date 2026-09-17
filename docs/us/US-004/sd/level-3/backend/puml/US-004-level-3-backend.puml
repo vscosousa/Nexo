@@ -1,0 +1,45 @@
+@startuml
+participant "Web App" as FE
+participant "ResourcesController" as Controller
+participant "ResourceService" as Service
+participant "IAccountRepository" as AccountRepo
+participant "ResourceMapper" as Mapper
+participant "IResourceRepository" as ResourceRepo
+participant "NexoDbContext" as DbContext
+participant "Database" as DB
+
+activate FE
+FE -> Controller: POST /resources (dto)
+activate Controller
+Controller -> Service: Register(callerAccountId, dto)
+activate Service
+Service -> AccountRepo: GetById(callerAccountId)
+activate AccountRepo
+AccountRepo --> Service: caller Account
+deactivate AccountRepo
+alt Caller not permitted to manage resources
+    Service --> Controller: throw ForbiddenException
+    Controller --> FE: 403 Forbidden
+else Caller authorized
+    Service -> Mapper: ToResource(dto, caller.OrganizationId)
+    activate Mapper
+    Mapper --> Service: new Resource(name, type, description, status: Available)
+    deactivate Mapper
+    Service -> ResourceRepo: Add(resource)
+    activate ResourceRepo
+    deactivate ResourceRepo
+    Service -> DbContext: SaveChangesAsync()
+    activate DbContext
+    DbContext -> DB: INSERT Resource
+    activate DB
+    DB --> DbContext: rows affected
+    deactivate DB
+    DbContext --> Service: committed
+    deactivate DbContext
+    Service --> Controller: ResourceDto
+    Controller --> FE: 201 Created (ResourceDto)
+end
+deactivate Service
+deactivate Controller
+deactivate FE
+@enduml

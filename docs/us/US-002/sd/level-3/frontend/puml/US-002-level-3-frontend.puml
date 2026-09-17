@@ -1,0 +1,29 @@
+@startuml
+actor "Admin" as Admin
+participant "InviteMemberPage" as View
+participant "InviteMemberForm" as Component
+participant "invitationsService" as Service
+participant "HttpClient" as Http
+participant "Nexo API" as API
+
+Admin -> View: Submit member email
+activate View
+View -> Component: handleSubmit(email)
+activate Component
+Component -> Service: invite(organizationId, email)
+activate Service
+Service -> Http: POST /organizations/{organizationId}/invitations (InviteMemberDto)
+activate Http
+Http -> API: HTTP request (auth token attached)
+activate API
+API --> Http: 201 Created (AccountDto) or 400/403/409
+deactivate API
+Http --> Service: response
+deactivate Http
+Service --> Component: AccountDto, or thrown error
+deactivate Service
+Component --> View: Show result
+deactivate Component
+View --> Admin: Show result
+deactivate View
+@enduml

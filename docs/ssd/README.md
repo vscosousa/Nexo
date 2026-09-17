@@ -4,7 +4,7 @@
 
 Describe observable interactions between actors and Nexo. Treat the system as a single participant; internal components belong in [sequence diagrams](../sd/README.md).
 
-Instances live grouped by user story under [`docs/us/`](../us/README.md), as level 1 of that story's design (see there for the full folder layout and the list of stories).
+Instances live grouped by user story under [`docs/us/`](../us/README.md), as level 1 of that story's design (see there for the full folder layout and the list of stories). See [designing SSD/SD diagrams](../guides/sequence-diagrams.md) for the activation-bar and naming convention.
 
 ## Scenario template
 

@@ -1,9 +1,13 @@
 @startuml
 actor "Association Staff" as Staff
 participant "Web UI" as UI
-participant "ResourcesController" as Controller
+participant "Nexo API" as API
 Staff -> UI: Submit resource details
-UI -> Controller: POST /resources (RegisterResourceDto)
-Controller --> UI: 201 Created (ResourceDto) or 400/403
+activate UI
+UI -> API: POST /resources (RegisterResourceDto)
+activate API
+API --> UI: 201 Created (ResourceDto) or 400/403
+deactivate API
 UI --> Staff: Show result
+deactivate UI
 @enduml

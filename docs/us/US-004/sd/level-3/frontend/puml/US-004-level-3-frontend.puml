@@ -1,0 +1,29 @@
+@startuml
+actor "Association Staff" as Staff
+participant "RegisterResourcePage" as View
+participant "RegisterResourceForm" as Component
+participant "resourcesService" as Service
+participant "HttpClient" as Http
+participant "Nexo API" as API
+
+Staff -> View: Submit name, type, and description
+activate View
+View -> Component: handleSubmit(name, type, description)
+activate Component
+Component -> Service: register(name, type, description)
+activate Service
+Service -> Http: POST /resources (RegisterResourceDto)
+activate Http
+Http -> API: HTTP request (auth token attached)
+activate API
+API --> Http: 201 Created (ResourceDto) or 400/403
+deactivate API
+Http --> Service: response
+deactivate Http
+Service --> Component: ResourceDto, or thrown error
+deactivate Service
+Component --> View: Show result
+deactivate Component
+View --> Staff: Show result
+deactivate View
+@enduml

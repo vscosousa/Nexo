@@ -1,9 +1,13 @@
 @startuml
 actor "Admin" as Admin
 participant "Web UI" as UI
-participant "EligibleEmailsController" as Controller
+participant "Nexo API" as API
 Admin -> UI: Submit member email
-UI -> Controller: POST /organizations/{organizationId}/eligible-emails (RegisterEligibleEmailDto)
-Controller --> UI: 201 Created (EligibleEmailDto) or 400/403/409
+activate UI
+UI -> API: POST /organizations/{organizationId}/invitations (InviteMemberDto)
+activate API
+API --> UI: 201 Created (AccountDto, status: Invited) or 400/403/409
+deactivate API
 UI --> Admin: Show result
+deactivate UI
 @enduml

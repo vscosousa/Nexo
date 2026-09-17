@@ -1,9 +1,13 @@
 @startuml
 actor "Prospective Admin" as Admin
 participant "Web UI" as UI
-participant "OrganizationsController" as Controller
+participant "Nexo API" as API
 Admin -> UI: Submit organization and admin details
-UI -> Controller: POST /organizations (RegisterOrganizationDto)
-Controller --> UI: 201 Created (OrganizationDto) or 400/409
+activate UI
+UI -> API: POST /organizations (RegisterOrganizationDto)
+activate API
+API --> UI: 201 Created (OrganizationDto) or 400/409
+deactivate API
 UI --> Admin: Show result and sign in on success
+deactivate UI
 @enduml

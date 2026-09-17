@@ -1,0 +1,46 @@
+@startuml
+participant "Web App" as FE
+participant "AccountActivationsController" as Controller
+participant "AccountActivationService" as Service
+participant "IAccountRepository" as AccountRepo
+participant "AccountMapper" as Mapper
+participant "NexoDbContext" as DbContext
+participant "Database" as DB
+
+activate FE
+FE -> Controller: POST /accounts/activation (dto)
+activate Controller
+Controller -> Service: Activate(dto)
+activate Service
+Service -> AccountRepo: FindByEmail(dto.Email)
+activate AccountRepo
+AccountRepo --> Service: existing Account or null
+deactivate AccountRepo
+alt No account found
+    Service --> Controller: throw ForbiddenException (never registered to any organization)
+    Controller --> FE: 403 Forbidden
+else Account found
+    alt Account already Active
+        Service --> Controller: throw ConflictException
+        Controller --> FE: 409 Conflict
+    else Account is Invited
+        Service -> Mapper: ApplyActivation(account, dto)
+        activate Mapper
+        Mapper --> Service: account (Name, PasswordHash set; Status: Active)
+        deactivate Mapper
+        Service -> DbContext: SaveChangesAsync()
+        activate DbContext
+        DbContext -> DB: UPDATE Account
+        activate DB
+        DB --> DbContext: rows affected
+        deactivate DB
+        DbContext --> Service: committed
+        deactivate DbContext
+        Service --> Controller: AccountDto
+        Controller --> FE: 200 OK (AccountDto)
+    end
+end
+deactivate Service
+deactivate Controller
+deactivate FE
+@enduml
