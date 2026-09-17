@@ -37,7 +37,7 @@ Document the problem, scope, and verifiable requirements here.
 | [US-002](US-002-register-member-email.md) | Register a member's email to an organization | draft | [HLD](US-002-HLD.md) | [LLD](US-002-LLD.md) |
 | [US-003](US-003-create-member-account.md) | Create a member account | draft | [HLD](US-003-HLD.md) | [LLD](US-003-LLD.md) |
 | [US-004](US-004-register-resource.md) | Register a resource | draft | [HLD](US-004-HLD.md) | [LLD](US-004-LLD.md) |
-| [US-005](US-005-sign-in.md) | Sign in to an existing account | draft | | |
+| [US-005](US-005-sign-in.md) | Sign in to an existing account | draft | [HLD](US-005-HLD.md) | [LLD](US-005-LLD.md) |
 
 ## User story template
 

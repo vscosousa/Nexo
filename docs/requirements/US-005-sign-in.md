@@ -21,4 +21,4 @@
 - OAuth email with no matching account.
 - Account exists but was created SSO-only (no password) and the user attempts a password sign-in.
 
-**Related artifacts:** [ADR-006](../decisions/ADR-006-authentication.md), [Domain model](../domain-models/README.md#accounts-and-organizations), SSD/SD (not yet created), tests (not yet created).
+**Related artifacts:** [ADR-006](../decisions/ADR-006-authentication.md), [Domain model](../domain-models/README.md#accounts-and-organizations), [HLD](US-005-HLD.md), [LLD](US-005-LLD.md), [SSD/SD diagrams](../us/US-005/README.md), tests (not yet created).

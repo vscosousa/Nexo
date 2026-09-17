@@ -1,0 +1,30 @@
+@startuml
+actor "Account Holder" as User
+participant "Web UI" as UI
+participant "AuthController" as Controller
+participant "AuthService" as Service
+participant "IAccountRepository" as AccountRepo
+participant "PasswordHasher<Account>" as Hasher
+participant "ITokenService" as TokenService
+
+User -> UI: Submit email and password
+UI -> Controller: POST /auth/sign-in (dto)
+Controller -> Service: SignIn(dto)
+Service -> AccountRepo: FindByEmail(dto.Email)
+alt No account, or account has no password set
+    Service --> Controller: throw UnauthorizedException (generic)
+    Controller --> UI: 401 Unauthorized
+else Account has a password
+    Service -> Hasher: VerifyHashedPassword(account, account.PasswordHash, dto.Password)
+    alt Password does not match
+        Service --> Controller: throw UnauthorizedException (generic)
+        Controller --> UI: 401 Unauthorized
+    else Password matches
+        Service -> TokenService: GenerateToken(account)
+        TokenService --> Service: JWT
+        Service --> Controller: SessionDto
+        Controller --> UI: 200 OK (SessionDto)
+    end
+end
+UI --> User: Show result and store session on success
+@enduml

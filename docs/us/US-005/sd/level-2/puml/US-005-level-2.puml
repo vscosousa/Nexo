@@ -1,0 +1,9 @@
+@startuml
+actor "Account Holder" as User
+participant "Web UI" as UI
+participant "AuthController" as Controller
+User -> UI: Submit email and password
+UI -> Controller: POST /auth/sign-in (SignInDto)
+Controller --> UI: 200 OK (SessionDto) or 400/401
+UI --> User: Show result and store session on success
+@enduml
