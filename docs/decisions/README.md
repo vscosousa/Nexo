@@ -4,6 +4,8 @@
 
 Keep one record per significant technical decision. Name records `ADR-001-short-title.md` and link superseding decisions rather than rewriting historical reasoning.
 
+**Accepted** means the approach was selected; it does not mean all consequences are implemented. The [architecture page](../architecture/README.md) describes current implementation and the [requirements review gaps](../requirements/README.md#design-review-gaps) identify unfinished design details. The records below retain their original rationale.
+
 ## Decision index
 
 | ID | Title | Status | Date |
@@ -14,6 +16,7 @@ Keep one record per significant technical decision. Name records `ADR-001-short-
 | [ADR-004](ADR-004-frontend-architecture.md) | Frontend architecture | Accepted | 2026-09-17 |
 | [ADR-005](ADR-005-testing-frameworks.md) | Testing frameworks | Accepted | 2026-09-17 |
 | [ADR-006](ADR-006-authentication.md) | Authentication: password and social login | Accepted | 2026-09-17 |
+| [ADR-007](ADR-007-local-docker-compose.md) | Docker Compose for local startup | Proposed; implemented for review | 2026-09-17 |
 
 ## Record template
 

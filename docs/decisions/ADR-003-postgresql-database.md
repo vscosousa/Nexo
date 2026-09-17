@@ -28,4 +28,6 @@ PostgreSQL, accessed via `Npgsql.EntityFrameworkCore.PostgreSQL`.
 
 ## Related artifacts
 
+[ADR-007](ADR-007-local-docker-compose.md) adds a containerized local startup option; the original rationale above describes the manual setup.
+
 [ADR-001](ADR-001-frontend-backend-stack.md), [Technical reference](../reference/README.md), [Database design](../database/README.md).
