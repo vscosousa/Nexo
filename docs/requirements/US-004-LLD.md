@@ -8,15 +8,17 @@ Full technical detail, building on the [HLD](US-004-HLD.md)'s contract and struc
 
 ## Domain
 
+Business rules (starting status, required fields) are defined once in the [domain model](../domain-models/README.md#resources); the table below maps fields to C# types only.
+
 **`Resource`**
 
-| Field | Type | Rule |
+| Field | Type | Constraint |
 | --- | --- | --- |
 | `Id` | Guid | Generated on creation |
 | `Name` | string | Required, non-empty |
 | `Type` | string | Required, non-empty |
 | `Description` | string, nullable | Optional |
-| `Status` | enum (`Available`, ...) | `Available` on creation |
+| `Status` | enum (`Available`, ...) | See domain model for the starting status |
 | `OrganizationId` | Guid | Foreign key to `Organization`; taken from the caller's account, not from client input |
 
 ## Service logic (`ResourceService.Register`)

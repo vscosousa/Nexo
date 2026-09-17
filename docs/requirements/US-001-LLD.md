@@ -8,24 +8,26 @@ Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and struc
 
 ## Domain
 
+Business rules (defaults, limits, status transitions) are defined once in the [domain model](../domain-models/README.md#accounts-and-organizations); the tables below map fields to C# types only.
+
 **`Organization`**
 
-| Field | Type | Rule |
+| Field | Type | Constraint |
 | --- | --- | --- |
 | `Id` | Guid | Generated on creation |
 | `Name` | string | Required, non-empty |
-| `Plan` | enum (`Free`, ...) | Defaults to `Free` on creation |
-| `MemberLimit` | int | `20` for `Free` |
+| `Plan` | enum (`Free`, ...) | See domain model for default and limit |
+| `MemberLimit` | int | See domain model for default and limit |
 
 **`Account`**
 
-| Field | Type | Rule |
+| Field | Type | Constraint |
 | --- | --- | --- |
 | `Id` | Guid | Generated on creation |
 | `Email` | string | Required, valid format, unique across all accounts |
-| `Name` | string, nullable | Required for this feature; null for an account still `Invited` (see [US-002-LLD](US-002-LLD.md)) |
+| `Name` | string, nullable | Required for this feature; nullability rule per domain model (`Invited` accounts) |
 | `Role` | enum (`Admin`, `Member`) | `Admin` when created via this feature |
-| `Status` | enum (`Invited`, `Active`) | `Active` immediately for an admin account (this feature); a member account starts `Invited` (see [US-002-LLD](US-002-LLD.md)) and becomes `Active` on activation (see [US-003-LLD](US-003-LLD.md)). Only `Active` accounts count toward the organization's `MemberLimit` |
+| `Status` | enum (`Invited`, `Active`) | `Active` immediately for an admin account (this feature); see domain model for the member lifecycle and limit counting |
 | `OrganizationId` | Guid | Foreign key to `Organization` |
 
 ## Service logic (`OrganizationService.Register`)

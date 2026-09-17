@@ -35,13 +35,13 @@ Install Docker Desktop with Linux containers and Docker Compose v2, then run fro
 docker compose up --build
 ```
 
-This builds the frontend and API, starts PostgreSQL 17, and applies EF Core migrations before starting the API. No host Node.js, .NET SDK, PostgreSQL installation, or user-secrets setup is needed for this path. The first run downloads images and dependencies.
+This builds the frontend and API, starts PostgreSQL 17, and starts the API. No host Node.js, .NET SDK, PostgreSQL installation, or user-secrets setup is needed for this path. The first run downloads images and dependencies. See [database migrations and lifecycle](docs/database/README.md#migrations-and-lifecycle) for what happens to the database on startup, `down`, and `down -v`.
 
 - Frontend: `http://localhost:5173` (login placeholder).
 - API sample: `http://localhost:5122/WeatherForecast`.
 - Development OpenAPI: `http://localhost:5122/openapi/v1.json`, browsable at `http://localhost:5122/scalar/v1`.
 
-Use `docker compose up --build -d` to run in the background and `docker compose logs -f` to follow logs. Stop with Ctrl+C in attached mode, or `docker compose down` in either mode. Database data survives both operations in a named volume. **`docker compose down -v` deletes the local Docker database.**
+Use `docker compose up --build -d` to run in the background and `docker compose logs -f` to follow logs. Stop with Ctrl+C in attached mode, or `docker compose down` in either mode.
 
 Source is copied into the images; rerun `docker compose up --build` after edits. Ports 5173 and 5122 must be free. PostgreSQL is accessible only inside the Compose network, so an existing local PostgreSQL service can keep running. The fixed database credentials in [compose.yaml](compose.yaml) are disposable development values, not production credentials. This setup uses HTTP and development servers on loopback only; it is not a production deployment.
 
@@ -121,22 +121,7 @@ The [technical reference](docs/reference/README.md#commands) lists all commands.
 
 ## How it works
 
-### Main workflow
-
-The current browser scaffold reads a token from `localStorage` and uses its presence to guard routes. This does not validate credentials, expiry, or permissions. The shared Axios client targets `/api`, attaches a stored token, and redirects to login after a 401.
-
-The sample API request follows controller → service → repository → mapper → response. The weather repository generates data in memory; it does not query PostgreSQL. The proposed business workflows are documented in [user story designs](docs/us/README.md).
-
-### Data and state
-
-| Data | Storage | Current behavior |
-| --- | --- | --- |
-| Scaffold token | Browser `localStorage` | Auth context reads/writes it; the HTTP client clears it after a 401 |
-| Weather forecasts | Generated in memory | Five sample entries per request; no persistence |
-| Business data | PostgreSQL planned through EF Core | Empty context and initial migration; no business entities yet |
-| Local connection string | .NET user secrets (manual) or Compose environment | Docker uses disposable development credentials |
-
-See [architecture](docs/architecture/README.md) for implementation boundaries.
+See [architecture](docs/architecture/README.md) for component boundaries, the current scaffold's request flow, and data/state handling.
 
 ## Design
 
@@ -171,9 +156,9 @@ The [decision index](docs/decisions/README.md) explains the selected stack and a
 
 ## Contributing
 
-This is a solo portfolio project. Discuss non-trivial changes before implementing them, follow [AGENTS.md](AGENTS.md), and use TDD for features and fixes. Keep the matching documentation topic current. Run the relevant [checks](docs/testing/README.md), and include actual results and limitations in the review.
+This is a solo portfolio project. Follow [AGENTS.md](AGENTS.md) for how to work in this repo, use TDD for features and fixes, and keep the matching documentation topic current. Run the relevant [checks](docs/testing/README.md), and include actual results and limitations in the review.
 
-Review the diff before committing: the hook can format and re-stage selected files. Agents must request review before committing and explicit confirmation before changing Git configuration.
+Review the diff before committing: the hook can format and re-stage selected files.
 
 ## Acknowledgements
 
