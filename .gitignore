@@ -1,0 +1,33 @@
+﻿# Local configuration files and secrets
+.env
+.env.*
+!.env.example
+
+# Downloaded/verified binary dependencies
+.cache/
+
+# Temporary files and logs
+*.log
+*.tmp
+*.swp
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Web (Node)
+web/node_modules/
+web/dist/
+
+# API (.NET)
+api/bin/
+api/obj/
+api.Tests/bin/
+api.Tests/obj/
+
+# E2E (Playwright)
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
