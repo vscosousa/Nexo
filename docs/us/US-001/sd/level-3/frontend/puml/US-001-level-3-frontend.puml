@@ -1,10 +1,24 @@
 @startuml
+title US-001 - Register organization and admin - SD level 3 - Frontend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Prospective Admin" as Admin
 participant "RegisterOrganizationPage" as View
 participant "RegisterOrganizationForm" as Component
 participant "organizationsService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
+
+note over View, API
+  Credential input and session delivery are not yet specified.\nThis diagram shows the current draft contract only.
+end note
 
 Admin -> View: Submit organization and admin details
 activate View
@@ -16,14 +30,22 @@ Service -> Http: POST /organizations (RegisterOrganizationDto)
 activate Http
 Http -> API: HTTP request
 activate API
-API --> Http: 201 Created (OrganizationDto) or 400/409
+alt Request accepted
+    API --> Http: 201 Created (OrganizationDto)
+else Request rejected
+    API --> Http: 400/409/500
+end
 deactivate API
-Http --> Service: response
+Http --> Service: Response data or rejected request
 deactivate Http
 Service --> Component: OrganizationDto, or thrown error
 deactivate Service
-Component --> View: Show result and sign in on success
+alt Successful response
+    Component --> View: Organization and admin account created
+else Failed response
+    Component --> View: Error state (validation / operation failure)
+end
 deactivate Component
-View --> Admin: Show result
+View --> Admin: Render the resulting state
 deactivate View
 @enduml

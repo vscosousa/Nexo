@@ -2,6 +2,8 @@
 
 [Requirements](README.md) · [US-003](US-003-create-member-account.md) · [LLD](US-003-LLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 ## Requirements recap
 
 As a person whose email was registered by an admin, I want to create my account with either email/password or Google/Microsoft, so that I can use the system as a member of that organization. Full acceptance criteria: [US-003](US-003-create-member-account.md).
@@ -10,7 +12,7 @@ This activates the pending `Account` row that [US-002](US-002-HLD.md) already cr
 
 ## Folder structure
 
-New files this feature adds to `api/`:
+Proposed files for this feature in `api/`:
 
 ```text
 api/
@@ -22,7 +24,7 @@ api/
     └── AccountActivationService.cs
 ```
 
-Reuses `Dtos/AccountDto.cs` and `Infrastructure/Repositories/IAccountRepository` from [US-002](US-002-HLD.md).
+Reuses `Domain/Dtos/AccountDto.cs` and `Infrastructure/Repositories/IAccountRepository` from [US-002](US-002-HLD.md).
 
 ## API contract
 

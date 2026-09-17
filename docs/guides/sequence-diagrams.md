@@ -18,6 +18,14 @@ Level 1 and level 2 stay coarse on purpose: level 3 is where each side's real st
 
 ## Activation bars
 
+Give every diagram a story ID, descriptive title, and level. Number messages, use readable line wrapping, and keep styling consistent. Keep unresolved contract details in notes so a rendered image remains understandable outside its README.
+
+SSDs show only actor inputs and observable system outcomes. Do not add `System -> System` messages for validation, database access, or credential verification; put that work in the SDs. Distinguish accepted requests from validation, authorization, and conflict outcomes with `alt` branches.
+
+At level 2, keep only the actor, Web UI, and Nexo API. At level 3, show validation before repository access, repository reads through the context/database, and a separate save step after entity tracking. `Add` tracks an entity; it does not imply that an INSERT has already committed. Show the save-failure result where the LLD defines it.
+
+Keep success and error results separate. If a requirement promises automatic sign-in but its HLD returns no session, annotate that gap instead of inventing token delivery. Password-flow diagrams do not stand in for a designed OAuth exchange.
+
 Every diagram shows an activation bar (a vertical box on the lifeline) for the duration a participant is doing work, added with explicit `activate X` / `deactivate X` lines around plantuml `->` calls:
 
 ```plantuml
@@ -27,9 +35,11 @@ UI -> API: POST /organizations (RegisterOrganizationDto)
 activate API
 API --> UI: 201 Created (OrganizationDto) or 400/409
 deactivate API
-UI --> Admin: Show result and sign in on success
+UI --> Admin: Show registration result
 deactivate UI
 ```
+
+Automatic sign-in after registration is a requirement, but US-001's credential and session contract remains unresolved; annotate that gap in complete diagrams.
 
 Rules of thumb, the "ping pong" discipline every diagram follows:
 

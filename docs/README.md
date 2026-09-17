@@ -4,7 +4,9 @@
 
 This is the starting point for Nexo's project and technical documentation. Use the topic folders below to explore requirements, models, design decisions, and development guides.
 
-**Status:** documentation scaffolding. Topic pages contain templates to complete as the project develops.
+**Status:** five draft user stories have proposed designs; six architecture decisions are accepted. Implementation is scaffolded, with no completed business feature. Accepted decisions describe intended choices, not proof that they are implemented.
+
+Start with [local setup](../README.md#run-locally), the [current architecture](architecture/README.md), or the [story index](requirements/README.md#user-stories). Known inconsistencies that need a design decision are collected in [design review gaps](requirements/README.md#design-review-gaps).
 
 ## Documentation map
 
@@ -37,3 +39,6 @@ Keep documentation in English. Replace bracketed placeholders with confirmed inf
 
 Use stable identifiers such as `US-001` for user stories and `ADR-001` for decisions. Link related artifacts rather than duplicating them. Store editable diagram sources beside their documentation; add rendered exports only when needed.
 
+Separate current behavior from proposed behavior on every design page. Keep templates in explicitly named template sections; replace empty status tables with a clear statement of what is not defined. An accepted ADR is a historical record: link a superseding decision rather than silently rewriting its rationale.
+
+When changing a feature, update its requirement, HLD/LLD, diagrams, schema documentation, and testing topic as applicable. After a heading or path changes, check all incoming links and anchors. Verify local links and regenerate changed diagram sources before review. Record only checks actually executed, with their scope and limitations.

@@ -1,13 +1,25 @@
 @startuml
+title US-004 - Register resource - SSD level 1
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Association Staff" as Staff
 participant "Nexo" as System
-Staff -> System: Register resource (name, type, description)
+
+Staff -> System: Register resource (name, type, optional description)
 activate System
-System -> System: Validate details and check permission to manage resources
-alt Valid and authorized
-    System --> Staff: Resource created with status "Available"
-else Invalid details or unauthorized
-    System --> Staff: Registration rejected (validation or authorization error)
+alt Request accepted
+    System --> Staff: Resource created as Available; appears in resource list
+else Invalid required details
+    System --> Staff: Validation errors; nothing created
+else Caller cannot manage resources
+    System --> Staff: Authorization error; nothing created
 end
 deactivate System
 @enduml

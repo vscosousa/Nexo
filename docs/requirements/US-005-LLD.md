@@ -2,11 +2,13 @@
 
 [Requirements](README.md) · [US-005](US-005-sign-in.md) · [HLD](US-005-HLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 Full technical detail, building on the [HLD](US-005-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-005/README.md#level-3---backend) for the call sequence.
 
 ## Domain
 
-Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain), extended per [US-003-LLD](US-003-LLD.md#domain)); no new fields. `Account.PasswordHash` being null identifies an SSO-only account.
+Reuses the proposed `Account` (per [US-001-LLD](US-001-LLD.md#domain), extended per [US-003-LLD](US-003-LLD.md#domain)); no new fields. A null `Account.PasswordHash` means password sign-in is unavailable; this applies to invited accounts as well as active SSO-only accounts. The status gate remains a [design review gap](README.md#design-review-gaps).
 
 ## Service logic (`AuthService.SignIn`)
 

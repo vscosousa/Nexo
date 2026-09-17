@@ -1,4 +1,14 @@
 @startuml
+title US-002 - Invite member - SD level 3 - Backend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 participant "Web App" as FE
 participant "AccountInvitationsController" as Controller
 participant "AccountInvitationService" as Service
@@ -8,56 +18,111 @@ participant "AccountMapper" as Mapper
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
 
+note over Controller, DB
+  Limit counting (members vs all active accounts) and concurrent\nactivation enforcement remain open.
+end note
+
 activate FE
 FE -> Controller: POST /organizations/{organizationId}/invitations (dto)
 activate Controller
 Controller -> Service: Invite(organizationId, callerAccountId, dto)
 activate Service
-Service -> AccountRepo: GetById(callerAccountId)
-activate AccountRepo
-AccountRepo --> Service: caller Account
-deactivate AccountRepo
-alt Caller is not Admin of organizationId
-    Service --> Controller: throw ForbiddenException
-    Controller --> FE: 403 Forbidden
-else Caller authorized
-    Service -> OrgRepo: GetById(organizationId)
-    activate OrgRepo
-    OrgRepo --> Service: Organization (MemberLimit)
-    deactivate OrgRepo
-    Service -> AccountRepo: CountByOrganizationAndStatus(organizationId, Active)
+alt Missing or invalid required fields
+    Service --> Controller: Validation failure
+    Controller --> FE: 400 Bad Request
+else Valid input
+    Service -> AccountRepo: GetByIdAsync(callerAccountId)
     activate AccountRepo
-    AccountRepo --> Service: current active account count
+    AccountRepo -> DbContext: Query by Id (callerAccountId)
+    activate DbContext
+    DbContext -> DB: SELECT Account by Id
+    activate DB
+    DB --> DbContext: Query result
+    deactivate DB
+    DbContext --> AccountRepo: Materialized result
+    deactivate DbContext
+    AccountRepo --> Service: caller Account
     deactivate AccountRepo
-    alt Active-member limit reached
-        Service --> Controller: throw ConflictException (limit reached)
-        Controller --> FE: 409 Conflict
-    else Under limit
-        Service -> AccountRepo: FindByEmail(dto.Email)
+    alt Caller is not Admin of organizationId
+        Service --> Controller: throw ForbiddenException
+        Controller --> FE: 403 Forbidden
+    else Caller authorized
+        Service -> OrgRepo: GetByIdAsync(organizationId)
+        activate OrgRepo
+        OrgRepo -> DbContext: Query by Id (organizationId)
+        activate DbContext
+        DbContext -> DB: SELECT Organization by Id
+        activate DB
+        DB --> DbContext: Query result
+        deactivate DB
+        DbContext --> OrgRepo: Materialized result
+        deactivate DbContext
+        OrgRepo --> Service: Organization (MemberLimit)
+        deactivate OrgRepo
+        Service -> AccountRepo: CountByOrganizationAndStatusAsync(organizationId, Active)
         activate AccountRepo
-        AccountRepo --> Service: existing Account or null
+        AccountRepo -> DbContext: Count active accounts (organizationId, Active)
+        activate DbContext
+        DbContext -> DB: COUNT active Accounts in organization
+        activate DB
+        DB --> DbContext: Query result
+        deactivate DB
+        DbContext --> AccountRepo: Materialized result
+        deactivate DbContext
+        AccountRepo --> Service: current active account count
         deactivate AccountRepo
-        alt Email already has an account (Invited or Active)
-            Service --> Controller: throw ConflictException (already registered)
+        alt Active-member limit reached
+            Service --> Controller: throw ConflictException (limit reached)
             Controller --> FE: 409 Conflict
-        else Email available
-            Service -> Mapper: ToInvitedAccount(dto, organizationId)
-            activate Mapper
-            Mapper --> Service: new Account(email, role: Member, status: Invited, organization)
-            deactivate Mapper
-            Service -> AccountRepo: Add(account)
+        else Under limit
+            Service -> AccountRepo: FindByEmailAsync(dto.Email)
             activate AccountRepo
-            deactivate AccountRepo
-            Service -> DbContext: SaveChangesAsync()
+            AccountRepo -> DbContext: Query Account by Email (dto.Email)
             activate DbContext
-            DbContext -> DB: INSERT Account
+            DbContext -> DB: SELECT Account by Email
             activate DB
-            DB --> DbContext: rows affected
+            DB --> DbContext: Query result
             deactivate DB
-            DbContext --> Service: committed
+            DbContext --> AccountRepo: Materialized result
             deactivate DbContext
-            Service --> Controller: AccountDto
-            Controller --> FE: 201 Created (AccountDto)
+            AccountRepo --> Service: existing Account or null
+            deactivate AccountRepo
+            alt Email already has an account (Invited or Active)
+                Service --> Controller: throw ConflictException (already registered)
+                Controller --> FE: 409 Conflict
+            else Email available
+                Service -> Mapper: ToInvitedAccount(dto, organizationId)
+                activate Mapper
+                Mapper --> Service: new Account(email, role: Member, status: Invited, organization)
+                deactivate Mapper
+                Service -> AccountRepo: Add(account)
+                activate AccountRepo
+                AccountRepo -> DbContext: Track account as Added
+                activate DbContext
+                DbContext --> AccountRepo: Tracked (no INSERT yet)
+                deactivate DbContext
+                AccountRepo --> Service: Added to unit of work
+                deactivate AccountRepo
+                Service -> DbContext: SaveChangesAsync()
+                activate DbContext
+                DbContext -> DB: INSERT Account
+                activate DB
+                DB --> DbContext: Committed, or save failed (rolled back)
+                deactivate DB
+                DbContext --> Service: Save result or persistence exception
+                deactivate DbContext
+                alt Save succeeded
+                    Service -> Mapper: Map account to AccountDto
+                    activate Mapper
+                    Mapper --> Service: AccountDto
+                    deactivate Mapper
+                    Service --> Controller: AccountDto
+                    Controller --> FE: 201 Created (AccountDto)
+                else Save failed
+                    Service --> Controller: Persistence failure
+                    Controller --> FE: 500 Internal Server Error
+                end
+            end
         end
     end
 end

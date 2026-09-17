@@ -1,10 +1,25 @@
 @startuml
+title US-005 - Sign in - SD level 3 - Frontend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Account Holder" as User
 participant "LoginPage" as View
 participant "SignInForm" as Component
+participant "AuthProvider" as Auth
 participant "authService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
+
+note over View, API
+  Password flow only. Explicit Active-status checks, OAuth linking,\nand sign-in 401 handling in HttpClient remain open.
+end note
 
 User -> View: Submit email and password
 activate View
@@ -16,14 +31,26 @@ Service -> Http: POST /auth/sign-in (SignInDto)
 activate Http
 Http -> API: HTTP request
 activate API
-API --> Http: 200 OK (SessionDto) or 400/401
+alt Request accepted
+    API --> Http: 200 OK (SessionDto)
+else Request rejected
+    API --> Http: 400/401
+end
 deactivate API
-Http --> Service: response
+Http --> Service: Response data or rejected request
 deactivate Http
 Service --> Component: SessionDto, or thrown error
 deactivate Service
-Component --> View: Show result and store session on success
+alt Successful response
+    Component -> Auth: login(session.token)
+    activate Auth
+    Auth --> Component: Token stored; auth state updated
+    deactivate Auth
+    Component --> View: Session issued (token, expiresAt)
+else Failed response
+    Component --> View: Error state (validation / operation failure)
+end
 deactivate Component
-View --> User: Show result
+View --> User: Render the resulting state
 deactivate View
 @enduml

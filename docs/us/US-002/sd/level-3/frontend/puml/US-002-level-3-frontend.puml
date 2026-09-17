@@ -1,10 +1,24 @@
 @startuml
+title US-002 - Invite member - SD level 3 - Frontend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Admin" as Admin
 participant "InviteMemberPage" as View
 participant "InviteMemberForm" as Component
 participant "invitationsService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
+
+note over View, API
+  Limit counting (members vs all active accounts) and concurrent\nactivation enforcement remain open.
+end note
 
 Admin -> View: Submit member email
 activate View
@@ -16,14 +30,22 @@ Service -> Http: POST /organizations/{organizationId}/invitations (InviteMemberD
 activate Http
 Http -> API: HTTP request (auth token attached)
 activate API
-API --> Http: 201 Created (AccountDto) or 400/403/409
+alt Request accepted
+    API --> Http: 201 Created (AccountDto)
+else Request rejected
+    API --> Http: 400/403/409/500
+end
 deactivate API
-Http --> Service: response
+Http --> Service: Response data or rejected request
 deactivate Http
 Service --> Component: AccountDto, or thrown error
 deactivate Service
-Component --> View: Show result
+alt Successful response
+    Component --> View: Pending member account created (Invited)
+else Failed response
+    Component --> View: Error state (validation / operation failure)
+end
 deactivate Component
-View --> Admin: Show result
+View --> Admin: Render the resulting state
 deactivate View
 @enduml

@@ -1,13 +1,39 @@
 @startuml
+title US-001 - Register organization and admin - SD level 2
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Prospective Admin" as Admin
 participant "Web UI" as UI
 participant "Nexo API" as API
-Admin -> UI: Submit organization and admin details
+
+note over UI, API
+  Credential input and session delivery are not yet specified.\nThis diagram shows the current draft contract only.
+end note
+Admin -> UI: Register organization and admin account
 activate UI
 UI -> API: POST /organizations (RegisterOrganizationDto)
 activate API
-API --> UI: 201 Created (OrganizationDto) or 400/409
+alt Request accepted
+    API --> UI: 201 Created (OrganizationDto)
+else Invalid required details
+    API --> UI: 400 Bad Request
+else Email already registered
+    API --> UI: 409 Conflict
+else Persistence failure
+    API --> UI: 500 Internal Server Error
+end
 deactivate API
-UI --> Admin: Show result and sign in on success
+alt Successful response
+    UI --> Admin: Organization and admin account created
+else Error response
+    UI --> Admin: Show validation, authorization, or operation error
+end
 deactivate UI
 @enduml

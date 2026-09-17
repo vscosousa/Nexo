@@ -1,4 +1,14 @@
 @startuml
+title US-004 - Register resource - SD level 3 - Backend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 participant "Web App" as FE
 participant "ResourcesController" as Controller
 participant "ResourceService" as Service
@@ -8,36 +18,67 @@ participant "IResourceRepository" as ResourceRepo
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
 
+note over Controller, DB
+  Resource-management roles and the recognized type vocabulary\nremain open. Organization comes from the caller.
+end note
+
 activate FE
 FE -> Controller: POST /resources (dto)
 activate Controller
 Controller -> Service: Register(callerAccountId, dto)
 activate Service
-Service -> AccountRepo: GetById(callerAccountId)
-activate AccountRepo
-AccountRepo --> Service: caller Account
-deactivate AccountRepo
-alt Caller not permitted to manage resources
-    Service --> Controller: throw ForbiddenException
-    Controller --> FE: 403 Forbidden
-else Caller authorized
-    Service -> Mapper: ToResource(dto, caller.OrganizationId)
-    activate Mapper
-    Mapper --> Service: new Resource(name, type, description, status: Available)
-    deactivate Mapper
-    Service -> ResourceRepo: Add(resource)
-    activate ResourceRepo
-    deactivate ResourceRepo
-    Service -> DbContext: SaveChangesAsync()
+alt Missing or invalid required fields
+    Service --> Controller: Validation failure
+    Controller --> FE: 400 Bad Request
+else Valid input
+    Service -> AccountRepo: GetByIdAsync(callerAccountId)
+    activate AccountRepo
+    AccountRepo -> DbContext: Query by Id (callerAccountId)
     activate DbContext
-    DbContext -> DB: INSERT Resource
+    DbContext -> DB: SELECT Account by Id
     activate DB
-    DB --> DbContext: rows affected
+    DB --> DbContext: Query result
     deactivate DB
-    DbContext --> Service: committed
+    DbContext --> AccountRepo: Materialized result
     deactivate DbContext
-    Service --> Controller: ResourceDto
-    Controller --> FE: 201 Created (ResourceDto)
+    AccountRepo --> Service: caller Account
+    deactivate AccountRepo
+    alt Caller not permitted to manage resources
+        Service --> Controller: throw ForbiddenException
+        Controller --> FE: 403 Forbidden
+    else Caller authorized
+        Service -> Mapper: ToResource(dto, caller.OrganizationId)
+        activate Mapper
+        Mapper --> Service: new Resource(name, type, description, status: Available)
+        deactivate Mapper
+        Service -> ResourceRepo: Add(resource)
+        activate ResourceRepo
+        ResourceRepo -> DbContext: Track resource as Added
+        activate DbContext
+        DbContext --> ResourceRepo: Tracked (no INSERT yet)
+        deactivate DbContext
+        ResourceRepo --> Service: Added to unit of work
+        deactivate ResourceRepo
+        Service -> DbContext: SaveChangesAsync()
+        activate DbContext
+        DbContext -> DB: INSERT Resource
+        activate DB
+        DB --> DbContext: Committed, or save failed (rolled back)
+        deactivate DB
+        DbContext --> Service: Save result or persistence exception
+        deactivate DbContext
+        alt Save succeeded
+            Service -> Mapper: Map resource to ResourceDto
+            activate Mapper
+            Mapper --> Service: ResourceDto
+            deactivate Mapper
+            Service --> Controller: ResourceDto
+            Controller --> FE: 201 Created (ResourceDto)
+        else Save failed
+            Service --> Controller: Persistence failure
+            Controller --> FE: 500 Internal Server Error
+        end
+    end
 end
 deactivate Service
 deactivate Controller

@@ -1,13 +1,41 @@
 @startuml
+title US-002 - Invite member - SD level 2
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Admin" as Admin
 participant "Web UI" as UI
 participant "Nexo API" as API
-Admin -> UI: Submit member email
+
+note over UI, API
+  Limit counting (members vs all active accounts) and concurrent\nactivation enforcement remain open.
+end note
+Admin -> UI: Register member email (email)
 activate UI
 UI -> API: POST /organizations/{organizationId}/invitations (InviteMemberDto)
 activate API
-API --> UI: 201 Created (AccountDto, status: Invited) or 400/403/409
+alt Request accepted
+    API --> UI: 201 Created (AccountDto)
+else Invalid email
+    API --> UI: 400 Bad Request
+else Caller not authorized for organization
+    API --> UI: 403 Forbidden
+else Plan limit reached or email already registered
+    API --> UI: 409 Conflict
+else Persistence failure
+    API --> UI: 500 Internal Server Error
+end
 deactivate API
-UI --> Admin: Show result
+alt Successful response
+    UI --> Admin: Pending member account created (Invited)
+else Error response
+    UI --> Admin: Show validation, authorization, or operation error
+end
 deactivate UI
 @enduml

@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-Describe business concepts independently of database tables and implementation classes.
+These proposed models describe business concepts independently of database tables and implementation classes. Business entities are not implemented. Consult the [design review gaps](../requirements/README.md#design-review-gaps) for unresolved cross-story rules.
 
 ## Rationale
 
@@ -63,7 +63,7 @@ Domain concepts and their associations are identified from the requirements' [go
 | Concept | Meaning | Relationships | Business rules |
 | --- | --- | --- | --- |
 | Organization | A single association using the system (per [glossary](../glossary/README.md)) | Has one admin Account (the creator) and member Accounts (0..*, `Invited` or `Active`); has Resources (0..*) | Starts on the "Free" plan (limit: 20 **active** member accounts) on creation |
-| Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials) or signed into the system (`Status = Active`) | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created directly `Active` with role "admin" via organization creation (US-001); created `Invited` with role "member" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; only `Active` accounts count toward the organization's plan limit |
+| Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials) or activated (`Status = Active`, independently of any current session) | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created directly `Active` with role "admin" via organization creation (US-001); created `Invited` with role "member" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; only `Active` accounts count toward the organization's plan limit |
 | ExternalLogin | A link between an Account and a social provider identity (per [glossary](../glossary/README.md)) | Belongs to exactly one Account | Unique per (Provider, ProviderKey); the provider's email must match the Account's email at creation time |
 
 **Assumptions and open questions:**
@@ -87,6 +87,7 @@ Domain concepts and their associations are identified from the requirements' [go
 **Assumptions and open questions:**
 
 - Does a resource need a unique code/identifier, or is the name alone sufficient? Not yet decided.
+- Which roles may manage resources, and which resource types are recognized? [US-004's LLD](../requirements/US-004-LLD.md) leaves the permission rule open; its requirement also needs a defined type vocabulary.
 - Can two physically identical resources (e.g., two projectors) be registered as separate entries, or does one entry represent a quantity? Assumed separate entries for now, since reservations and loans target one specific item.
 
 ## Reservations and loans
@@ -142,8 +143,22 @@ Domain concepts and their associations are identified from the requirements' [go
 One conceptual domain model for the whole system, at three levels of detail:
 
 - **Level 1:** concepts and their associations only.
-- **Level 2:** adds each concept's attributes, as value objects.
-- **Level 3:** groups each concept and its attributes into a DDD aggregate, per [ADR-002](../decisions/ADR-002-modular-monolith-architecture.md)'s layered structure.
+- **Level 2:** adds each concept's attributes as separately drawn value objects, scoped to their owner. For example, Account.Status and Resource.Status are different lifecycles even though both are labeled `Status`.
+- **Level 3:** retains the proposed aggregate grouping and roots. [ADR-002](../decisions/ADR-002-modular-monolith-architecture.md) selects a layered monolith; it does not decide aggregate boundaries. Those boundaries still need review before implementation, particularly ExternalLogin's relationship to Account.
+
+The three levels use the same entity associations and multiplicities. Attribute nodes express conceptual values, not a decision to implement a separate C# class or database table for each value. Arrows across aggregate boundaries do not imply composition, cascade deletion, or a shared transaction.
+
+| Association or value | Multiplicity | Basis or limitation |
+| --- | --- | --- |
+| Organization → Account | One organization has `1..*` accounts; each account belongs to one organization | US-001 creates the organization and its admin atomically; exactly one admin is the current assumption |
+| Account → ExternalLogin | `0..*` logins per account; one account per login | Invited and password-only accounts may have none; provider/key pair is unique |
+| Account.Name / PasswordHash | `0..1` each | Invited accounts lack both; active SSO-only accounts lack a password hash |
+| Resource.Description | `0..1` | Optional in US-004 |
+| Resource → Incident | `0..*` incidents per resource; `0..1` resource per incident | Matches the current provisional table; whether standalone incidents remain supported is open |
+| Account → HistoryEntry | `0..*` entries per account; `0..1` attributed account per entry | Allows system or unattributed changes |
+| Loan.DeliveredAt / ReturnedAt | `0..1` each | Provisional lifecycle interpretation: absent until delivery/return; final rules await a story |
+
+All other existing domain associations are preserved. Detailed status sets, plan-limit counting, and persistence constraints remain in the per-area open questions and [design review gaps](../requirements/README.md#design-review-gaps).
 
 ### Level 1
 

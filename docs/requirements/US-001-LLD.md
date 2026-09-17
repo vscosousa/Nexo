@@ -2,6 +2,8 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [HLD](US-001-HLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-001/README.md#level-3---backend) for the call sequence.
 
 ## Domain

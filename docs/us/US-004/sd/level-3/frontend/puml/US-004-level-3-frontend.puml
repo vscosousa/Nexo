@@ -1,10 +1,24 @@
 @startuml
+title US-004 - Register resource - SD level 3 - Frontend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Association Staff" as Staff
 participant "RegisterResourcePage" as View
 participant "RegisterResourceForm" as Component
 participant "resourcesService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
+
+note over View, API
+  Resource-management roles and the recognized type vocabulary\nremain open. Organization comes from the caller.
+end note
 
 Staff -> View: Submit name, type, and description
 activate View
@@ -16,14 +30,22 @@ Service -> Http: POST /resources (RegisterResourceDto)
 activate Http
 Http -> API: HTTP request (auth token attached)
 activate API
-API --> Http: 201 Created (ResourceDto) or 400/403
+alt Request accepted
+    API --> Http: 201 Created (ResourceDto)
+else Request rejected
+    API --> Http: 400/403/500
+end
 deactivate API
-Http --> Service: response
+Http --> Service: Response data or rejected request
 deactivate Http
 Service --> Component: ResourceDto, or thrown error
 deactivate Service
-Component --> View: Show result
+alt Successful response
+    Component --> View: Resource created with status Available
+else Failed response
+    Component --> View: Error state (validation / operation failure)
+end
 deactivate Component
-View --> Staff: Show result
+View --> Staff: Render the resulting state
 deactivate View
 @enduml

@@ -1,4 +1,14 @@
 @startuml
+title US-005 - Sign in - SD level 3 - Backend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 participant "Web App" as FE
 participant "AuthController" as Controller
 participant "AuthService" as Service
@@ -8,41 +18,50 @@ participant "ITokenService" as TokenService
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
 
+note over Controller, DB
+  Password flow only. Explicit Active-status checks, OAuth linking,\nand sign-in 401 handling in HttpClient remain open.
+end note
+
 activate FE
 FE -> Controller: POST /auth/sign-in (dto)
 activate Controller
 Controller -> Service: SignIn(dto)
 activate Service
-Service -> AccountRepo: FindByEmail(dto.Email)
-activate AccountRepo
-AccountRepo -> DbContext: query Account by Email
-activate DbContext
-DbContext -> DB: SELECT Account WHERE Email = ...
-activate DB
-DB --> DbContext: Account row or none
-deactivate DB
-DbContext --> AccountRepo: Account or null
-deactivate DbContext
-AccountRepo --> Service: Account or null
-deactivate AccountRepo
-alt No account, or account has no password set
-    Service --> Controller: throw UnauthorizedException (generic)
-    Controller --> FE: 401 Unauthorized
-else Account has a password
-    Service -> Hasher: VerifyHashedPassword(account, account.PasswordHash, dto.Password)
-    activate Hasher
-    Hasher --> Service: match or mismatch
-    deactivate Hasher
-    alt Password does not match
+alt Missing or invalid required fields
+    Service --> Controller: Validation failure
+    Controller --> FE: 400 Bad Request
+else Valid input
+    Service -> AccountRepo: FindByEmailAsync(dto.Email)
+    activate AccountRepo
+    AccountRepo -> DbContext: Query Account by Email (dto.Email)
+    activate DbContext
+    DbContext -> DB: SELECT Account by Email
+    activate DB
+    DB --> DbContext: Query result
+    deactivate DB
+    DbContext --> AccountRepo: Materialized result
+    deactivate DbContext
+    AccountRepo --> Service: existing Account or null
+    deactivate AccountRepo
+    alt No account, or account has no password set
         Service --> Controller: throw UnauthorizedException (generic)
         Controller --> FE: 401 Unauthorized
-    else Password matches
-        Service -> TokenService: GenerateToken(account)
-        activate TokenService
-        TokenService --> Service: JWT
-        deactivate TokenService
-        Service --> Controller: SessionDto
-        Controller --> FE: 200 OK (SessionDto)
+    else Account has a password
+        Service -> Hasher: VerifyHashedPassword(account, account.PasswordHash, dto.Password)
+        activate Hasher
+        Hasher --> Service: match or mismatch
+        deactivate Hasher
+        alt Password does not match
+            Service --> Controller: throw UnauthorizedException (generic)
+            Controller --> FE: 401 Unauthorized
+        else Password matches
+            Service -> TokenService: GenerateToken(account)
+            activate TokenService
+            TokenService --> Service: JWT
+            deactivate TokenService
+            Service --> Controller: SessionDto
+            Controller --> FE: 200 OK (SessionDto)
+        end
     end
 end
 deactivate Service

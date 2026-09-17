@@ -1,13 +1,41 @@
 @startuml
+title US-003 - Activate member account - SD level 2
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Invited Person" as Person
 participant "Web UI" as UI
 participant "Nexo API" as API
-Person -> UI: Submit account details
+
+note over UI, API
+  Password flow only. OAuth endpoints and session delivery\nafter activation are not yet specified.
+end note
+Person -> UI: Activate account (email, name, password)
 activate UI
 UI -> API: POST /accounts/activation (ActivateAccountDto)
 activate API
-API --> UI: 200 OK (AccountDto) or 400/403/409
+alt Request accepted
+    API --> UI: 200 OK (AccountDto)
+else Invalid required details
+    API --> UI: 400 Bad Request
+else No account registered for email
+    API --> UI: 403 Forbidden
+else Account already Active
+    API --> UI: 409 Conflict
+else Persistence failure
+    API --> UI: 500 Internal Server Error
+end
 deactivate API
-UI --> Person: Show result and sign in on success
+alt Successful response
+    UI --> Person: Existing account activated (Active)
+else Error response
+    UI --> Person: Show validation, authorization, or operation error
+end
 deactivate UI
 @enduml

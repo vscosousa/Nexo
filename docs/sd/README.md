@@ -6,9 +6,11 @@ Describe how internal participants collaborate to implement a scenario, at two l
 
 - **Level 2**: the coarse interaction: actor, `Web UI`, and `Nexo API` (the backend as a whole, not a named controller; that's level 3). This is where the frontend and backend first connect, before either side's internals are shown.
 - **Level 3 - Backend**: the full backend collaboration, every participant involved (controller, service, repository, mapper, `NexoDbContext`), matching the layers in [architecture](../architecture/README.md).
-- **Level 3 - Frontend**: the full frontend collaboration (view, feature component, feature API service, shared `HttpClient`), ending at the same entry-point participant the backend diagram starts from.
+- **Level 3 - Frontend**: the full frontend collaboration (view, feature component, feature API service, shared `HttpClient`), ending at an opaque `Nexo API`. The backend diagram starts from an opaque `Web App` caller.
 
 See [designing SSD/SD diagrams](../guides/sequence-diagrams.md) for the activation-bar and naming convention. Instances live grouped by user story under [`docs/us/`](../us/README.md) (see there for the full folder layout and the list of stories).
+
+The current diagrams expose validation branches, repository reads, entity tracking versus database writes, and save failures already specified in the LLDs. Frontend diagrams distinguish response/error states; US-005 also shows the existing `AuthProvider.login(token)` boundary. Notes identify incomplete session, OAuth, permission, and plan-limit contracts rather than implying those decisions are settled.
 
 ## Scenario template
 

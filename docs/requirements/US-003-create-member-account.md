@@ -21,4 +21,4 @@
 - Email not registered to any organization (no pending account exists).
 - Email already has an active account.
 
-**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [ADR-006](../decisions/ADR-006-authentication.md), [HLD](US-003-HLD.md), [LLD](US-003-LLD.md), [SSD/SD diagrams](../us/US-003/README.md), [database design](../database/README.md) (not yet created), tests (not yet created).
+**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [ADR-006](../decisions/ADR-006-authentication.md), [HLD](US-003-HLD.md), [LLD](US-003-LLD.md), [SSD/SD diagrams](../us/US-003/README.md), [database design](../database/README.md) (business schema not yet implemented), tests (not yet created).

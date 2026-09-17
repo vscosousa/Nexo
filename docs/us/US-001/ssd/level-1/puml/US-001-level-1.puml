@@ -1,13 +1,28 @@
 @startuml
+title US-001 - Register organization and admin - SSD level 1
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Prospective Admin" as Admin
 participant "Nexo" as System
-Admin -> System: Register organization and admin account (org name, admin email, admin name)
+
+note over System
+  Registration outcome only; credential/provider interaction\n  needs a separate contract before implementation.
+end note
+Admin -> System: Register organization and admin account
 activate System
-System -> System: Validate details and check email uniqueness
-alt Valid and email available
+alt Request accepted
     System --> Admin: Organization and admin account created; signed in
-else Invalid details or email already in use
-    System --> Admin: Registration rejected (validation or conflict error)
+else Invalid required details
+    System --> Admin: Validation errors; nothing created
+else Email already registered
+    System --> Admin: Conflict; nothing created
 end
 deactivate System
 @enduml

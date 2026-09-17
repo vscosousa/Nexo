@@ -2,6 +2,8 @@
 
 [Requirements](README.md) · [US-003](US-003-create-member-account.md) · [HLD](US-003-HLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 Full technical detail, building on the [HLD](US-003-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-003/README.md#level-3---backend) for the call sequence.
 
 ## Domain

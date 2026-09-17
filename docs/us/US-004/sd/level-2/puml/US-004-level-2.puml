@@ -1,13 +1,39 @@
 @startuml
+title US-004 - Register resource - SD level 2
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Association Staff" as Staff
 participant "Web UI" as UI
 participant "Nexo API" as API
-Staff -> UI: Submit resource details
+
+note over UI, API
+  Resource-management roles and the recognized type vocabulary\nremain open. Organization comes from the caller.
+end note
+Staff -> UI: Register resource (name, type, optional description)
 activate UI
 UI -> API: POST /resources (RegisterResourceDto)
 activate API
-API --> UI: 201 Created (ResourceDto) or 400/403
+alt Request accepted
+    API --> UI: 201 Created (ResourceDto)
+else Invalid required details
+    API --> UI: 400 Bad Request
+else Caller cannot manage resources
+    API --> UI: 403 Forbidden
+else Persistence failure
+    API --> UI: 500 Internal Server Error
+end
 deactivate API
-UI --> Staff: Show result
+alt Successful response
+    UI --> Staff: Resource created with status Available
+else Error response
+    UI --> Staff: Show validation, authorization, or operation error
+end
 deactivate UI
 @enduml

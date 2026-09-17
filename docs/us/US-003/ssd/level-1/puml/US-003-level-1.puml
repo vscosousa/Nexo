@@ -1,13 +1,28 @@
 @startuml
+title US-003 - Activate member account - SSD level 1
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Invited Person" as Person
 participant "Nexo" as System
+
+note over System
+  Email/password scenario; provider interaction is not detailed here.
+end note
 Person -> System: Activate account (email, name, password)
 activate System
-System -> System: Check a pending account exists for the email and is not already active
-alt Pending account found and not yet active
-    System --> Person: Account activated and signed in
-else No account for the email, or already active
-    System --> Person: Activation rejected (not eligible or conflict error)
+alt Request accepted
+    System --> Person: Existing account activated; signed in
+else Invalid required details
+    System --> Person: Validation errors; account unchanged
+else No pending account for email
+    System --> Person: Eligibility or conflict error; account unchanged
 end
 deactivate System
 @enduml

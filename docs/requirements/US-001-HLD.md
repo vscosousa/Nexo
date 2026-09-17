@@ -2,13 +2,15 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [LLD](US-001-LLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 ## Requirements recap
 
 As a prospective admin, I want to register my organization and create my admin account in one step, so that I can start inviting members and managing resources. Full acceptance criteria: [US-001](US-001-create-organization-admin.md).
 
 ## Folder structure
 
-New files this feature adds to `api/`:
+Proposed files for this feature in `api/`:
 
 ```text
 api/
@@ -17,7 +19,7 @@ api/
 │   ├── Models/Organization.cs
 │   ├── Models/Account.cs
 │   └── Dtos/RegisterOrganizationDto.cs
-├── Dtos/OrganizationDto.cs
+├── Domain/Dtos/OrganizationDto.cs
 ├── Mappers/OrganizationMapper.cs
 ├── Services/
 │   ├── IOrganizationService.cs

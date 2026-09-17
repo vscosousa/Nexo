@@ -1,4 +1,14 @@
 @startuml
+title US-003 - Activate member account - SD level 3 - Frontend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Invited Person" as Person
 participant "ActivateAccountPage" as View
 participant "ActivateAccountForm" as Component
@@ -6,9 +16,13 @@ participant "accountsService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
 
-Person -> View: Submit name and password
+note over View, API
+  Password flow only. OAuth endpoints and session delivery\nafter activation are not yet specified.
+end note
+
+Person -> View: Submit email, name, and password
 activate View
-View -> Component: handleSubmit(name, password)
+View -> Component: handleSubmit(email, name, password)
 activate Component
 Component -> Service: activate(email, name, password)
 activate Service
@@ -16,14 +30,22 @@ Service -> Http: POST /accounts/activation (ActivateAccountDto)
 activate Http
 Http -> API: HTTP request
 activate API
-API --> Http: 200 OK (AccountDto) or 400/403/409
+alt Request accepted
+    API --> Http: 200 OK (AccountDto)
+else Request rejected
+    API --> Http: 400/403/409/500
+end
 deactivate API
-Http --> Service: response
+Http --> Service: Response data or rejected request
 deactivate Http
 Service --> Component: AccountDto, or thrown error
 deactivate Service
-Component --> View: Show result and sign in on success
+alt Successful response
+    Component --> View: Existing account activated (Active)
+else Failed response
+    Component --> View: Error state (validation / operation failure)
+end
 deactivate Component
-View --> Person: Show result
+View --> Person: Render the resulting state
 deactivate View
 @enduml

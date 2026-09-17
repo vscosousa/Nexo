@@ -1,43 +1,84 @@
 @startuml
+title US-003 - Activate member account - SD level 3 - Backend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 participant "Web App" as FE
 participant "AccountActivationsController" as Controller
 participant "AccountActivationService" as Service
 participant "IAccountRepository" as AccountRepo
 participant "AccountMapper" as Mapper
+participant "PasswordHasher<Account>" as Hasher
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
+
+note over Controller, DB
+  Password flow only. OAuth endpoints and session delivery\nafter activation are not yet specified.
+end note
 
 activate FE
 FE -> Controller: POST /accounts/activation (dto)
 activate Controller
 Controller -> Service: Activate(dto)
 activate Service
-Service -> AccountRepo: FindByEmail(dto.Email)
-activate AccountRepo
-AccountRepo --> Service: existing Account or null
-deactivate AccountRepo
-alt No account found
-    Service --> Controller: throw ForbiddenException (never registered to any organization)
-    Controller --> FE: 403 Forbidden
-else Account found
-    alt Account already Active
-        Service --> Controller: throw ConflictException
-        Controller --> FE: 409 Conflict
-    else Account is Invited
-        Service -> Mapper: ApplyActivation(account, dto)
-        activate Mapper
-        Mapper --> Service: account (Name, PasswordHash set; Status: Active)
-        deactivate Mapper
-        Service -> DbContext: SaveChangesAsync()
-        activate DbContext
-        DbContext -> DB: UPDATE Account
-        activate DB
-        DB --> DbContext: rows affected
-        deactivate DB
-        DbContext --> Service: committed
-        deactivate DbContext
-        Service --> Controller: AccountDto
-        Controller --> FE: 200 OK (AccountDto)
+alt Missing or invalid required fields
+    Service --> Controller: Validation failure
+    Controller --> FE: 400 Bad Request
+else Valid input
+    Service -> AccountRepo: FindByEmailAsync(dto.Email)
+    activate AccountRepo
+    AccountRepo -> DbContext: Query Account by Email (dto.Email)
+    activate DbContext
+    DbContext -> DB: SELECT Account by Email
+    activate DB
+    DB --> DbContext: Query result
+    deactivate DB
+    DbContext --> AccountRepo: Materialized result
+    deactivate DbContext
+    AccountRepo --> Service: existing Account or null
+    deactivate AccountRepo
+    alt No account found
+        Service --> Controller: throw ForbiddenException (never registered to any organization)
+        Controller --> FE: 403 Forbidden
+    else Account found
+        alt Account already Active
+            Service --> Controller: throw ConflictException
+            Controller --> FE: 409 Conflict
+        else Account is Invited
+            Service -> Mapper: ApplyActivation(account, dto)
+            activate Mapper
+            Mapper -> Hasher: HashPassword(account, dto.Password)
+            activate Hasher
+            Hasher --> Mapper: Password hash
+            deactivate Hasher
+            Mapper --> Service: account (Name, PasswordHash set; Status: Active)
+            deactivate Mapper
+            Service -> DbContext: SaveChangesAsync()
+            activate DbContext
+            DbContext -> DB: UPDATE Account
+            activate DB
+            DB --> DbContext: Committed, or save failed (rolled back)
+            deactivate DB
+            DbContext --> Service: Save result or persistence exception
+            deactivate DbContext
+            alt Save succeeded
+                Service -> Mapper: Map account to AccountDto
+                activate Mapper
+                Mapper --> Service: AccountDto
+                deactivate Mapper
+                Service --> Controller: AccountDto
+                Controller --> FE: 200 OK (AccountDto)
+            else Save failed
+                Service --> Controller: Persistence failure
+                Controller --> FE: 500 Internal Server Error
+            end
+        end
     end
 end
 deactivate Service

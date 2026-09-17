@@ -1,13 +1,37 @@
 @startuml
+title US-005 - Sign in - SD level 2
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Account Holder" as User
 participant "Web UI" as UI
 participant "Nexo API" as API
-User -> UI: Submit email and password
+
+note over UI, API
+  Password flow only. Explicit Active-status checks, OAuth linking,\nand sign-in 401 handling in HttpClient remain open.
+end note
+User -> UI: Sign in (email, password)
 activate UI
 UI -> API: POST /auth/sign-in (SignInDto)
 activate API
-API --> UI: 200 OK (SessionDto) or 400/401
+alt Request accepted
+    API --> UI: 200 OK (SessionDto)
+else Missing required credentials
+    API --> UI: 400 Bad Request
+else Unknown email, no password, or incorrect password
+    API --> UI: 401 Unauthorized
+end
 deactivate API
-UI --> User: Show result and store session on success
+alt Successful response
+    UI --> User: Session issued (token, expiresAt)
+else Error response
+    UI --> User: Show validation, authorization, or operation error
+end
 deactivate UI
 @enduml

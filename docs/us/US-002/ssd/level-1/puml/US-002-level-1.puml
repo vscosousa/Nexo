@@ -1,13 +1,29 @@
 @startuml
+title US-002 - Invite member - SSD level 1
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Admin" as Admin
 participant "Nexo" as System
-Admin -> System: Register a member's email to the organization (email)
+
+Admin -> System: Register member email (email)
 activate System
-System -> System: Validate email, check authorization, active-member limit, and uniqueness
-alt Valid, authorized, under limit, and email available
-    System --> Admin: Pending account created (Invited)
-else Invalid, unauthorized, limit reached, or email already registered
-    System --> Admin: Registration rejected (validation, authorization, limit, or conflict error)
+alt Request accepted
+    System --> Admin: Pending member account created; no credentials yet
+else Invalid email
+    System --> Admin: Validation error; nothing created
+else Caller not authorized
+    System --> Admin: Authorization error; nothing created
+else Plan limit reached
+    System --> Admin: Limit error; nothing created
+else Email already registered
+    System --> Admin: Conflict; nothing created
 end
 deactivate System
 @enduml

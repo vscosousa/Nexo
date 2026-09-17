@@ -36,6 +36,8 @@ us/
 
 ## Stories
 
+All five designs are proposed. Read the [design review gaps](../requirements/README.md#design-review-gaps) before treating a diagram as a complete implementation contract. Rendered diagrams show intended collaboration, not existing classes.
+
 | Story | SSD (level 1) | SD (level 2) | SD (level 3) | HLD | LLD |
 | --- | --- | --- | --- | --- | --- |
 | [US-001](US-001/README.md) | [level-1](US-001/ssd/level-1/puml/US-001-level-1.puml) | [level-2](US-001/sd/level-2/puml/US-001-level-2.puml) | [backend](US-001/sd/level-3/backend/puml/US-001-level-3-backend.puml), [frontend](US-001/sd/level-3/frontend/puml/US-001-level-3-frontend.puml) | [HLD](../requirements/US-001-HLD.md) | [LLD](../requirements/US-001-LLD.md) |

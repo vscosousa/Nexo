@@ -1,13 +1,28 @@
 @startuml
+title US-005 - Sign in - SSD level 1
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 actor "Account Holder" as User
 participant "Nexo" as System
+
+note over System
+  Email/password scenario; provider interaction is not detailed here.
+end note
 User -> System: Sign in (email, password)
 activate System
-System -> System: Verify credentials
-alt Correct email and password
+alt Request accepted
     System --> User: Session issued; signed in
-else Incorrect password or no matching account
-    System --> User: Sign-in rejected (no detail on which)
+else Missing required credentials
+    System --> User: Validation errors; no session issued
+else Credentials not accepted
+    System --> User: Generic sign-in error; no session issued
 end
 deactivate System
 @enduml

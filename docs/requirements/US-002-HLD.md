@@ -2,6 +2,8 @@
 
 [Requirements](README.md) · [US-002](US-002-register-member-email.md) · [LLD](US-002-LLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 ## Requirements recap
 
 As an admin, I want to register a person's email against my organization, so that they become eligible to create their own account. Full acceptance criteria: [US-002](US-002-register-member-email.md).
@@ -10,13 +12,13 @@ This registers the email as a pending `Account` (`Status = Invited`, `Role = Mem
 
 ## Folder structure
 
-New files this feature adds to `api/`:
+Proposed files for this feature in `api/`:
 
 ```text
 api/
 ├── Controllers/AccountInvitationsController.cs
 ├── Domain/Dtos/InviteMemberDto.cs
-├── Dtos/AccountDto.cs
+├── Domain/Dtos/AccountDto.cs
 ├── Mappers/AccountMapper.cs
 └── Services/
     ├── IAccountInvitationService.cs

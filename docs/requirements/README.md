@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-Document the problem, scope, and verifiable requirements here.
+This page defines the intended scope and indexes draft stories. None of the five business stories is implemented; their HLD/LLD and diagrams describe proposed behavior.
 
 ## Context and scope
 
@@ -53,8 +53,21 @@ Create one file per story using `US-001-short-title.md` when requirements are de
 
 ## Quality requirements
 
-| ID | Quality attribute | Scenario | Measurable target | Verification |
-| --- | --- | --- | --- | --- |
-| [NFR-001] | [Performance, accessibility, etc.] | [Conditions and action] | [Threshold] | [Check] |
+No measurable quality targets have been agreed. Before adding an NFR, define a stable ID, the conditions and action, an observable threshold, and a reproducible verification method. Performance testing remains deferred per [ADR-005](../decisions/ADR-005-testing-frameworks.md).
+
+## Design review gaps
+
+These are inconsistencies or missing details in the current proposals, not new decisions. Resolve them with the project owner and update the affected stories and diagrams together before implementation.
+
+| Area | Gap to resolve |
+| --- | --- |
+| US-001 registration | Acceptance criteria require password/SSO registration and automatic sign-in, but the HLD only supplies organization/name/email fields and returns `OrganizationDto`. Credential input and session delivery are missing. |
+| US-003 activation | The story requires sign-in after activation, but the HLD returns only `AccountDto`; the session response is unspecified. |
+| US-002/US-003 plan limits | Text alternates between active members and all active accounts. The invitation design checks the limit, while activation does not; concurrent activations are unspecified. |
+| US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
+| US-005 sign-in | A null password hash also occurs on invited accounts, not only SSO-only accounts. The active-status gate and provider-linking behavior need explicit treatment. The scaffold redirects on every HTTP 401, whereas the sign-in design needs to render a generic credential error; these behaviors must be reconciled. |
+| Shared contracts | API prefix, error bodies, email normalization, OAuth endpoints, and database uniqueness/concurrency handling need consistent specifications. |
+
+The [database page](../database/README.md) tracks persistence status. [ADR-006](../decisions/ADR-006-authentication.md) records the accepted authentication direction, while the concrete contracts remain incomplete.
 
 Use terms from the [glossary](../glossary/README.md).

@@ -1,125 +1,154 @@
 @startuml
-title DOMAIN MODEL - LEVEL 3
+title Domain model - Level 3\nProposed; business entities are not implemented
 
 hide empty members
-
+hide circle
+skinparam shadowing false
+skinparam linetype polyline
+skinparam nodesep 35
+skinparam ranksep 45
 skinparam class {
-    BackgroundColor<<valueObject>> #D6EAF8
     BackgroundColor #FEF9E7
-    ArrowColor Black
+    BackgroundColor<<valueObject>> #D6EAF8
+    ArrowColor #34495E
 }
+skinparam packageBackgroundColor #EBF5FB
 
-skinparam package {
-    BackgroundColor #EBF5FB
-}
-
-package "<<aggregate>> Organization" {
+package "Organization\n(proposed aggregate)" as OrganizationAggregate {
     entity Organization <<entity>> <<root>> {}
-    class Plan <<valueObject>> <<(V, #FF8B40)>> {}
-    class MemberLimit <<valueObject>> <<(V, #FF8B40)>> {}
+    class "Name" as OrganizationName <<valueObject>> {}
+    class "Plan" as OrganizationPlan <<valueObject>> {}
+    class "MemberLimit" as OrganizationMemberLimit <<valueObject>> {}
 }
 
-package "<<aggregate>> Account" {
+package "Account\n(proposed aggregate)" as AccountAggregate {
     entity Account <<entity>> <<root>> {}
-    class PasswordHash <<valueObject>> <<(V, #FF8B40)>> {}
-    class Role <<valueObject>> <<(V, #FF8B40)>> {}
+    class "Email" as AccountEmail <<valueObject>> {}
+    class "Name" as AccountName <<valueObject>> {}
+    class "PasswordHash" as AccountPasswordHash <<valueObject>> {}
+    class "Role" as AccountRole <<valueObject>> {}
+    class "Status" as AccountStatus <<valueObject>> {}
 }
 
-package "<<aggregate>> ExternalLogin" {
+package "ExternalLogin\n(proposed aggregate)" as ExternalLoginAggregate {
     entity ExternalLogin <<entity>> <<root>> {}
-    class Provider <<valueObject>> <<(V, #FF8B40)>> {}
-    class ProviderKey <<valueObject>> <<(V, #FF8B40)>> {}
+    class "Provider" as ExternalLoginProvider <<valueObject>> {}
+    class "ProviderKey" as ExternalLoginProviderKey <<valueObject>> {}
 }
 
-package "<<aggregate>> Resource" {
+package "Resource\n(proposed aggregate)" as ResourceAggregate {
     entity Resource <<entity>> <<root>> {}
-    class Type <<valueObject>> <<(V, #FF8B40)>> {}
+    class "Name" as ResourceName <<valueObject>> {}
+    class "Type" as ResourceType <<valueObject>> {}
+    class "Description" as ResourceDescription <<valueObject>> {}
+    class "Status" as ResourceStatus <<valueObject>> {}
 }
 
-package "<<aggregate>> Reservation" {
+package "Reservation\n(proposed aggregate)" as ReservationAggregate {
     entity Reservation <<entity>> <<root>> {}
-    class StartAt <<valueObject>> <<(V, #FF8B40)>> {}
-    class EndAt <<valueObject>> <<(V, #FF8B40)>> {}
+    class "StartAt" as ReservationStartAt <<valueObject>> {}
+    class "EndAt" as ReservationEndAt <<valueObject>> {}
+    class "Status" as ReservationStatus <<valueObject>> {}
 }
 
-package "<<aggregate>> Loan" {
+package "Loan\n(proposed aggregate)" as LoanAggregate {
     entity Loan <<entity>> <<root>> {}
-    class RequestedAt <<valueObject>> <<(V, #FF8B40)>> {}
-    class DeliveredAt <<valueObject>> <<(V, #FF8B40)>> {}
-    class ReturnedAt <<valueObject>> <<(V, #FF8B40)>> {}
+    class "Status" as LoanStatus <<valueObject>> {}
+    class "RequestedAt" as LoanRequestedAt <<valueObject>> {}
+    class "DeliveredAt" as LoanDeliveredAt <<valueObject>> {}
+    class "ReturnedAt" as LoanReturnedAt <<valueObject>> {}
 }
 
-package "<<aggregate>> Incident" {
+package "Incident\n(proposed aggregate)" as IncidentAggregate {
     entity Incident <<entity>> <<root>> {}
+    class "Description" as IncidentDescription <<valueObject>> {}
+    class "Status" as IncidentStatus <<valueObject>> {}
 }
 
-package "<<aggregate>> HistoryEntry" {
+package "HistoryEntry\n(proposed aggregate)" as HistoryEntryAggregate {
     entity HistoryEntry <<entity>> <<root>> {}
-    class EntityName <<valueObject>> <<(V, #FF8B40)>> {}
-    class EntityId <<valueObject>> <<(V, #FF8B40)>> {}
-    class ChangeType <<valueObject>> <<(V, #FF8B40)>> {}
-    class ChangedAt <<valueObject>> <<(V, #FF8B40)>> {}
+    class "EntityName" as HistoryEntryEntityName <<valueObject>> {}
+    class "EntityId" as HistoryEntryEntityId <<valueObject>> {}
+    class "ChangeType" as HistoryEntryChangeType <<valueObject>> {}
+    class "ChangedAt" as HistoryEntryChangedAt <<valueObject>> {}
 }
 
-package "<<aggregate>> Notification" {
+package "Notification\n(proposed aggregate)" as NotificationAggregate {
     entity Notification <<entity>> <<root>> {}
-    class Message <<valueObject>> <<(V, #FF8B40)>> {}
-    class SentAt <<valueObject>> <<(V, #FF8B40)>> {}
+    class "Message" as NotificationMessage <<valueObject>> {}
+    class "SentAt" as NotificationSentAt <<valueObject>> {}
 }
 
-' Shared value objects, referenced by more than one aggregate
-class Name <<valueObject>> <<(V, #FF8B40)>> {}
-class Email <<valueObject>> <<(V, #FF8B40)>> {}
-class Description <<valueObject>> <<(V, #FF8B40)>> {}
-class Status <<valueObject>> <<(V, #FF8B40)>> {}
 
-Organization "1" --> "1" Name : has
-Organization "1" --> "1" Plan : has
-Organization "1" --> "1" MemberLimit : has
-Organization "1" --> "*" Account : has
-Organization "1" --> "*" Resource : has
+Organization "1" --> "1..*" Account : has
+Organization "1" --> "0..*" Resource : owns
+Account "1" --> "0..*" ExternalLogin : links
+Account "1" --> "0..*" Reservation : requests
+Account "1" --> "0..*" Loan : requests
+Account "1" --> "0..*" Incident : reports
+Account "0..1" --> "0..*" HistoryEntry : attributed changes
+Account "1" --> "0..*" Notification : receives
+Resource "1" --> "0..*" Reservation : is reserved via
+Resource "1" --> "0..*" Loan : is loaned via
+Resource "0..1" --> "0..*" Incident : is affected by
 
-Account "1" --> "1" Email : has
-Account "1" --> "1" Name : has
-Account "1" --> "1" PasswordHash : has
-Account "1" --> "1" Role : has
-Account "1" --> "1" Status : has
-Account "1" --> "*" ExternalLogin : has
-Account "1" --> "*" Reservation : requests
-Account "1" --> "*" Loan : requests
-Account "1" --> "*" Incident : reports
-Account "1" --> "*" HistoryEntry : changes
-Account "1" --> "*" Notification : receives
+Organization "1" --> "1" OrganizationName : has
+Organization "1" --> "1" OrganizationPlan : has
+Organization "1" --> "1" OrganizationMemberLimit : has
+Account "1" --> "1" AccountEmail : has
+Account "1" --> "0..1" AccountName : has
+Account "1" --> "0..1" AccountPasswordHash : has
+Account "1" --> "1" AccountRole : has
+Account "1" --> "1" AccountStatus : has
+ExternalLogin "1" --> "1" ExternalLoginProvider : has
+ExternalLogin "1" --> "1" ExternalLoginProviderKey : has
+Resource "1" --> "1" ResourceName : has
+Resource "1" --> "1" ResourceType : has
+Resource "1" --> "0..1" ResourceDescription : has
+Resource "1" --> "1" ResourceStatus : has
+Reservation "1" --> "1" ReservationStartAt : has
+Reservation "1" --> "1" ReservationEndAt : has
+Reservation "1" --> "1" ReservationStatus : has
+Loan "1" --> "1" LoanStatus : has
+Loan "1" --> "1" LoanRequestedAt : has
+Loan "1" --> "0..1" LoanDeliveredAt : has
+Loan "1" --> "0..1" LoanReturnedAt : has
+Incident "1" --> "1" IncidentDescription : has
+Incident "1" --> "1" IncidentStatus : has
+HistoryEntry "1" --> "1" HistoryEntryEntityName : has
+HistoryEntry "1" --> "1" HistoryEntryEntityId : has
+HistoryEntry "1" --> "1" HistoryEntryChangeType : has
+HistoryEntry "1" --> "1" HistoryEntryChangedAt : has
+Notification "1" --> "1" NotificationMessage : has
+Notification "1" --> "1" NotificationSentAt : has
 
-ExternalLogin "1" --> "1" Provider : has
-ExternalLogin "1" --> "1" ProviderKey : has
+note top of Account
+  Invited: no name or credentials yet.
+  Active: password and/or external login.
+  Active is an account state, not a session.
+  Email is unique across accounts.
+end note
 
-Resource "1" --> "1" Name : has
-Resource "1" --> "1" Type : has
-Resource "1" --> "1" Description : has
-Resource "1" --> "1" Status : has
-Resource "1" --> "*" Reservation : is reserved via
-Resource "1" --> "*" Loan : is loaned via
-Resource "1" --> "*" Incident : is affected by
+note top of Organization
+  Created with one Active Admin (US-001).
+  Free plan: MemberLimit = 20.
+  Counting rule and activation enforcement
+  still need review (US-002 / US-003).
+end note
 
-Reservation "1" --> "1" StartAt : has
-Reservation "1" --> "1" EndAt : has
-Reservation "1" --> "1" Status : has
+note bottom of ExternalLogin
+  Unique (Provider, ProviderKey).
+  Each external login belongs to one Account.
+end note
 
-Loan "1" --> "1" Status : has
-Loan "1" --> "1" RequestedAt : has
-Loan "1" --> "1" DeliveredAt : has
-Loan "1" --> "1" ReturnedAt : has
-
-Incident "1" --> "1" Description : has
-Incident "1" --> "1" Status : has
-
-HistoryEntry "1" --> "1" EntityName : has
-HistoryEntry "1" --> "1" EntityId : has
-HistoryEntry "1" --> "1" ChangeType : has
-HistoryEntry "1" --> "1" ChangedAt : has
-
-Notification "1" --> "1" Message : has
-Notification "1" --> "1" SentAt : has
-
+legend bottom left
+  1 = exactly one; 0..1 = optional; 0..* = zero or more; 1..* = one or more.
+  Incident -> Resource is optional in the current proposal; final scope is open.
+  HistoryEntry may have no Account (system or unattributed change).
+  Reservation, Loan, Incident, HistoryEntry, Notification remain provisional.
+  Attribute nodes are scoped to their owner: Status is not one shared lifecycle.
+  Loan delivery/return timestamps are absent until those events occur.
+  Aggregate boundaries are proposals, not an accepted consequence of ADR-002.
+  Cross-aggregate arrows express associations, not ownership or cascade deletion.
+endlegend
 @enduml

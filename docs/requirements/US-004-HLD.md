@@ -2,13 +2,15 @@
 
 [Requirements](README.md) · [US-004](US-004-register-resource.md) · [LLD](US-004-LLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 ## Requirements recap
 
 As association staff, I want to register a new resource with its details, so that it becomes available for search, reservation, and loan. Full acceptance criteria: [US-004](US-004-register-resource.md).
 
 ## Folder structure
 
-New files this feature adds to `api/`:
+Proposed files for this feature in `api/`:
 
 ```text
 api/
@@ -16,7 +18,7 @@ api/
 ├── Domain/
 │   ├── Models/Resource.cs
 │   └── Dtos/RegisterResourceDto.cs
-├── Dtos/ResourceDto.cs
+├── Domain/Dtos/ResourceDto.cs
 ├── Mappers/ResourceMapper.cs
 ├── Services/
 │   ├── IResourceService.cs

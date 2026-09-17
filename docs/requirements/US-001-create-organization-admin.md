@@ -20,4 +20,4 @@
 - Missing or invalid required fields (empty organization name, invalid email).
 - Email already associated with an existing account, whether that account has a password, an SSO link, or both.
 
-**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [HLD](US-001-HLD.md), [LLD](US-001-LLD.md), [SSD/SD diagrams](../us/US-001/README.md), [ADR-006](../decisions/ADR-006-authentication.md), [database design](../database/README.md) (not yet created), tests (not yet created).
+**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [HLD](US-001-HLD.md), [LLD](US-001-LLD.md), [SSD/SD diagrams](../us/US-001/README.md), [ADR-006](../decisions/ADR-006-authentication.md), [database design](../database/README.md) (business schema not yet implemented), tests (not yet created).

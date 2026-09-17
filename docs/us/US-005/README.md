@@ -2,6 +2,14 @@
 
 [User story design index](../README.md) · [Requirement](../../requirements/US-005-sign-in.md) · [HLD](../../requirements/US-005-HLD.md) · [LLD](../../requirements/US-005-LLD.md)
 
+**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+
+## Diagram scope
+
+The password scenario returns SessionDto and passes its token to AuthProvider.login. OAuth linking and an explicit Active-status gate remain open. The current shared HTTP client redirects on every 401; sign-in error presentation therefore needs reconciliation before implementation.
+
+All diagrams are numbered and use explicit outcome branches. Backend SDs show input validation before reads, EF tracking separately from save, and persistence failure responses where the LLD defines them. Operation tables summarize the collaboration; their row numbers are not diagram message numbers.
+
 ## Level 1 - SSD
 
 **Actor:** Account holder (admin or member, per [US-001](../../requirements/US-001-create-organization-admin.md) or [US-003](../../requirements/US-003-create-member-account.md)).
@@ -10,8 +18,7 @@
 
 | Step | Actor input | System response |
 | --- | --- | --- |
-| 1 | Email, password | Verifies credentials |
-| 2 | n/a | Issues a session; signs the user in |
+| 1 | Email and password | Session issued, or validation/generic sign-in error |
 
 **Alternative and failure flows:** Incorrect password, or no matching account, reject without revealing which.
 **Postconditions:** The user holds a valid session.
@@ -30,7 +37,7 @@
 | Step | Sender → receiver | Operation | Outcome |
 | --- | --- | --- | --- |
 | 1 | Web App → Controller | `POST /auth/sign-in` | Delegates to `AuthService.SignIn` |
-| 2 | Service → AccountRepository → DbContext → Database | `FindByEmail` | Looks up the account; rejects if missing or SSO-only |
+| 2 | Service → AccountRepository → DbContext → Database | `FindByEmailAsync` | Looks up the account; rejects if missing or SSO-only |
 | 3 | Service → PasswordHasher | `VerifyHashedPassword` | Rejects on mismatch, generic error either way |
 | 4 | Service → TokenService | `GenerateToken` | Issues the JWT |
 
@@ -39,7 +46,7 @@
 
 ## Level 3 - Frontend
 
-**Participants:** `LoginPage`, `SignInForm`, `authService`, `HttpClient`, `Nexo API` (the backend, as a whole).
+**Participants:** `LoginPage`, `SignInForm`, `AuthProvider`, `authService`, `HttpClient`, `Nexo API` (the backend, as a whole).
 **Diagram:** [![SD level 3 frontend](sd/level-3/frontend/svg/US-005-level-3-frontend.svg)](sd/level-3/frontend/puml/US-005-level-3-frontend.puml)
 
 | Step | Sender → receiver | Operation | Outcome |
@@ -49,5 +56,5 @@
 | 3 | Service → HttpClient | `POST /auth/sign-in` | Shared Axios instance sends the request |
 | 4 | HttpClient → Nexo API | HTTP request | Reaches the backend (detailed in [Level 3 - Backend](#level-3---backend)) |
 
-**Failure handling:** A thrown 401 propagates back through the service to the form, which renders the same generic sign-in error either way.
+**Failure handling:** The proposed form needs to render the same generic sign-in error for all credential failures. The current shared HttpClient redirects on every 401, so the contract for sign-in failures must be resolved before implementing this interaction.
 **Related design:** [Architecture](../../architecture/README.md), [Domain model](../../domain-models/README.md#accounts-and-organizations), [ADR-006](../../decisions/ADR-006-authentication.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md).

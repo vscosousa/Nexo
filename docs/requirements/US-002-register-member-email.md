@@ -22,4 +22,4 @@
 - Email already registered elsewhere.
 - Unauthorized user attempting the action.
 
-**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [HLD](US-002-HLD.md), [LLD](US-002-LLD.md), [SSD/SD diagrams](../us/US-002/README.md), [database design](../database/README.md) (not yet created), tests (not yet created).
+**Related artifacts:** [Domain model](../domain-models/README.md#accounts-and-organizations), [HLD](US-002-HLD.md), [LLD](US-002-LLD.md), [SSD/SD diagrams](../us/US-002/README.md), [database design](../database/README.md) (business schema not yet implemented), tests (not yet created).

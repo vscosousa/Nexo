@@ -1,228 +1,183 @@
-﻿# Nexo
+# Nexo
 
-<!-- Add a banner here once a real project image is available. -->
+Nexo is a local prototype for associations to coordinate resources, spaces, activities, and incidents, with availability, responsibility, and history in one system.
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green)
+**Status:** React and ASP.NET Core scaffolds, PostgreSQL configuration, and example tests are in place. Business features remain proposed; the frontend and API are not integrated yet.
 
-Nexo is a local prototype that helps a small association coordinate its resources, spaces, activities, and incidents. It replaces scattered messages and spreadsheets with a single system that tracks availability, responsibility, and history.
-
-[Demo](#demo) · [Features](#features) · [Run locally](#run-locally) · [How it works](#how-it-works) · [Design](#design) · [Project structure](#project-structure)
-
-**Status:** stack scaffolded (frontend, backend, database wired), no features implemented yet.
-
-<!--
-Replace bracketed placeholders and remove sections that do not apply.
-Command placeholders are editing instructions, not executable commands.
-Keep all project documentation in English.
--->
+[Run locally](#run-locally) · [Features](#features) · [Architecture](docs/architecture/README.md) · [Documentation](docs/README.md)
 
 ## Demo
 
-[Add an image, GIF, or video link showing the main workflow and its outcome.]
-
-<details>
-<summary>View the main screens or examples</summary>
-
-| Step | What to show |
-| --- | --- |
-| [Getting started] | [Image or example of the initial experience] |
-| [Main action] | [Image or example of the core feature] |
-| [Result] | [Image or example of the final outcome] |
-
-<!-- Replace placeholders with real content and accessible descriptions. -->
-
-</details>
+There is no complete business workflow or published demo yet. Running the frontend without a stored token displays a placeholder login page. The API independently exposes a sample weather endpoint.
 
 ## Features
 
-<!-- Label each feature as planned, in progress, or available. -->
+| Area | Intended capability | Status |
+| --- | --- | --- |
+| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); not implemented |
+| Resources | Register, browse, and update rooms and equipment | Registration designed in US-004; not implemented |
+| Search and availability | Find resources and available periods | Planned |
+| Reservations | Reserve and cancel a resource for a period | Planned |
+| Loans | Request, deliver, and return resources | Planned |
+| Incidents | Report, handle, close, and reopen incidents | Planned |
+| Automation and history | One scheduled job, a simulated notification, and a record of relevant changes | Planned |
+| AI-assisted search | Convert natural language into filters for user confirmation | Optional, planned, disabled by default |
 
-- **Access and authorization.** Sign in with a synthetic identity and act within your assigned permissions. - Planned
-- **Resources.** Register, browse, and update resources such as rooms and equipment. - Planned
-- **Search and availability.** Find resources and see when they are free. - Planned
-- **Reservations.** Reserve and cancel a resource for a period. - Planned
-- **Loans.** Request, deliver, and return a resource. - Planned
-- **Incidents.** Report, handle, and close incidents affecting a resource; reopen if unresolved. - Planned
-- **Automation.** One scheduled job and one simulated notification. - Planned
-- **History.** A record sufficient to reconstruct relevant changes. - Planned
-- **AI-assisted search.** Turn a natural-language request into structured search filters for the user to confirm before searching. - Planned, optional, disabled by default
-
-The core must work without any AI model API. Real payments, certified accounting, real personal data, offline mode, real-time collaboration, and global scale are out of scope.
+The core must work without an AI model API. Real payments, certified accounting, real personal data, offline mode, real-time collaboration, and global scale are out of scope. See [requirements](docs/requirements/README.md).
 
 ## Run locally
 
-### Requirements
+### Docker (recommended)
 
-- Node.js 24.x and npm 11.x (frontend).
-- .NET SDK 10.x (backend).
-- PostgreSQL 17.x, running locally as a service.
-- Windows, macOS, or Linux.
+Install Docker Desktop with Linux containers and Docker Compose v2, then run from the repository root:
 
-### Setup
+```sh
+docker compose up --build
+```
 
-Clone the repository and enter its directory:
+This builds the frontend and API, starts PostgreSQL 17, and applies EF Core migrations before starting the API. No host Node.js, .NET SDK, PostgreSQL installation, or user-secrets setup is needed for this path. The first run downloads images and dependencies.
+
+- Frontend: `http://localhost:5173` (login placeholder).
+- API sample: `http://localhost:5122/WeatherForecast`.
+- Development OpenAPI: `http://localhost:5122/openapi/v1.json`, browsable at `http://localhost:5122/scalar/v1`.
+
+Use `docker compose up --build -d` to run in the background and `docker compose logs -f` to follow logs. Stop with Ctrl+C in attached mode, or `docker compose down` in either mode. Database data survives both operations in a named volume. **`docker compose down -v` deletes the local Docker database.**
+
+Source is copied into the images; rerun `docker compose up --build` after edits. Ports 5173 and 5122 must be free. PostgreSQL is accessible only inside the Compose network, so an existing local PostgreSQL service can keep running. The fixed database credentials in [compose.yaml](compose.yaml) are disposable development values, not production credentials. This setup uses HTTP and development servers on loopback only; it is not a production deployment.
+
+The frontend and API still expose separate scaffolds; authentication and a Vite API proxy are not implemented. See [configuration and commands](docs/reference/README.md).
+
+### Manual requirements
+
+- Node.js 24.x and npm 11.x.
+- .NET SDK 10.x.
+- PostgreSQL 17.x, with a local `nexo` database and credentials.
+- Git; Bash is needed for the optional pre-commit hook.
+
+Development currently uses Windows and a local PostgreSQL service. Diagram tooling additionally needs PowerShell 7+, Java, and Graphviz; see [diagrams](docs/guides/diagrams.md).
+
+### Manual setup
+
+Clone the repository:
 
 ```sh
 git clone https://github.com/vscosousa/Nexo.git
 cd Nexo
 ```
 
-1. **Install dependencies:**
+Install the frontend dependencies from `web/`:
 
-   ```sh
-   cd web && npm install
-   cd ../api && dotnet tool restore
-   cd .. && dotnet restore Nexo.slnx
-   cd e2e && npm install && npx playwright install chromium
-   ```
+```sh
+npm ci
+```
 
-2. **Configure:** create the `nexo` PostgreSQL database, then set the connection string as a local secret (see the [configuration reference](docs/reference/README.md#configuration)):
+Restore the solution from the repository root:
 
-   ```sh
-   dotnet user-secrets set "ConnectionStrings:NexoDb" "Host=localhost;Port=5432;Database=nexo;Username=<user>;Password=<password>"
-   dotnet ef database update
-   ```
+```sh
+dotnet restore Nexo.slnx
+```
 
-3. **Start:**
+From `api/`, restore EF tooling and configure the connection string. Replace the credential placeholders with your local values; do not commit credentials.
 
-   ```sh
-   # terminal 1, from api/
-   dotnet run
-   # terminal 2, from web/
-   npm run dev
-   ```
+```sh
+dotnet tool restore
+dotnet user-secrets set "ConnectionStrings:NexoDb" "Host=localhost;Port=5432;Database=nexo;Username=<user>;Password=<password>"
+dotnet ef database update
+```
 
-4. **Verify:** open the Vite dev server URL printed in terminal 2; the SPA calls the API started in terminal 1.
+The initial migration contains no business tables. See [database design](docs/database/README.md) for the current persistence state.
+
+Start two terminals:
+
+| Directory | Command | Expected result |
+| --- | --- | --- |
+| `api/` | `dotnet run --launch-profile http` | API at `http://localhost:5122` |
+| `web/` | `npm run dev` | Vite prints the frontend URL, normally `http://localhost:5173` |
+
+Open the frontend URL. Without a stored token, it redirects to the login placeholder. To verify the API independently, open `http://localhost:5122/WeatherForecast`; it returns five generated forecasts. The development OpenAPI document is at `http://localhost:5122/openapi/v1.json`, and a Scalar UI for manually exercising endpoints is at `http://localhost:5122/scalar/v1`.
+
+Authentication endpoints and a Vite API proxy are not implemented. Stop each process with Ctrl+C.
+
+For browser tests, install dependencies and Chromium from `e2e/`:
+
+```sh
+npm ci
+npx playwright install chromium
+npm test
+```
 
 ### Commands
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` (in `web/`) | Start the frontend development server |
-| `dotnet run` (in `api/`) | Start the backend API |
-| `dotnet ef database update` (in `api/`) | Apply pending database migrations |
-| `dotnet test Nexo.slnx` (repository root) | Run backend unit and integration tests |
-| `npm test` (in `web/`) | Run frontend unit and component tests |
-| `npm test` (in `e2e/`) | Run end-to-end tests |
-| [To be defined] | Check formatting and code quality |
+| Command | Directory | Purpose |
+| --- | --- | --- |
+| `npm test` | `web/` | Frontend unit/component tests |
+| `npm run lint` | `web/` | Frontend lint |
+| `npm run build` | `web/` | TypeScript check and production build |
+| `npm run format:check` | `web/` | Formatting check |
+| `dotnet test Nexo.slnx` | Repository root | Backend unit/integration tests |
+| `dotnet build Nexo.slnx -warnaserror` | Repository root | Backend build with warnings as errors |
+
+The [technical reference](docs/reference/README.md#commands) lists all commands. Enable the optional [pre-commit hook](docs/guides/pre-commit-hook.md) separately for each clone.
 
 ## How it works
 
 ### Main workflow
 
-[Explain the journey from the user's action to the result, identifying the components involved.]
+The current browser scaffold reads a token from `localStorage` and uses its presence to guard routes. This does not validate credentials, expiry, or permissions. The shared Axios client targets `/api`, attaches a stored token, and redirects to login after a 401.
 
-[Add a concrete input and output example once the feature is implemented.]
+The sample API request follows controller → service → repository → mapper → response. The weather repository generates data in memory; it does not query PostgreSQL. The proposed business workflows are documented in [user story designs](docs/us/README.md).
 
 ### Data and state
 
-| Data | Storage | Behavior |
+| Data | Storage | Current behavior |
 | --- | --- | --- |
-| [Data type] | [Storage or service] | [When data is created, read, updated, and deleted] |
+| Scaffold token | Browser `localStorage` | Auth context reads/writes it; the HTTP client clears it after a 401 |
+| Weather forecasts | Generated in memory | Five sample entries per request; no persistence |
+| Business data | PostgreSQL planned through EF Core | Empty context and initial migration; no business entities yet |
+| Local connection string | .NET user secrets (manual) or Compose environment | Docker uses disposable development credentials |
 
-[Describe external dependencies, persistence, and failure behavior where applicable.]
-
-See the [architecture](docs/architecture/README.md) and [decision records](docs/decisions/README.md) for detailed explanations.
+See [architecture](docs/architecture/README.md) for implementation boundaries.
 
 ## Design
 
-[Describe the project's visual direction and interaction principles.]
-
-| Element | Definition | Usage |
-| --- | --- | --- |
-| Primary color | [To be defined] | [Actions and highlights] |
-| Surface and text colors | [To be defined] | [Backgrounds, content, and contrast] |
-| Typography | [To be defined] | [Headings, body text, and controls] |
-| Shared components | [To be defined] | [Reusable interface patterns] |
-
-<details>
-<summary>Wireframes and interface decisions</summary>
-
-[Link to wireframes when available and explain key navigation, hierarchy, and accessibility decisions.]
-
-</details>
+Product wireframes, shared controls, colors, and typography are pending review. Existing Vite assets and styles are scaffold content. The [interface design page](docs/design/README.md) maps the planned journeys and records what remains to be designed.
 
 ## Tech stack
 
-<!-- Include only selected technologies. Adjust the areas to fit the project. -->
+| Area | Technology |
+| --- | --- |
+| Frontend | React 19, Vite, TypeScript 6, React Router, Axios |
+| Backend | ASP.NET Core 10 Web API |
+| Persistence | PostgreSQL 17, EF Core, Npgsql |
+| Tests | xUnit, Vitest, React Testing Library, Playwright, Node.js test runner |
+| Quality | oxlint, Prettier, dotnet format |
+| Diagrams | PlantUML, Graphviz, PowerShell |
 
-| Area | Technology | Purpose |
-| --- | --- | --- |
-| Frontend | React 19 + Vite + TypeScript, React Router, Axios | Single-page application UI |
-| Backend | ASP.NET Core 10 Web API (controllers) | HTTP API, application and domain logic |
-| Data | PostgreSQL 17 + EF Core (Npgsql) | Relational persistence |
-| Testing and quality | xUnit, Vitest + React Testing Library, Playwright | Unit, integration, component, and E2E tests |
-| Distribution | [To be defined, if applicable] | [Responsibility] |
-
-See [ADR-001](docs/decisions/ADR-001-frontend-backend-stack.md), [ADR-002](docs/decisions/ADR-002-modular-monolith-architecture.md), [ADR-003](docs/decisions/ADR-003-postgresql-database.md), [ADR-004](docs/decisions/ADR-004-frontend-architecture.md), and [ADR-005](docs/decisions/ADR-005-testing-frameworks.md) for the reasoning behind these choices.
+The [decision index](docs/decisions/README.md) explains the selected stack and architecture.
 
 ## Project structure
 
-```text
-Nexo/
-├── AGENTS.md        # Agent guidelines
-├── CLAUDE.md        # Claude instructions
-├── .gitignore       # Version control exclusions
-├── README.md        # Overview and getting started
-├── Nexo.slnx        # Solution file (api + api.Tests)
-├── web/             # React + Vite + TypeScript SPA
-│   └── src/
-│       ├── app/         # Shell, router
-│       ├── auth/        # Session, route guard, login
-│       ├── shared/      # HTTP client, reusable UI
-│       ├── features/    # One folder per business module (created as built)
-│       └── test/        # Vitest setup
-├── api/             # ASP.NET Core Web API
-│   ├── Controllers/
-│   ├── Domain/
-│   │   ├── Models/
-│   │   └── Dtos/
-│   ├── Mappers/
-│   ├── Services/
-│   ├── Infrastructure/
-│   │   ├── Repositories/
-│   │   └── Persistence/
-│   └── Migrations/
-├── api.Tests/       # xUnit unit and integration tests
-├── e2e/             # Playwright end-to-end tests
-└── docs/
-    ├── README.md    # Documentation introduction and index
-    ├── requirements/
-    ├── glossary/
-    ├── domain-models/
-    ├── ssd/
-    ├── architecture/
-    ├── sd/
-    ├── database/
-    ├── decisions/
-    ├── design/
-    ├── guides/
-    ├── reference/
-    └── testing/
-```
-
-<!-- Update the tree as project components are added. -->
-
-See the [documentation](docs/README.md) for the tutorial, how-to guides, and technical reference.
+| Path | Contents |
+| --- | --- |
+| `web/` | React SPA; see the [frontend guide](web/README.md) |
+| `api/` | Controllers, domain/DTOs, services, mappers, repositories, EF context and migrations |
+| `api.Tests/` | Backend unit/integration tests |
+| `e2e/` | Playwright configuration and smoke test |
+| `docs/` | Requirements, domain models, story designs, decisions, guides, and reference |
+| `tools/git-hooks/` | Pre-commit hook and regression suite |
+| `tools/generate/` | PlantUML generator and its tests |
+| `libs/` | Pinned diagram-tool metadata |
+| `Nexo.slnx` | API and test solution |
 
 ## Contributing
 
-This is a solo portfolio project; contributions follow the usual GitHub flow:
+This is a solo portfolio project. Discuss non-trivial changes before implementing them, follow [AGENTS.md](AGENTS.md), and use TDD for features and fixes. Keep the matching documentation topic current. Run the relevant [checks](docs/testing/README.md), and include actual results and limitations in the review.
 
-1. Open an issue describing the problem or proposal before starting non-trivial work.
-2. Branch from `main`, make focused changes, and follow [AGENTS.md](AGENTS.md) (keep documentation current, don't invent project details).
-3. Before opening a pull request, run the available checks: `dotnet build Nexo.slnx`, `dotnet test Nexo.slnx`, `npm run build` and `npm test` in `web/`, and `npm test` in `e2e/`. See [testing](docs/testing/README.md).
-4. Describe what changed and what was checked in the pull request.
-
-When reporting an issue, include your environment, reproduction steps, and the expected and actual results.
+Review the diff before committing: the hook can format and re-stage selected files. Agents must request review before committing and explicit confirmation before changing Git configuration.
 
 ## Acknowledgements
 
-- Scaffolded with the official [Vite](https://vite.dev/) React + TypeScript template and the [ASP.NET Core](https://learn.microsoft.com/aspnet/core/) Web API template.
+Scaffolded from the React + TypeScript Vite template and ASP.NET Core Web API template.
 
 ## License
 

@@ -19,4 +19,4 @@
 - Missing or invalid required fields (empty name, unrecognized type).
 - Unauthorized user attempting registration.
 
-**Related artifacts:** [Domain model](../domain-models/README.md#resources), [HLD](US-004-HLD.md), [LLD](US-004-LLD.md), [SSD/SD diagrams](../us/US-004/README.md), [database design](../database/README.md) (not yet created), tests (not yet created).
+**Related artifacts:** [Domain model](../domain-models/README.md#resources), [HLD](US-004-HLD.md), [LLD](US-004-LLD.md), [SSD/SD diagrams](../us/US-004/README.md), [database design](../database/README.md) (business schema not yet implemented), tests (not yet created).

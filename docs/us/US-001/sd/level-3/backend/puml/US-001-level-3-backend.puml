@@ -1,4 +1,14 @@
 @startuml
+title US-001 - Register organization and admin - SD level 3 - Backend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
 participant "Web App" as FE
 participant "OrganizationsController" as Controller
 participant "OrganizationService" as Service
@@ -8,43 +18,79 @@ participant "OrganizationMapper" as Mapper
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
 
+note over Controller, DB
+  Credential input and session delivery are not yet specified.\nThis diagram shows the current draft contract only.
+end note
+
 activate FE
 FE -> Controller: POST /organizations (RegisterOrganizationDto dto)
 activate Controller
 Controller -> Service: Register(dto)
 activate Service
-Service -> AccountRepo: FindByEmail(dto.AdminEmail)
-activate AccountRepo
-AccountRepo --> Service: existing Account or null
-deactivate AccountRepo
-alt Email already has an account
-    Service --> Controller: throw ConflictException
-    Controller --> FE: 409 Conflict
-else Email available
-    Service -> Mapper: ToOrganization(dto)
-    activate Mapper
-    Mapper --> Service: new Organization(name, plan: Free)
-    deactivate Mapper
-    Service -> Mapper: ToAdminAccount(dto, organization)
-    activate Mapper
-    Mapper --> Service: new Account(email, role: Admin, organization)
-    deactivate Mapper
-    Service -> OrgRepo: Add(organization)
-    activate OrgRepo
-    deactivate OrgRepo
-    Service -> AccountRepo: Add(account)
+alt Missing or invalid required fields
+    Service --> Controller: Validation failure
+    Controller --> FE: 400 Bad Request
+else Valid input
+    Service -> AccountRepo: FindByEmailAsync(dto.AdminEmail)
     activate AccountRepo
-    deactivate AccountRepo
-    Service -> DbContext: SaveChangesAsync()
+    AccountRepo -> DbContext: Query Account by Email (dto.AdminEmail)
     activate DbContext
-    DbContext -> DB: INSERT Organization, Account
+    DbContext -> DB: SELECT Account by Email
     activate DB
-    DB --> DbContext: rows affected
+    DB --> DbContext: Query result
     deactivate DB
-    DbContext --> Service: committed
+    DbContext --> AccountRepo: Materialized result
     deactivate DbContext
-    Service --> Controller: OrganizationDto
-    Controller --> FE: 201 Created (OrganizationDto)
+    AccountRepo --> Service: existing Account or null
+    deactivate AccountRepo
+    alt Email already has an account
+        Service --> Controller: throw ConflictException
+        Controller --> FE: 409 Conflict
+    else Email available
+        Service -> Mapper: ToOrganization(dto)
+        activate Mapper
+        Mapper --> Service: new Organization(name, plan: Free)
+        deactivate Mapper
+        Service -> Mapper: ToAdminAccount(dto, organization)
+        activate Mapper
+        Mapper --> Service: new Account(email, role: Admin, status: Active, organization)
+        deactivate Mapper
+        Service -> OrgRepo: Add(organization)
+        activate OrgRepo
+        OrgRepo -> DbContext: Track organization as Added
+        activate DbContext
+        DbContext --> OrgRepo: Tracked (no INSERT yet)
+        deactivate DbContext
+        OrgRepo --> Service: Added to unit of work
+        deactivate OrgRepo
+        Service -> AccountRepo: Add(account)
+        activate AccountRepo
+        AccountRepo -> DbContext: Track account as Added
+        activate DbContext
+        DbContext --> AccountRepo: Tracked (no INSERT yet)
+        deactivate DbContext
+        AccountRepo --> Service: Added to unit of work
+        deactivate AccountRepo
+        Service -> DbContext: SaveChangesAsync()
+        activate DbContext
+        DbContext -> DB: INSERT Organization, Account
+        activate DB
+        DB --> DbContext: Committed, or save failed (rolled back)
+        deactivate DB
+        DbContext --> Service: Save result or persistence exception
+        deactivate DbContext
+        alt Save succeeded
+            Service -> Mapper: Map organization to OrganizationDto
+            activate Mapper
+            Mapper --> Service: OrganizationDto
+            deactivate Mapper
+            Service --> Controller: OrganizationDto
+            Controller --> FE: 201 Created (OrganizationDto)
+        else Save failed
+            Service --> Controller: Persistence failure
+            Controller --> FE: 500 Internal Server Error
+        end
+    end
 end
 deactivate Service
 deactivate Controller

@@ -2,37 +2,30 @@
 
 [Documentation index](../README.md)
 
-Use tutorials to teach a first workflow and how-to guides for specific tasks. Add a separate named file when a real guide is ready.
+## Start here
 
-## Tutorial template
+Follow [Run locally](../../README.md#run-locally) to install dependencies, configure PostgreSQL, and launch the scaffold. The expected first screen is the login placeholder. For frontend-only work, use the [frontend guide](../../web/README.md).
 
-**Goal:** [concrete outcome].
-**Prerequisites:** [knowledge, tools, versions, and access].
-**Estimated time:** [duration].
+## Development tasks
 
-1. **Prepare:** [environment and sample data].
-2. **Run:** [complete commands and working directory].
-3. **Try it:** [representative action].
-4. **Verify:** [expected result].
-5. **Finish:** [stop services or clean up, if applicable].
-
-**What you learned:** [skill acquired and next steps].
-
-## How-to template
-
-**Task:** [specific objective].
-**Starting conditions:** [required state].
-
-1. [First action.]
-2. [Next action.]
-3. [Verification.]
-
-**Alternatives and limitations:** [relevant variations].
+| Task | Guide |
+| --- | --- |
+| Format staged code and check builds before committing | [Pre-commit hook](pre-commit-hook.md) |
+| Design a story's four sequence diagrams | [Sequence diagram conventions](sequence-diagrams.md) |
+| Render PlantUML sources as SVGs | [Diagram generation](diagrams.md) |
+| Update the local database | [Database migrations](../database/README.md#migrations-and-lifecycle) |
+| Choose and run tests | [Testing](../testing/README.md) |
+| Look up commands, settings, and endpoints | [Technical reference](../reference/README.md) |
 
 ## Troubleshooting
 
-| Symptom | Possible cause | Diagnostic check | Solution |
-| --- | --- | --- | --- |
-| [Behavior] | [Cause] | [Check] | [Corrective action] |
+| Symptom | Check | Next step |
+| --- | --- | --- |
+| Browser opens a placeholder login page | No session token is stored | Expected scaffold behavior; real sign-in is planned |
+| Frontend requests to `/api` fail | `web/vite.config.ts` has no proxy | API integration requires routing work; verify the sample API directly |
+| EF cannot connect to PostgreSQL | Service, database, and local connection-string configuration | Follow [configuration](../reference/README.md#configuration); keep credentials outside the repo |
+| `dotnet ef` is unavailable | Local tools have not been restored | Run `dotnet tool restore` in `api/` |
+| Playwright cannot launch Chromium | Browser binary is not installed | Run `npx playwright install chromium` in `e2e/` |
+| Commit stops because a selected file has unstaged edits | `git diff` and `git diff --cached` | Review the hunks and stage or stash as described in the [hook guide](pre-commit-hook.md) |
 
-See [technical reference](../reference/README.md) for settings and [testing](../testing/README.md) for validation.
+For a new guide, state its goal and prerequisites, give commands with their working directory, and describe the observable result. Keep shared command details in the technical reference.

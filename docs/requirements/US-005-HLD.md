@@ -2,6 +2,8 @@
 
 [Requirements](README.md) · [US-005](US-005-sign-in.md) · [LLD](US-005-LLD.md)
 
+**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+
 ## Requirements recap
 
 As an admin or member with an existing account, I want to sign in with my email and password, or with Google/Microsoft, so that I can access the system. Full acceptance criteria: [US-005](US-005-sign-in.md).
@@ -10,13 +12,13 @@ This HLD/LLD covers the email/password path in full detail. The Google/Microsoft
 
 ## Folder structure
 
-New files this feature adds to `api/`:
+Proposed files for this feature in `api/`:
 
 ```text
 api/
 ├── Controllers/AuthController.cs
 ├── Domain/Dtos/SignInDto.cs
-├── Dtos/SessionDto.cs
+├── Domain/Dtos/SessionDto.cs
 ├── Services/
 │   ├── IAuthService.cs
 │   ├── AuthService.cs
