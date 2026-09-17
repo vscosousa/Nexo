@@ -11,12 +11,19 @@
 - Write documentation per [docs/README.md](docs/README.md#maintaining-the-documentation); match the user's language in conversation.
 - Do not include secrets or invent project details, commands, or test results.
 - Follow TDD: write a failing test before implementing a feature or fix. See [docs/testing/README.md](docs/testing/README.md) for which kind of test applies and how to run it.
+- When creating or editing a user story's SSD/SD diagrams, follow [docs/guides/sequence-diagrams.md](docs/guides/sequence-diagrams.md) for the level/activation-bar/naming convention, and [docs/guides/diagrams.md](docs/guides/diagrams.md) for rendering.
+- Ask for feedback before deciding anything non-trivial (scope, design/schema choices, wording of decisions) and before committing. Do the work, then pause for review; do not commit on your own judgment even if the user asked for the underlying work.
+- When the user points to their own prior work or an external template as the model to follow (e.g., "like I did in project X"), fetch and read it before building the parallel structure. Don't infer the shape from the term alone — a term like "database design" can map to a conceptual domain model in one project's convention and a physical schema in another.
+- Never run `git config` (including `core.hooksPath`, aliases, user identity) without explicit confirmation for that specific change, even when it's local-only and reversible.
 
 ## Keep documentation current
 
 A change is not done until its matching topic page (per [docs/README.md](docs/README.md#documentation-map)) reflects it. Tests, behavior, models, architecture, decisions, and configuration each have one. Record actual test results only when executed, and significant technical decisions in `docs/decisions/`.
 
+Renaming or merging a domain concept, or renaming a heading, is not done until every reference to it is updated: `#anchor` links to that heading (anchors change when heading text changes), acceptance-criteria wording that describes the old shape (e.g., "no account yet" after a concept merge that means an account now exists in a pending state), and any diagram or table using the old name. Grep the repo for the old name/anchor before considering the rename finished.
+
 ## Before finishing
 
 - Run the relevant available checks (see [docs/reference/README.md](docs/reference/README.md#commands)) and verify changed documentation links.
+- After renaming or restructuring diagrams, headings, or folders, regenerate diagrams (per [docs/guides/diagrams.md](docs/guides/diagrams.md)) and grep the repo for the old name/path before calling the change done.
 - Summarize what changed, what was checked, and anything left unverified.
