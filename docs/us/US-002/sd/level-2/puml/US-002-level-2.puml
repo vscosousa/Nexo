@@ -1,0 +1,9 @@
+@startuml
+actor "Admin" as Admin
+participant "Web UI" as UI
+participant "EligibleEmailsController" as Controller
+Admin -> UI: Submit member email
+UI -> Controller: POST /organizations/{organizationId}/eligible-emails (RegisterEligibleEmailDto)
+Controller --> UI: 201 Created (EligibleEmailDto) or 400/403/409
+UI --> Admin: Show result
+@enduml

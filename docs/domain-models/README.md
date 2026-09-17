@@ -15,6 +15,7 @@ Describe business concepts independently of database tables and implementation c
 | Organization | A single association using the system (per [glossary](../glossary/README.md)) | Has one admin Account (the creator) and member Accounts (0..*); has eligible emails awaiting an account (0..*); has Resources (0..*) | Starts on the "Free" plan (limit: 20 member accounts) on creation |
 | Account | A synthetic identity signed into the system | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created with role "admin" only via organization creation (US-001); created with role "member" only for an email already registered to the organization (US-003); must have a password, at least one ExternalLogin, or both |
 | ExternalLogin | A link between an Account and a social provider identity (per [glossary](../glossary/README.md)) | Belongs to exactly one Account | Unique per (Provider, ProviderKey); the provider's email must match the Account's email at creation time |
+| EligibleEmail | An email registered by an admin against an Organization, awaiting its own Account (US-002) | Belongs to exactly one Organization; consumed (removed) once an Account is created for it (US-003) | Unique across all EligibleEmails and Accounts; registering one counts against the Organization's plan limit |
 
 **Assumptions and open questions:**
 

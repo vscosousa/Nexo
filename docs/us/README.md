@@ -33,3 +33,4 @@ us/
 | Story | SSD (level 1) | SD (levels 2-3) | HLD | LLD |
 | --- | --- | --- | --- | --- |
 | [US-001](US-001/README.md) | [level-1](US-001/ssd/level-1/puml/US-001-level-1.puml) | [level-2](US-001/sd/level-2/puml/US-001-level-2.puml), [level-3](US-001/sd/level-3/puml/US-001-level-3.puml) | [HLD](../requirements/US-001-HLD.md) | [LLD](../requirements/US-001-LLD.md) |
+| [US-002](US-002/README.md) | [level-1](US-002/ssd/level-1/puml/US-002-level-1.puml) | [level-2](US-002/sd/level-2/puml/US-002-level-2.puml), [level-3](US-002/sd/level-3/puml/US-002-level-3.puml) | [HLD](../requirements/US-002-HLD.md) | [LLD](../requirements/US-002-LLD.md) |

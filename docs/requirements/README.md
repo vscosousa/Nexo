@@ -34,7 +34,7 @@ Document the problem, scope, and verifiable requirements here.
 | ID | Title | Status | HLD | LLD |
 | --- | --- | --- | --- | --- |
 | [US-001](US-001-create-organization-admin.md) | Create an organization and its admin account | draft | [HLD](US-001-HLD.md) | [LLD](US-001-LLD.md) |
-| [US-002](US-002-register-member-email.md) | Register a member's email to an organization | draft | | |
+| [US-002](US-002-register-member-email.md) | Register a member's email to an organization | draft | [HLD](US-002-HLD.md) | [LLD](US-002-LLD.md) |
 | [US-003](US-003-create-member-account.md) | Create a member account | draft | | |
 | [US-004](US-004-register-resource.md) | Register a resource | draft | | |
 | [US-005](US-005-sign-in.md) | Sign in to an existing account | draft | | |
