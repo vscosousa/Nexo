@@ -1,0 +1,9 @@
+@startuml
+actor "Invited Person" as Person
+participant "Web UI" as UI
+participant "AccountsController" as Controller
+Person -> UI: Submit account details
+UI -> Controller: POST /accounts (CreateMemberAccountDto)
+Controller --> UI: 201 Created (AccountDto) or 400/403/409
+UI --> Person: Show result and sign in on success
+@enduml

@@ -1,0 +1,11 @@
+@startuml
+actor "Invited Person" as Person
+participant "Nexo" as System
+Person -> System: Create account (email, name, password)
+System -> System: Check the email is registered to an organization and has no account yet
+alt Email eligible and available
+    System --> Person: Member account created and signed in
+else Email not eligible or already has an account
+    System --> Person: Account creation rejected (not eligible or conflict error)
+end
+@enduml
