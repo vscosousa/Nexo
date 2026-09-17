@@ -1,0 +1,9 @@
+@startuml
+actor "Association Staff" as Staff
+participant "Web UI" as UI
+participant "ResourcesController" as Controller
+Staff -> UI: Submit resource details
+UI -> Controller: POST /resources (RegisterResourceDto)
+Controller --> UI: 201 Created (ResourceDto) or 400/403
+UI --> Staff: Show result
+@enduml
