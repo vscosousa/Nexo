@@ -13,6 +13,7 @@ Keep one record per significant technical decision. Name records `ADR-001-short-
 | [ADR-003](ADR-003-postgresql-database.md) | PostgreSQL as the relational database | Accepted | 2026-09-17 |
 | [ADR-004](ADR-004-frontend-architecture.md) | Frontend architecture | Accepted | 2026-09-17 |
 | [ADR-005](ADR-005-testing-frameworks.md) | Testing frameworks | Accepted | 2026-09-17 |
+| [ADR-006](ADR-006-authentication.md) | Authentication: password and social login | Accepted | 2026-09-17 |
 
 ## Record template
 
