@@ -2,11 +2,31 @@
 
 [User story design index](../README.md) · [Requirement](../../requirements/US-004-register-resource.md) · [HLD](../../requirements/US-004-HLD.md) · [LLD](../../requirements/US-004-LLD.md)
 
+## Implementation context
+
+**Read:**
+
+1. [Requirement](../../requirements/US-004-register-resource.md)
+2. [LLD](../../requirements/US-004-LLD.md)
+3. This file (diagrams and levels 1-3)
+4. [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md)
+5. [Domain model - resources](../../domain-models/README.md#resources)
+6. [US-003](../../requirements/US-003-create-member-account.md) (precondition: signed-in account with permission)
+
+**Do not read unless needed:** the full domain model, unrelated user stories, other ADRs, global sequence diagrams.
+
+**Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
+
+- The permitted role is not defined; "Staff" is not a modeled role.
+- The recognized resource-type vocabulary is not defined.
+
+Implementation must not assume answers to these; do not introduce a Staff role or invent resource types.
+
 **Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
-OrganizationId comes from the caller. The exact resource-management role and recognized type vocabulary remain open; the diagram does not introduce a Staff role.
+OrganizationId comes from the caller. The diagram does not introduce a Staff role; see the [resource-permissions gap](../../requirements/README.md#design-review-gaps) for what remains open.
 
 All diagrams are numbered and use explicit outcome branches. Backend SDs show input validation before reads, EF tracking separately from save, and persistence failure responses where the LLD defines them. Operation tables summarize the collaboration; their row numbers are not diagram message numbers.
 
@@ -34,17 +54,14 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 **Participants:** `Web App` (the frontend, as a whole), `ResourcesController`, `ResourceService`, `IAccountRepository`, `ResourceMapper`, `IResourceRepository`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-004-level-3-backend.svg)](sd/level-3/backend/puml/US-004-level-3-backend.puml)
 
-| Step | Sender → receiver | Operation | Outcome |
-| --- | --- | --- | --- |
-| 1 | Web App → Controller | `POST /resources` | Delegates to `ResourceService.Register` |
-| 2 | Service → AccountRepository | `GetByIdAsync` | Checks the caller's permission to manage resources |
-| 3 | Service → Mapper | `ToResource` | Builds the domain `Resource` (status Available) |
-| 4 | Service → repository → DbContext → Database | `Add`, `SaveChangesAsync` | Persists the resource |
+| Step | Sender → receiver | Operation |
+| --- | --- | --- |
+| 1 | Web App → Controller | `POST /resources` |
+| 2 | Service → AccountRepository | `GetByIdAsync` |
+| 3 | Service → Mapper | `ToResource` |
+| 4 | Service → repository → DbContext → Database | `Add`, `SaveChangesAsync` |
 
-**Failure handling:** An unauthorized caller short-circuits before any persistence and returns a 403 to the controller.
-Validation errors return 400 before repository access. A failed save returns 500 with no partial persisted write, as specified in the LLD; the detailed error body remains unspecified. The diagrams show response mapping only after a successful save.
-
-**Transaction boundaries:** The resource is created in a single `SaveChangesAsync` call.
+See the [LLD service logic](../../requirements/US-004-LLD.md#service-logic-resourceserviceregister) for what each step does and its [error handling](../../requirements/US-004-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
 
 ## Level 3 - Frontend
 

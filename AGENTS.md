@@ -4,6 +4,7 @@
 
 - Read [README.md](README.md) for project context and [docs/README.md](docs/README.md) for the documentation map.
 - Read the topic pages relevant to the task, including their linked requirements and decisions.
+- Prefer targeted context over repository-wide exploration. Start from the user story's "Implementation context" section (`docs/us/US-XXX/README.md`) and expand only when an unresolved dependency requires it. Do not assume answers to its listed open decisions; ask before expanding scope to resolve them.
 
 ## Working rules
 

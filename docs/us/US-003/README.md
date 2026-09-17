@@ -2,6 +2,26 @@
 
 [User story design index](../README.md) · [Requirement](../../requirements/US-003-create-member-account.md) · [HLD](../../requirements/US-003-HLD.md) · [LLD](../../requirements/US-003-LLD.md)
 
+## Implementation context
+
+**Read:**
+
+1. [Requirement](../../requirements/US-003-create-member-account.md)
+2. [LLD](../../requirements/US-003-LLD.md)
+3. This file (diagrams and levels 1-3)
+4. [ADR-006](../../decisions/ADR-006-authentication.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md)
+5. [Domain model - accounts and organizations](../../domain-models/README.md#accounts-and-organizations)
+6. [US-002](../../requirements/US-002-register-member-email.md) (precondition: Invited account exists)
+
+**Do not read unless needed:** the full domain model, unrelated user stories, other ADRs, global sequence diagrams.
+
+**Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
+
+- Sign-in after activation is required, but the HLD returns only `AccountDto`; the session response is unspecified.
+- Plan-limit counting and concurrency (shared with US-002).
+
+Implementation must not assume answers to these; stop at `AccountDto` as the diagrams show.
+
 **Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
@@ -34,17 +54,14 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 **Participants:** `Web App` (the frontend, as a whole), `AccountActivationsController`, `AccountActivationService`, `IAccountRepository`, `AccountMapper`, `PasswordHasher<Account>`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-003-level-3-backend.svg)](sd/level-3/backend/puml/US-003-level-3-backend.puml)
 
-| Step | Sender → receiver | Operation | Outcome |
-| --- | --- | --- | --- |
-| 1 | Web App → Controller | `POST /accounts/activation` | Delegates to `AccountActivationService.Activate` |
-| 2 | Service → AccountRepository | `FindByEmailAsync` | Loads the pending account for the email |
-| 3 | Service → Mapper | `ApplyActivation` | Sets name and hashed password, flips `Status` to `Active` |
-| 4 | Service → DbContext → Database | `SaveChangesAsync` | Persists the mutation on the existing row |
+| Step | Sender → receiver | Operation |
+| --- | --- | --- |
+| 1 | Web App → Controller | `POST /accounts/activation` |
+| 2 | Service → AccountRepository | `FindByEmailAsync` |
+| 3 | Service → Mapper | `ApplyActivation` |
+| 4 | Service → DbContext → Database | `SaveChangesAsync` |
 
-**Failure handling:** No account for the email, or an already-`Active` account, short-circuits before any persistence and returns its respective error to the controller.
-Validation errors return 400 before repository access. A failed save returns 500 with no partial persisted write, as specified in the LLD; the detailed error body remains unspecified. The diagrams show response mapping only after a successful save.
-
-**Transaction boundaries:** The activation is a single-row update in one `SaveChangesAsync` call.
+See the [LLD service logic](../../requirements/US-003-LLD.md#service-logic-accountactivationserviceactivate) for what each step does and its [error handling](../../requirements/US-003-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
 
 ## Level 3 - Frontend
 

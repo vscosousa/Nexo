@@ -2,6 +2,24 @@
 
 [User story design index](../README.md) · [Requirement](../../requirements/US-001-create-organization-admin.md) · [HLD](../../requirements/US-001-HLD.md) · [LLD](../../requirements/US-001-LLD.md)
 
+## Implementation context
+
+**Read:**
+
+1. [Requirement](../../requirements/US-001-create-organization-admin.md)
+2. [LLD](../../requirements/US-001-LLD.md)
+3. This file (diagrams and levels 1-3)
+4. [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md)
+5. [Domain model - accounts and organizations](../../domain-models/README.md#accounts-and-organizations)
+
+**Do not read unless needed:** the full domain model, unrelated user stories, other ADRs, global sequence diagrams.
+
+**Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
+
+- Credential input (password/SSO) and session delivery are required by the acceptance criteria but missing from the HLD contract.
+
+Implementation must not assume answers to these; stop at the `OrganizationDto` contract the diagrams show.
+
 **Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
@@ -34,17 +52,14 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 **Participants:** `Web App` (the frontend, as a whole), `OrganizationsController`, `OrganizationService`, `IAccountRepository`, `IOrganizationRepository`, `OrganizationMapper`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-001-level-3-backend.svg)](sd/level-3/backend/puml/US-001-level-3-backend.puml)
 
-| Step | Sender → receiver | Operation | Outcome |
-| --- | --- | --- | --- |
-| 1 | Web App → Controller | `POST /organizations` | Delegates to `OrganizationService.Register` |
-| 2 | Service → AccountRepository | `FindByEmailAsync` | Checks the admin email is not already in use |
-| 3 | Service → Mapper | `ToOrganization`, `ToAdminAccount` | Builds the domain `Organization` (Free plan) and admin `Account` |
-| 4 | Service → repositories → DbContext → Database | `Add`, `SaveChangesAsync` | Persists both in one transaction |
+| Step | Sender → receiver | Operation |
+| --- | --- | --- |
+| 1 | Web App → Controller | `POST /organizations` |
+| 2 | Service → AccountRepository | `FindByEmailAsync` |
+| 3 | Service → Mapper | `ToOrganization`, `ToAdminAccount` |
+| 4 | Service → repositories → DbContext → Database | `Add`, `SaveChangesAsync` |
 
-**Failure handling:** An email already in use short-circuits before any persistence and returns a conflict to the controller.
-Validation errors return 400 before repository access. A failed save returns 500 with no partial persisted write, as specified in the LLD; the detailed error body remains unspecified. The diagrams show response mapping only after a successful save.
-
-**Transaction boundaries:** Organization and admin account are created together in a single `SaveChangesAsync` call; no partial state is possible.
+See the [LLD service logic](../../requirements/US-001-LLD.md#service-logic-organizationserviceregister) for what each step does and its [error handling](../../requirements/US-001-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
 
 ## Level 3 - Frontend
 
