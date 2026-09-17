@@ -5,10 +5,18 @@
 set -e
 
 staged="$(git diff --cached --name-only --diff-filter=ACMR)"
-[ -z "$staged" ] && exit 0
+if [ -z "$staged" ]; then
+    echo "pre-commit: nothing staged, skipping"
+    exit 0
+fi
 
 fe_staged="$(printf '%s\n' "$staged" | grep -E '^web/.*\.(ts|tsx|js|jsx|json|css|md)$' || true)"
 be_staged="$(printf '%s\n' "$staged" | grep -E '^(api|api\.Tests)/.*\.cs$' || true)"
+
+if [ -z "$fe_staged" ] && [ -z "$be_staged" ]; then
+    echo "pre-commit: no frontend or backend files staged, nothing to check"
+    exit 0
+fi
 
 if [ -n "$fe_staged" ]; then
     echo "pre-commit: formatting frontend (prettier)"

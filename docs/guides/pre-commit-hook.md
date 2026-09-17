@@ -16,6 +16,8 @@ Formatting is always applied and folded into the commit automatically; only a re
 
 The hook only touches files you already staged. It re-adds exactly those paths after formatting, never anything else in your working tree, so unrelated in-progress edits are never swept into the commit.
 
+The hook always prints one line, even when there's nothing to check (e.g., a commit that only touches docs or root-level files) — so a silent commit never means "did the hook even run?"; it means it ran and found nothing to check.
+
 ## One-time setup
 
 The hook script lives in the repository at [`tools/git-hooks/pre-commit`](../../tools/git-hooks/pre-commit) (tracked, unlike the untracked `.git/hooks/` directory). Point Git at it once per clone:
