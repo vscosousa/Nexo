@@ -1,0 +1,19 @@
+@startuml
+title Nexo diagram generation workflow
+actor Contributor
+participant "PlantUML generator" as Generator
+participant "PlantUML JAR" as PlantUML
+participant "Documentation SVGs" as SVGs
+Contributor -> Generator: Run generator after editing .puml sources
+Generator -> Generator: Verify pinned JAR checksum
+loop Each source
+    Generator -> PlantUML: Render into temporary staging directory
+    PlantUML --> Generator: SVG or error
+end
+alt Every source rendered successfully
+    Generator -> SVGs: Publish SVGs and remove owned stale outputs
+    Generator --> Contributor: Success
+else Rendering failed
+    Generator --> Contributor: Error; existing SVGs preserved
+end
+@enduml
