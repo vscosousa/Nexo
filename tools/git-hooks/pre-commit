@@ -1,47 +1,105 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Formats and checks staged files before a commit is created.
 # Installed via: git config core.hooksPath tools/git-hooks
 # See docs/reference/README.md#commands for the underlying tools.
-set -e
+set -euo pipefail
 
-staged="$(git diff --cached --name-only --diff-filter=ACMR)"
-if [ -z "$staged" ]; then
-    echo "pre-commit: nothing staged, skipping"
+cd "$(git rev-parse --show-toplevel)"
+
+# Materialize the list so a failed Git command cannot look like an empty commit.
+staged_list=$(mktemp)
+trap 'rm -f -- "$staged_list"' EXIT
+git diff --cached --name-status --no-renames -z > "$staged_list"
+
+fe_staged=()
+be_staged=()
+check_fe=false
+check_be=false
+while IFS= read -r -d '' status && IFS= read -r -d '' path; do
+    if [ "$status" = U ]; then
+        echo "pre-commit: Resolve merge conflicts before committing." >&2
+        exit 1
+    fi
+    case "$path" in
+        web/*) check_fe=true ;;
+        api/*|api.Tests/*|*.sln|*.slnx|*.props|*.targets|global.json|[Nn]u[Gg]et.[Cc]onfig|.editorconfig)
+            check_be=true ;;
+    esac
+    # Deleted files still trigger checks, but cannot be formatted or re-staged.
+    [ "$status" != D ] || continue
+    case "$path" in
+        web/*.ts|web/*.tsx|web/*.js|web/*.jsx|web/*.mjs|web/*.cjs|web/*.json|web/*.css|web/*.md|web/*.html|web/*.yaml|web/*.yml)
+            fe_staged+=("$path") ;;
+        api/*.cs|api.Tests/*.cs)
+            be_staged+=("$path") ;;
+    esac
+done < "$staged_list"
+
+if ! "$check_fe" && ! "$check_be"; then
+    echo "pre-commit: No frontend or backend files staged, nothing to check"
     exit 0
 fi
 
-fe_staged="$(printf '%s\n' "$staged" | grep -E '^web/.*\.(ts|tsx|js|jsx|json|css|md)$' || true)"
-be_staged="$(printf '%s\n' "$staged" | grep -E '^(api|api\.Tests)/.*\.cs$' || true)"
+# Check every selected file before either formatter can change the worktree/index.
+for path in "${fe_staged[@]}" "${be_staged[@]}"; do
+    entry=$(git --literal-pathspecs ls-files --stage -- "$path")
+    case "$entry" in
+        100644*|100755*) ;;
+        *) printf 'pre-commit: %s is not a regular staged file; refusing to format it.\n' "$path" >&2; exit 1 ;;
+    esac
+    if ! git --literal-pathspecs diff --quiet -- "$path"; then
+        printf 'pre-commit: %s has unstaged changes; stage or stash them before committing.\n' "$path" >&2
+        exit 1
+    fi
+done
 
-if [ -z "$fe_staged" ] && [ -z "$be_staged" ]; then
-    echo "pre-commit: no frontend or backend files staged, nothing to check"
-    exit 0
+if [ "${#fe_staged[@]}" -gt 0 ]; then
+    echo "pre-commit: Formatting frontend (prettier) - ${#fe_staged[@]} file(s)"
+    fe_rel=()
+    for path in "${fe_staged[@]}"; do fe_rel+=("./${path#web/}"); done
+    if ! (cd web && npx --no-install prettier --write -- "${fe_rel[@]}"); then
+        echo "pre-commit: Frontend formatting failed; review working-tree changes before retrying." >&2
+        exit 1
+    fi
+    git --literal-pathspecs add -- "${fe_staged[@]}"
 fi
 
-if [ -n "$fe_staged" ]; then
-    echo "pre-commit: formatting frontend (prettier)"
-    fe_rel="$(printf '%s\n' "$fe_staged" | sed 's|^web/||')"
-    (cd web && printf '%s\n' "$fe_rel" | xargs npx --no-install prettier --write)
-    printf '%s\n' "$fe_staged" | xargs git add
-
-    echo "pre-commit: linting frontend (oxlint)"
+if "$check_fe"; then
+    echo "pre-commit: Linting frontend (oxlint)"
     if ! (cd web && npm run --silent lint); then
-        echo "pre-commit: frontend lint failed; fix the errors above and re-commit."
+        echo "pre-commit: Frontend lint failed; fix the errors above and re-commit." >&2
+        exit 1
+    fi
+    echo "pre-commit: Building frontend (TypeScript and Vite)"
+    if ! (cd web && npm run --silent build); then
+        echo "pre-commit: Frontend build failed; fix the errors above and re-commit." >&2
         exit 1
     fi
 fi
 
-if [ -n "$be_staged" ]; then
-    echo "pre-commit: formatting backend (dotnet format)"
-    # shellcheck disable=SC2046
-    dotnet format Nexo.slnx --include $(printf '%s\n' "$be_staged" | tr '\n' ' ') --verbosity quiet
-    printf '%s\n' "$be_staged" | xargs git add
+if [ "${#be_staged[@]}" -gt 0 ]; then
+    echo "pre-commit: Formatting backend (dotnet format) - ${#be_staged[@]} file(s)"
+    if ! dotnet format Nexo.slnx --include "${be_staged[@]}" --verbosity quiet; then
+        echo "pre-commit: Backend formatting failed; review working-tree changes before retrying." >&2
+        exit 1
+    fi
+    git --literal-pathspecs add -- "${be_staged[@]}"
+fi
 
-    echo "pre-commit: building backend (dotnet build, warnings as errors)"
+if "$check_be"; then
+    echo "pre-commit: Building backend (dotnet build, warnings as errors)"
     if ! dotnet build Nexo.slnx --nologo -warnaserror -v quiet; then
-        echo "pre-commit: backend build failed; fix the errors/warnings above and re-commit."
+        echo "pre-commit: Backend build failed; fix the errors/warnings above and re-commit." >&2
         exit 1
     fi
 fi
 
+if "$check_fe" && "$check_be"; then
+    scope="frontend + backend"
+elif "$check_fe"; then
+    scope="frontend"
+else
+    scope="backend"
+fi
+echo "pre-commit: Checks passed ($scope)"
 exit 0
