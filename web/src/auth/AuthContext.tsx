@@ -9,7 +9,9 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem("token"),
+  );
 
   const login = (newToken: string) => {
     localStorage.setItem("token", newToken);
@@ -21,7 +23,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
   };
 
-  return <AuthContext.Provider value={{ token, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ token, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

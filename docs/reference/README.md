@@ -22,6 +22,8 @@ Document exact supported versions, settings, commands, and interfaces here.
 | `vitest`, `@testing-library/react` | `web/` | Frontend unit and component tests |
 | `Microsoft.AspNetCore.Mvc.Testing` | `api.Tests/` | Backend integration tests (`WebApplicationFactory`) |
 | `@playwright/test` | `e2e/` | End-to-end tests against the running app |
+| `oxlint` | `web/` | Frontend linting |
+| `prettier` | `web/` | Frontend formatting |
 
 See [ADR-004](../decisions/ADR-004-frontend-architecture.md) and [ADR-005](../decisions/ADR-005-testing-frameworks.md) for why these were chosen over native alternatives.
 
@@ -55,6 +57,11 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | `npm install` | `e2e/` | None | Installs Playwright |
 | `npx playwright install chromium` | `e2e/` | None | Downloads the Chromium browser used by tests |
 | `npm test` | `e2e/` | None | Runs E2E tests (starts the Vite dev server automatically) |
+| `npm run lint` | `web/` | None | Lints the frontend (oxlint) |
+| `npm run format` / `npm run format:check` | `web/` | None | Formats the frontend (Prettier), or checks without writing |
+| `dotnet format Nexo.slnx` | repository root | None | Formats the backend in place |
+| `dotnet build Nexo.slnx -warnaserror` | repository root | None | Builds the backend, failing on any warning |
+| `git config core.hooksPath tools/git-hooks` | repository root | None | One-time setup: enables the [pre-commit hook](../guides/pre-commit-hook.md) that runs the four commands above on staged files |
 
 ## Interfaces
 

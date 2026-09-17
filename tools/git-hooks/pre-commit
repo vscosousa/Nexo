@@ -1,0 +1,39 @@
+#!/bin/sh
+# Formats and checks staged files before a commit is created.
+# Installed via: git config core.hooksPath tools/git-hooks
+# See docs/reference/README.md#commands for the underlying tools.
+set -e
+
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+[ -z "$staged" ] && exit 0
+
+fe_staged="$(printf '%s\n' "$staged" | grep -E '^web/.*\.(ts|tsx|js|jsx|json|css|md)$' || true)"
+be_staged="$(printf '%s\n' "$staged" | grep -E '^(api|api\.Tests)/.*\.cs$' || true)"
+
+if [ -n "$fe_staged" ]; then
+    echo "pre-commit: formatting frontend (prettier)"
+    fe_rel="$(printf '%s\n' "$fe_staged" | sed 's|^web/||')"
+    (cd web && printf '%s\n' "$fe_rel" | xargs npx --no-install prettier --write)
+    printf '%s\n' "$fe_staged" | xargs git add
+
+    echo "pre-commit: linting frontend (oxlint)"
+    if ! (cd web && npm run --silent lint); then
+        echo "pre-commit: frontend lint failed; fix the errors above and re-commit."
+        exit 1
+    fi
+fi
+
+if [ -n "$be_staged" ]; then
+    echo "pre-commit: formatting backend (dotnet format)"
+    # shellcheck disable=SC2046
+    dotnet format Nexo.slnx --include $(printf '%s\n' "$be_staged" | tr '\n' ' ') --verbosity quiet
+    printf '%s\n' "$be_staged" | xargs git add
+
+    echo "pre-commit: building backend (dotnet build, warnings as errors)"
+    if ! dotnet build Nexo.slnx --nologo -warnaserror -v quiet; then
+        echo "pre-commit: backend build failed; fix the errors/warnings above and re-commit."
+        exit 1
+    fi
+fi
+
+exit 0
