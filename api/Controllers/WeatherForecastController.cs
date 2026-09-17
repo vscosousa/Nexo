@@ -8,6 +8,7 @@ namespace Nexo.Api.Controllers;
 [Route("[controller]")]
 public class WeatherForecastController(IWeatherForecastService service) : ControllerBase
 {
+    /// <summary>Returns a 5-day weather forecast.</summary>
     [HttpGet(Name = "GetWeatherForecast")]
     public IEnumerable<WeatherForecastDto> Get()
     {
