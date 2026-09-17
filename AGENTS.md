@@ -15,6 +15,9 @@
 - Ask for feedback before deciding anything non-trivial (scope, design/schema choices, wording of decisions) and before committing. Do the work, then pause for review; do not commit on your own judgment even if the user asked for the underlying work.
 - When the user points to their own prior work or an external template as the model to follow (e.g., "like I did in project X"), fetch and read it before building the parallel structure. Don't infer the shape from the term alone — a term like "database design" can map to a conceptual domain model in one project's convention and a physical schema in another.
 - Never run `git config` (including `core.hooksPath`, aliases, user identity) without explicit confirmation for that specific change, even when it's local-only and reversible.
+- TDD applies to application code. Infra/tooling scripts (Dockerfiles, Compose, Git hooks) don't need their own regression test suite unless asked; adding one is scope creep the user may then have to ask you to remove.
+- When adding or removing dev tooling (Docker, hooks, scripts), grep the repo for every doc that references it (README, `docs/reference/`, `docs/testing/`, `docs/guides/`) — these tend to be mentioned in multiple places and are easy to leave stale.
+- Code comments: frontend (`web/`) uses TSDoc (`/** ... */` with `@param`/`@returns`/`@throws`) on exported functions/hooks whose behavior isn't obvious from the signature alone — see [github.com/vscosousa/little-lemon-react-native](https://github.com/vscosousa/little-lemon-react-native) for the reference style. Backend (`api/`) uses standard .NET `///` XML doc comments on public API surface (controllers, service/repository interfaces). Skip docs on trivial pass-through code, and never leave a comment that only restates what the code already says.
 
 ## Keep documentation current
 

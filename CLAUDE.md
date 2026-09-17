@@ -1,3 +1,3 @@
 ﻿# Claude instructions
 
-Read and follow [.AGENTS](.AGENTS) before starting work.
+Read and follow [AGENTS.md](AGENTS.md) before starting work.
