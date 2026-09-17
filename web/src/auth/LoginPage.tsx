@@ -1,4 +1,6 @@
-// Placeholder: wire to the backend's synthetic-identity login endpoint once it exists.
+/**
+ * Placeholder login screen. Wire to the backend's login endpoint once it exists.
+ */
 export function LoginPage() {
   return (
     <section>

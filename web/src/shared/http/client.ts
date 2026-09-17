@@ -1,5 +1,9 @@
 import axios from "axios";
 
+/**
+ * Axios instance for the backend API. Attaches the stored auth token to
+ * every request and, on a 401 response, clears it and redirects to `/login`.
+ */
 export const apiClient = axios.create({
   baseURL: "/api",
 });

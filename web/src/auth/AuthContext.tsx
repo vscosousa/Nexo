@@ -8,6 +8,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * Provides the auth token to descendants and persists it to `localStorage`
+ * so a session survives a page reload.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("token"),
@@ -30,6 +34,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Reads the current auth state.
+ *
+ * @throws {Error} If called outside an {@link AuthProvider}.
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
