@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-These proposed models describe business concepts independently of database tables and implementation classes. Business entities are not implemented. Consult the [design review gaps](../requirements/README.md#design-review-gaps) for unresolved cross-story rules.
+These proposed models describe business concepts independently of database tables and implementation classes. Only `Organization`, `Account`, and `Plan` are implemented (US-001 to US-003 backend); the rest are proposed. Consult the [design review gaps](../requirements/README.md#design-review-gaps) for unresolved cross-story rules.
 
 ## Rationale
 
@@ -58,7 +58,7 @@ Domain concepts and their associations are identified from the requirements' [go
 ## Accounts and organizations
 
 **Scope:** Organization, account creation, and sign-in ([US-001](../requirements/US-001-create-organization-admin.md), [US-002](../requirements/US-002-register-member-email.md), [US-003](../requirements/US-003-create-member-account.md), [US-005](../requirements/US-005-sign-in.md)).
-**Status:** proposed.
+**Status:** `Organization`, `Plan`, and `Account` implemented for the password path; `ExternalLogin` proposed.
 **Diagram:** [Domain model diagrams](#domain-model-diagrams).
 
 | Concept | Meaning | Relationships | Business rules |

@@ -4,7 +4,7 @@
 
 This is the starting point for Nexo's project and technical documentation. Use the topic folders below to explore requirements, models, design decisions, and development guides.
 
-**Status:** five draft user stories have proposed designs; six architecture decisions are accepted. Implementation is scaffolded, with no completed business feature. Accepted decisions describe intended choices, not proof that they are implemented.
+**Status:** five draft user stories have proposed designs; six architecture decisions are accepted. The backends of US-001 to US-003 are implemented for the password path; there is no frontend, sign-in, or session yet. Accepted decisions describe intended choices, not proof that they are implemented.
 
 Start with [local setup](../README.md#run-locally), the [current architecture](architecture/README.md), or the [story index](requirements/README.md#user-stories). Known inconsistencies that need a design decision are collected in [design review gaps](requirements/README.md#design-review-gaps).
 

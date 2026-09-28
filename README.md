@@ -2,7 +2,7 @@
 
 Nexo is a local prototype for associations to coordinate resources, spaces, activities, and incidents, with availability, responsibility, and history in one system.
 
-**Status:** React and ASP.NET Core scaffolds, PostgreSQL configuration, and example tests are in place. The US-001 registration endpoint exists in the API; other business features remain proposed; the frontend and API are not integrated yet.
+**Status:** React and ASP.NET Core scaffolds, PostgreSQL configuration, and example tests are in place. The API implements organization registration, member invitations by email, and account activation (US-001 to US-003, password path); other business features remain proposed; the frontend and API are not integrated yet.
 
 [Run locally](#run-locally) · [Features](#features) · [Architecture](docs/architecture/README.md) · [Documentation](docs/README.md)
 
@@ -14,7 +14,7 @@ There is no complete business workflow or published demo yet. Running the fronte
 
 | Area | Intended capability | Status |
 | --- | --- | --- |
-| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); US-001 backend endpoint implemented (no credentials or session yet), the rest not implemented |
+| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); US-001 to US-003 backend endpoints implemented for the password path (no session or frontend yet); SSO and sign-in (US-005) not implemented |
 | Resources | Register, browse, and update rooms and equipment | Registration designed in US-004; not implemented |
 | Search and availability | Find resources and available periods | Planned |
 | Reservations | Reserve and cancel a resource for a period | Planned |

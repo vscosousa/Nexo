@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-This page distinguishes the implemented scaffold from the intended application structure.
+This page distinguishes the implemented backend and frontend scaffold from the intended application structure.
 
 ## Context
 
@@ -10,7 +10,7 @@ Nexo is a modular monolith: a single React SPA and a single ASP.NET Core Web API
 
 ## Components
 
-The layers below exist in the weather sample. Organization, account, and resource classes shown in story designs are proposed; their business modules have not been implemented.
+The layers below exist in the weather sample and in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`). Resource classes and the sign-in flow shown in story designs are proposed; their modules are not implemented, and no business module has a frontend.
 
 | Component | Responsibility | Dependencies | Interface |
 | --- | --- | --- | --- |
@@ -48,7 +48,8 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 
 - The presence-only route guard is UI scaffolding. API authentication, authorization, JWT validation, and organization isolation still need implementation.
 - The frontend `/api` base URL has no matching development proxy; the sample API route is `/WeatherForecast`.
-- `NexoDbContext` has no business entities and the initial migration is empty. The weather repository generates data without database access.
+- `NexoDbContext` holds `Plans`, `Organizations`, and `Accounts`; resource tables do not exist. The weather repository generates data without database access.
+- Endpoints for US-002 identify the caller by a temporary `X-Account-Id` header, which is not authentication, until JWT sign-in (US-005) exists.
 - Story contracts have unresolved details, including registration sessions and plan-limit enforcement. See [design review gaps](../requirements/README.md#design-review-gaps) before implementation.
 - Deployment, backup/recovery, and measurable performance targets are not defined for this local prototype.
 

@@ -3,7 +3,7 @@
 [Requirements](README.md)
 
 **ID and title:** US-003 - Create a member account.
-**Status:** draft.
+**Status:** backend implemented for the password path (no OAuth activation, sign-in session, or frontend yet).
 **Story:** As a person whose email was registered by an admin, I want to create my account with either email/password or Google/Microsoft, so that I can use the system as a member of that organization.
 
 **Preconditions:** The person's email was registered to an organization (per [US-002](US-002-register-member-email.md)) as a pending account that has not been activated yet.

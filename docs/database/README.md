@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](../decisions/ADR-003-postgresql-database.md). The [domain model](../domain-models/README.md) describes proposed business concepts; it is not an implemented database schema.
+PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](../decisions/ADR-003-postgresql-database.md). The [domain model](../domain-models/README.md) describes proposed business concepts; only the tables listed under [Data model](#data-model) are implemented.
 
 ## Data model
 

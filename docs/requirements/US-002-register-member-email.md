@@ -3,7 +3,7 @@
 [Requirements](README.md)
 
 **ID and title:** US-002 - Register a member's email to an organization.
-**Status:** draft.
+**Status:** backend implemented (caller from a temporary `X-Account-Id` header; no frontend yet).
 **Story:** As an admin, I want to register a person's email against my organization, so that they become eligible to create their own account.
 
 **Preconditions:** The admin has an account (per [US-001](US-001-create-organization-admin.md)) scoped to an organization.

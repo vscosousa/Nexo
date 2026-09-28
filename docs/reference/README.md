@@ -106,6 +106,7 @@ The `mail` service settings are `Smtp:Address` (`0.0.0.0` in the container, `127
 | Method and path | Current behavior |
 | --- | --- |
 | `GET /WeatherForecast` | Returns five generated forecasts from the sample controller; no authentication or database access |
+| `POST /organizations` | US-001: registers an organization and its admin account (password path); returns `201` with `OrganizationDto`, or `400`, `409` (email already registered). No session is returned |
 | `POST /organizations/{organizationId}/invitations` | US-002: registers `{ "email" }` as an `Invited` member account; emails the person an invitation with a one-time token and returns `201` with `AccountDto`, or `400`, `403`, `409`; `500` if the email cannot be sent (no account is kept). The caller is the account id in the temporary `X-Account-Id` header until JWT authentication exists |
 | `POST /accounts/activation` | US-003: activates the invited account for `{ "email", "name", "password", "invitationToken" }`; returns `200` with `AccountDto`, or `400`, `403` (no account for the email, or wrong token), `409` (already active, or member limit reached). No sign-in or session yet |
 | `GET http://localhost:8025/` | Fake mail server inbox (separate service, not the API) |

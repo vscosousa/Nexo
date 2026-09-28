@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-Use these terms across requirements, models, code, and tests. They describe the intended domain; business entities are not implemented yet.
+Use these terms across requirements, models, code, and tests. They describe the intended domain; only the organization, account, and plan entities are implemented so far.
 
 ## Domain terms
 

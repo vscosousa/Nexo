@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-This page defines the intended scope and indexes draft stories. None of the five business stories is implemented; their HLD/LLD and diagrams describe proposed behavior.
+This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path (no frontend, SSO, or session yet); US-004 and US-005 are not, and their HLD/LLD and diagrams describe proposed behavior.
 
 ## Context and scope
 
@@ -33,9 +33,9 @@ This page defines the intended scope and indexes draft stories. None of the five
 
 | ID | Title | Status | HLD | LLD |
 | --- | --- | --- | --- | --- |
-| [US-001](US-001-create-organization-admin.md) | Create an organization and its admin account | draft | [HLD](US-001-HLD.md) | [LLD](US-001-LLD.md) |
-| [US-002](US-002-register-member-email.md) | Register a member's email to an organization | draft | [HLD](US-002-HLD.md) | [LLD](US-002-LLD.md) |
-| [US-003](US-003-create-member-account.md) | Create a member account | draft | [HLD](US-003-HLD.md) | [LLD](US-003-LLD.md) |
+| [US-001](US-001-create-organization-admin.md) | Create an organization and its admin account | backend implemented | [HLD](US-001-HLD.md) | [LLD](US-001-LLD.md) |
+| [US-002](US-002-register-member-email.md) | Register a member's email to an organization | backend implemented | [HLD](US-002-HLD.md) | [LLD](US-002-LLD.md) |
+| [US-003](US-003-create-member-account.md) | Create a member account | backend implemented | [HLD](US-003-HLD.md) | [LLD](US-003-LLD.md) |
 | [US-004](US-004-register-resource.md) | Register a resource | draft | [HLD](US-004-HLD.md) | [LLD](US-004-LLD.md) |
 | [US-005](US-005-sign-in.md) | Sign in to an existing account | draft | [HLD](US-005-HLD.md) | [LLD](US-005-LLD.md) |
 
