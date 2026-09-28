@@ -29,6 +29,11 @@ services:
       Email__Password: ${EMAIL_PASSWORD:-}
       Email__From: "${EMAIL_FROM:-Nexo <no-reply@nexo.local>}"
       Email__WebBaseUrl: ${EMAIL_WEB_BASE_URL:-http://localhost:5173}
+      # Local-development signing key; set JWT_KEY in `.env` for anything else.
+      Jwt__Key: ${JWT_KEY:-nexo-local-development-signing-key-change-me}
+      # Google sign-in is enabled only when both values are set in `.env`.
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
     ports:
       - "127.0.0.1:5122:8080"
     depends_on:
@@ -48,6 +53,9 @@ services:
 
   web:
     build: ./web
+    environment:
+      # The dev server proxies /api to the API service (browser requests stay same-origin, so no CORS).
+      VITE_API_URL: http://api:8080
     ports:
       - "127.0.0.1:5173:5173"
 

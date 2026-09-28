@@ -8,13 +8,13 @@ Nexo is a local prototype for associations to coordinate resources, spaces, acti
 
 ## Demo
 
-There is no complete business workflow or published demo yet. Running the frontend without a stored token displays a placeholder login page. The API independently exposes a sample weather endpoint.
+There is no complete business workflow or published demo yet. Running the frontend without a stored token displays the sign-in page. The API independently exposes a sample weather endpoint.
 
 ## Features
 
 | Area | Intended capability | Status |
 | --- | --- | --- |
-| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); US-001 to US-003 backend endpoints implemented for the password path (no session or frontend yet); SSO and sign-in (US-005) not implemented |
+| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); US-001 to US-003 backend endpoints implemented for the password path (no frontend yet); US-005 sign-in (password and Google) implemented on backend and frontend; Microsoft sign-in and SSO registration not implemented |
 | Resources | Register, browse, and update rooms and equipment | Registration designed in US-004; not implemented |
 | Search and availability | Find resources and available periods | Planned |
 | Reservations | Reserve and cancel a resource for a period | Planned |
@@ -37,7 +37,7 @@ docker compose up --build
 
 This builds the frontend, API, and fake mail server, starts PostgreSQL 17, and starts the API. No host Node.js, .NET SDK, PostgreSQL installation, or user-secrets setup is needed for this path. The first run downloads images and dependencies. See [database migrations and lifecycle](docs/database/README.md#migrations-and-lifecycle) for what happens to the database on startup, `down`, and `down -v`.
 
-- Frontend: `http://localhost:5173` (login placeholder).
+- Frontend: `http://localhost:5173` (sign-in page).
 - API sample: `http://localhost:5122/WeatherForecast`.
 - Development OpenAPI: `http://localhost:5122/openapi/v1.json`, browsable at `http://localhost:5122/scalar/v1`.
 - Mail inbox (every email the API sends, such as invitations): `http://localhost:8025`; SMTP is `localhost:1025`. See the [fake mail server guide](docs/guides/fake-mail-server.md), including how to switch to a real email service through a git-ignored `.env` (template: [.env.example](.env.example)).
@@ -95,7 +95,7 @@ Start two terminals:
 | `api/` | `dotnet run --launch-profile http` | API at `http://localhost:5122` |
 | `web/` | `npm run dev` | Vite prints the frontend URL, normally `http://localhost:5173` |
 
-Open the frontend URL. Without a stored token, it redirects to the login placeholder. To verify the API independently, open `http://localhost:5122/WeatherForecast`; it returns five generated forecasts. The development OpenAPI document is at `http://localhost:5122/openapi/v1.json`, and a Scalar UI for manually exercising endpoints is at `http://localhost:5122/scalar/v1`.
+Open the frontend URL. Without a stored token, it redirects to the sign-in page. To verify the API independently, open `http://localhost:5122/WeatherForecast`; it returns five generated forecasts. The development OpenAPI document is at `http://localhost:5122/openapi/v1.json`, and a Scalar UI for manually exercising endpoints is at `http://localhost:5122/scalar/v1`.
 
 Authentication endpoints and a Vite API proxy are not implemented. Stop each process with Ctrl+C.
 
