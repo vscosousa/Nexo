@@ -10,23 +10,28 @@ public class AccountMapperTests
 {
     private static readonly Guid OrganizationId = Guid.NewGuid();
 
+    private static readonly DateTime Expiry = new(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     public void GivenAnEmailAndOrganization_WhenMappedToInvitedAccount_ThenItIsAPendingMemberWithoutAName()
     {
         var account = AccountMapper.ToInvitedAccount(
-            new InviteMemberDto { Email = "  Bob@Example.COM " }, OrganizationId, "token-hash");
+            new InviteMemberDto { Email = "  Bob@Example.COM " }, OrganizationId, "token-hash", "code-hash", Expiry);
+        Assert.Equal(Expiry, account.InvitationExpiresAt);
 
         Assert.Equal("bob@example.com", account.Email);
-        Assert.Null(account.Name);
+        Assert.Null(account.FirstName);
+        Assert.Null(account.LastName);
         Assert.Null(account.PasswordHash);
         Assert.Equal(Role.Member, account.Role);
         Assert.Equal(AccountStatus.Invited, account.Status);
         Assert.Equal(OrganizationId, account.OrganizationId);
         Assert.Equal("token-hash", account.InvitationTokenHash);
+        Assert.Equal("code-hash", account.InvitationCodeHash);
     }
 
     [Fact]
-    public void GivenAnInvitedAccount_WhenActivationIsApplied_ThenItIsActiveWithANameAndAHashedPasswordAndNoToken()
+    public void GivenAnInvitedAccount_WhenActivationIsApplied_ThenItIsActiveWithANameAndAHashedPasswordAndNoInvitationSecrets()
     {
         var account = new Account
         {
@@ -35,17 +40,20 @@ public class AccountMapperTests
             Status = AccountStatus.Invited,
             OrganizationId = OrganizationId,
             InvitationTokenHash = "token-hash",
+            InvitationCodeHash = "code-hash",
         };
         var hasher = new PasswordHasher<Account>();
 
         AccountMapper.ApplyActivation(
-            account, new ActivateAccountDto { Name = " Bob ", Password = "s3cret-pass" }, hasher);
+            account, new ActivateAccountDto { FirstName = " Bob ", LastName = " Builder ", Password = "s3cret-pass" }, hasher);
 
-        Assert.Equal("Bob", account.Name);
+        Assert.Equal("Bob", account.FirstName);
+        Assert.Equal("Builder", account.LastName);
         Assert.Equal(AccountStatus.Active, account.Status);
         Assert.Equal(Role.Member, account.Role);
         Assert.Equal(OrganizationId, account.OrganizationId);
         Assert.Null(account.InvitationTokenHash);
+        Assert.Null(account.InvitationCodeHash);
         Assert.NotEqual("s3cret-pass", account.PasswordHash);
         Assert.Equal(
             PasswordVerificationResult.Success,
@@ -67,7 +75,8 @@ public class AccountMapperTests
 
         Assert.Equal(account.Id, dto.Id);
         Assert.Equal("bob@example.com", dto.Email);
-        Assert.Null(dto.Name);
+        Assert.Null(dto.FirstName);
+        Assert.Null(dto.LastName);
         Assert.Equal(Role.Member, dto.Role);
         Assert.Equal(AccountStatus.Invited, dto.Status);
         Assert.Equal(OrganizationId, dto.OrganizationId);

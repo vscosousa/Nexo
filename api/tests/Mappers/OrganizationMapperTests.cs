@@ -11,7 +11,8 @@ public class OrganizationMapperTests
     private static readonly RegisterOrganizationDto Registration = new()
     {
         OrganizationName = "Local Club",
-        AdminName = "Ana Admin",
+        AdminFirstName = "Ana",
+        AdminLastName = "Admin",
         AdminEmail = "ana@example.com",
         Password = "Str0ng!Passw0rd",
     };
@@ -38,7 +39,8 @@ public class OrganizationMapperTests
         var account = OrganizationMapper.ToAdminAccount(Registration, organization, Hasher);
 
         Assert.Equal("ana@example.com", account.Email);
-        Assert.Equal("Ana Admin", account.Name);
+        Assert.Equal("Ana", account.FirstName);
+        Assert.Equal("Admin", account.LastName);
         Assert.Equal(Role.Admin, account.Role);
         Assert.Equal(AccountStatus.Active, account.Status);
         Assert.Equal(organization.Id, account.OrganizationId);
@@ -53,7 +55,8 @@ public class OrganizationMapperTests
         var dto = new RegisterOrganizationDto
         {
             OrganizationName = "  Local Club ",
-            AdminName = " Ana Admin  ",
+            AdminFirstName = " Ana ",
+            AdminLastName = " Admin  ",
             AdminEmail = "ana@example.com",
             Password = "Str0ng!Passw0rd",
         };
@@ -62,7 +65,8 @@ public class OrganizationMapperTests
         var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher);
 
         Assert.Equal("Local Club", organization.Name);
-        Assert.Equal("Ana Admin", account.Name);
+        Assert.Equal("Ana", account.FirstName);
+        Assert.Equal("Admin", account.LastName);
     }
 
     [Fact]
@@ -71,7 +75,8 @@ public class OrganizationMapperTests
         var dto = new RegisterOrganizationDto
         {
             OrganizationName = "Local Club",
-            AdminName = "Ana Admin",
+            AdminFirstName = "Ana",
+            AdminLastName = "Admin",
             AdminEmail = "  Ana.Admin+Club@Example.COM ",
             Password = "Str0ng!Passw0rd",
         };

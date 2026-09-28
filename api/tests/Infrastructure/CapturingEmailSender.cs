@@ -19,9 +19,15 @@ public sealed partial class CapturingEmailSender : IEmailSender
 
     public void Clear() => _sent.Clear();
 
-    /// <summary>The invitation token in the activation link of a captured message.</summary>
+    /// <summary>The link token in the activation link of a captured message.</summary>
     public static string TokenIn(EmailMessage message) => TokenPattern().Match(message.Text).Groups[1].Value;
+
+    /// <summary>The invitation code in the body text of a captured message.</summary>
+    public static string CodeIn(EmailMessage message) => CodePattern().Match(message.Text).Groups[1].Value;
 
     [GeneratedRegex(@"token=([^&\s""]+)")]
     private static partial Regex TokenPattern();
+
+    [GeneratedRegex(@"invitation code[^:]*:\s*(\S+)")]
+    private static partial Regex CodePattern();
 }

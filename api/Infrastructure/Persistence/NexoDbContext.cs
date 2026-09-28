@@ -13,6 +13,8 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
 
     public DbSet<Account> Accounts => Set<Account>();
 
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Plan>(plan =>
@@ -32,14 +34,25 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
         {
             account.Property(a => a.Email).HasMaxLength(Account.EmailMaxLength);
             account.HasIndex(a => a.Email).IsUnique();
-            account.Property(a => a.Name).HasMaxLength(Account.NameMaxLength);
+            account.Property(a => a.FirstName).HasMaxLength(Account.NameMaxLength);
+            account.Property(a => a.LastName).HasMaxLength(Account.NameMaxLength);
             account.Property(a => a.PasswordHash).HasMaxLength(200);
             account.Property(a => a.InvitationTokenHash).HasMaxLength(64);
+            account.Property(a => a.InvitationCodeHash).HasMaxLength(64);
+            account.Property(a => a.InvitationExpiresAt).HasColumnType("timestamp with time zone");
             // PostgreSQL's xmin system column detects a concurrent update of the same row.
             account.Property<uint>("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             account.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
             account.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
             account.HasOne<Organization>().WithMany().HasForeignKey(a => a.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ExternalLogin>(login =>
+        {
+            login.Property(l => l.Provider).HasMaxLength(ExternalLogin.ProviderMaxLength);
+            login.Property(l => l.ProviderKey).HasMaxLength(ExternalLogin.ProviderKeyMaxLength);
+            login.HasIndex(l => new { l.Provider, l.ProviderKey }).IsUnique();
+            login.HasOne<Account>().WithMany().HasForeignKey(l => l.AccountId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

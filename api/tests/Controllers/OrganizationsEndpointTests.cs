@@ -18,7 +18,8 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
     private static readonly RegisterOrganizationDto Valid = new()
     {
         OrganizationName = "Local Club",
-        AdminName = "Ana Admin",
+        AdminFirstName = "Ana",
+        AdminLastName = "Admin",
         AdminEmail = "ana@example.com",
         Password = TestData.StrongPassword,
     };
@@ -55,23 +56,26 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Theory]
-    [InlineData("", "Ana Admin", "ana@example.com")]
-    [InlineData("Local Club", "", "ana@example.com")]
-    [InlineData("Local Club", "Ana Admin", "")]
-    [InlineData("Local Club", "Ana Admin", "not-an-email")]
-    [InlineData("Local Club", "Ana Admin", "ana@example.com", "")]
-    [InlineData("Local Club", "Ana Admin", "ana@example.com", "weak")]
-    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!LocalClub9")]
-    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!L0c@l Cl_ub9")]
-    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!Adm1n-9zq")]
-    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!ANA9zqvw")]
+    [InlineData("", "Ana", "Admin", "ana@example.com")]
+    [InlineData("Local Club", "", "Admin", "ana@example.com")]
+    [InlineData("Local Club", "Ana", "", "ana@example.com")]
+    [InlineData("Local Club", "Ana", "Admin", "")]
+    [InlineData("Local Club", "Ana", "Admin", "not-an-email")]
+    [InlineData("Local Club", "Ana", "Admin", "ana@example.com", "")]
+    [InlineData("Local Club", "Ana", "Admin", "ana@example.com", "weak")]
+    [InlineData("Local Club", "Ana", "Admin", "ana@example.com", "Xx!LocalClub9")]
+    [InlineData("Local Club", "Ana", "Admin", "ana@example.com", "Xx!L0c@l Cl_ub9")]
+    [InlineData("Local Club", "Ana", "Admin", "ana@example.com", "Xx!Adm1n-9zq")]
+    [InlineData("Local Club", "Ana", "Admin", "ana@example.com", "Xx!ANA9zqvw")]
     public async Task GivenMissingOrInvalidFields_WhenRegistering_ThenItRejectsWithValidationErrorsAndCreatesNothing(
-        string organizationName, string adminName, string adminEmail, string password = TestData.StrongPassword)
+        string organizationName, string adminFirstName, string adminLastName, string adminEmail,
+        string password = TestData.StrongPassword)
     {
         var dto = new RegisterOrganizationDto
         {
             OrganizationName = organizationName,
-            AdminName = adminName,
+            AdminFirstName = adminFirstName,
+            AdminLastName = adminLastName,
             AdminEmail = adminEmail,
             Password = password,
         };
@@ -88,7 +92,8 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         var dto = new RegisterOrganizationDto
         {
             OrganizationName = new string('o', 201),
-            AdminName = new string('n', 201),
+            AdminFirstName = new string('n', 101),
+            AdminLastName = new string('n', 101),
             AdminEmail = new string('e', 310) + "@example.com",
             Password = TestData.StrongPassword,
         };
@@ -98,7 +103,8 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
         Assert.Equal(
-            ["AdminEmail", "AdminName", "OrganizationName"], problem!.Errors.Keys.Order().ToArray());
+            ["AdminEmail", "AdminFirstName", "AdminLastName", "OrganizationName"],
+            problem!.Errors.Keys.Order().ToArray());
         await AssertNothingCreatedAsync();
     }
 
@@ -111,7 +117,8 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         var second = new RegisterOrganizationDto
         {
             OrganizationName = "Other Club",
-            AdminName = "Ana Again",
+            AdminFirstName = "Ana",
+            AdminLastName = "Again",
             AdminEmail = Valid.AdminEmail,
             Password = TestData.StrongPassword,
         };
@@ -132,7 +139,8 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         var second = new RegisterOrganizationDto
         {
             OrganizationName = "Other Club",
-            AdminName = "Ana Again",
+            AdminFirstName = "Ana",
+            AdminLastName = "Again",
             AdminEmail = " ANA@Example.com ",
             Password = TestData.StrongPassword,
         };

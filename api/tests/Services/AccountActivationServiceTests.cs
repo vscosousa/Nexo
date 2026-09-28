@@ -32,7 +32,9 @@ public class AccountActivationServiceTests(PostgresApiFactory factory)
             Role = Role.Member,
             Status = AccountStatus.Invited,
             OrganizationId = organization.Id,
-            InvitationTokenHash = InvitationTokens.Hash(TestData.InvitationToken),
+            InvitationTokenHash = InvitationTokens.HashToken(TestData.InvitationLinkToken),
+            InvitationCodeHash = InvitationTokens.HashCode(TestData.InvitationCode),
+            InvitationExpiresAt = DateTime.UtcNow.AddDays(1),
         };
         db.AddRange(organization, pending);
         await db.SaveChangesAsync();
@@ -47,14 +49,16 @@ public class AccountActivationServiceTests(PostgresApiFactory factory)
         await Assert.ThrowsAsync<ConflictException>(() => service.Activate(new ActivateAccountDto
         {
             Email = "bob@example.com",
-            Name = "Bob",
+            FirstName = "Bob",
+            LastName = "Builder",
             Password = TestData.StrongPassword,
-            InvitationToken = TestData.InvitationToken,
+            LinkToken = TestData.InvitationLinkToken,
+            Code = TestData.InvitationCode,
         }));
 
         await using var check = factory.Services.CreateAsyncScope();
         var saved = await check.ServiceProvider.GetRequiredService<NexoDbContext>().Accounts.SingleAsync();
-        Assert.Equal("Winner", saved.Name);
+        Assert.Equal("Winner", saved.FirstName);
     }
 
     /// <summary>Simulates the losing request of a race: the other activation commits after this lookup.</summary>
@@ -70,7 +74,7 @@ public class AccountActivationServiceTests(PostgresApiFactory factory)
             await scope.ServiceProvider.GetRequiredService<NexoDbContext>().Accounts
                 .Where(a => a.Email == email)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(a => a.Name, "Winner")
+                    .SetProperty(a => a.FirstName, "Winner")
                     .SetProperty(a => a.Status, AccountStatus.Active)
                     .SetProperty(a => a.InvitationTokenHash, (string?)null));
             return found;

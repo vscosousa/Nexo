@@ -40,9 +40,10 @@ public class OrganizationService(
     {
         var errors = new Dictionary<string, string[]>();
         FieldRules.Text(errors, nameof(dto.OrganizationName), "Organization name", dto.OrganizationName, Organization.NameMaxLength);
-        FieldRules.Text(errors, nameof(dto.AdminName), "Admin name", dto.AdminName, Account.NameMaxLength);
+        FieldRules.Text(errors, nameof(dto.AdminFirstName), "First name", dto.AdminFirstName, Account.NameMaxLength);
+        FieldRules.Text(errors, nameof(dto.AdminLastName), "Last name", dto.AdminLastName, Account.NameMaxLength);
         FieldRules.Email(errors, nameof(dto.AdminEmail), dto.AdminEmail);
-        FieldRules.Password(errors, nameof(dto.Password), dto.Password, dto.OrganizationName, dto.AdminName);
+        FieldRules.Password(errors, nameof(dto.Password), dto.Password, dto.OrganizationName, dto.AdminFirstName, dto.AdminLastName);
 
         if (errors.Count > 0)
             throw new Domain.Exceptions.ValidationException(errors);

@@ -6,17 +6,53 @@ namespace Nexo.Api.Tests.Services;
 public class InvitationTokensTests
 {
     [Fact]
-    public void GivenANewToken_WhenMatchedAgainstItsHash_ThenItMatchesAndOthersDoNot()
+    public void GivenANewLinkToken_WhenMatchedAgainstItsHash_ThenItMatchesAndOthersDoNot()
     {
-        var (token, hash) = InvitationTokens.Create();
+        var (token, hash) = InvitationTokens.CreateLinkToken();
 
         Assert.NotEqual(token, hash);
-        Assert.True(InvitationTokens.Matches(token, hash));
-        Assert.False(InvitationTokens.Matches(token + "x", hash));
-        Assert.False(InvitationTokens.Matches(token, null));
+        Assert.True(InvitationTokens.TokenMatches(token, hash));
+        Assert.False(InvitationTokens.TokenMatches(token + "x", hash));
+        Assert.False(InvitationTokens.TokenMatches(token, null));
     }
 
     [Fact]
-    public void GivenTwoTokens_WhenCreated_ThenTheyDiffer() =>
-        Assert.NotEqual(InvitationTokens.Create().Token, InvitationTokens.Create().Token);
+    public void GivenTwoLinkTokens_WhenCreated_ThenTheyDiffer() =>
+        Assert.NotEqual(InvitationTokens.CreateLinkToken().Token, InvitationTokens.CreateLinkToken().Token);
+
+    [Fact]
+    public void GivenALinkToken_WhenMatchedInADifferentCase_ThenItDoesNotMatch()
+    {
+        // Unlike the code, the link token is copy-pasted from a URL, never typed, so case matters.
+        var (token, hash) = InvitationTokens.CreateLinkToken();
+
+        Assert.False(InvitationTokens.TokenMatches(token.ToLowerInvariant(), hash));
+    }
+
+    [Fact]
+    public void GivenANewCode_WhenMatchedAgainstItsHash_ThenItMatchesAndOthersDoNot()
+    {
+        var (code, hash) = InvitationTokens.CreateCode();
+
+        Assert.NotEqual(code, hash);
+        Assert.True(InvitationTokens.CodeMatches(code, hash));
+        Assert.False(InvitationTokens.CodeMatches(code + "x", hash));
+        Assert.False(InvitationTokens.CodeMatches(code, null));
+    }
+
+    [Fact]
+    public void GivenTwoCodes_WhenCreated_ThenTheyDiffer() =>
+        Assert.NotEqual(InvitationTokens.CreateCode().Code, InvitationTokens.CreateCode().Code);
+
+    [Fact]
+    public void GivenANewCode_WhenCreated_ThenItIsSixCharactersLong() =>
+        Assert.Equal(6, InvitationTokens.CreateCode().Code.Length);
+
+    [Fact]
+    public void GivenACode_WhenMatchedInADifferentCase_ThenItStillMatches()
+    {
+        var (code, hash) = InvitationTokens.CreateCode();
+
+        Assert.True(InvitationTokens.CodeMatches(code.ToLowerInvariant(), hash));
+    }
 }

@@ -19,7 +19,8 @@ public static class OrganizationMapper
         var account = new Account
         {
             Email = Account.NormalizeEmail(dto.AdminEmail!),
-            Name = dto.AdminName!.Trim(),
+            FirstName = dto.AdminFirstName!.Trim(),
+            LastName = dto.AdminLastName!.Trim(),
             Role = Role.Admin,
             Status = AccountStatus.Active,
             OrganizationId = organization.Id,

@@ -30,7 +30,8 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         var dto = await response.Content.ReadFromJsonAsync<AccountDto>();
         Assert.NotNull(dto);
         Assert.Equal("bob@example.com", dto.Email);
-        Assert.Null(dto.Name);
+        Assert.Null(dto.FirstName);
+        Assert.Null(dto.LastName);
         Assert.Equal(Role.Member, dto.Role);
         Assert.Equal(AccountStatus.Invited, dto.Status);
         Assert.Equal(organizationId, dto.OrganizationId);
@@ -45,12 +46,38 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         Assert.Contains("Local Club", email.Subject);
         Assert.Contains("Ana Admin", email.Text);
         var token = CapturingEmailSender.TokenIn(email);
-        Assert.True(InvitationTokens.Matches(token, account.InvitationTokenHash));
-        Assert.DoesNotContain(token, await response.Content.ReadAsStringAsync());
+        var code = CapturingEmailSender.CodeIn(email);
+        Assert.True(InvitationTokens.TokenMatches(token, account.InvitationTokenHash));
+        Assert.True(InvitationTokens.CodeMatches(code, account.InvitationCodeHash));
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain(token, body);
+        Assert.DoesNotContain(code, body);
     }
 
     [Fact]
-    public async Task GivenTheInvitationEmail_WhenTheMemberActivatesWithItsToken_ThenTheAccountIsActive()
+    public async Task GivenTheInvitationEmail_WhenTheMemberActivatesWithItsLinkTokenAndCode_ThenTheAccountIsActive()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        await InviteAsync(organizationId, adminId, "bob@example.com");
+        var email = Assert.Single(factory.Emails.Sent);
+        var token = CapturingEmailSender.TokenIn(email);
+        var code = CapturingEmailSender.CodeIn(email);
+
+        var response = await factory.CreateClient().PostAsJsonAsync("/accounts/activation", new ActivateAccountDto
+        {
+            Email = "bob@example.com",
+            FirstName = "Bob",
+            LastName = "Builder",
+            Password = TestData.StrongPassword,
+            LinkToken = token,
+            Code = code,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenTheInvitationEmail_WhenActivatingWithTheLinkTokenButAGuessedCode_ThenItRejectsAsForbidden()
     {
         var (organizationId, adminId) = await SeedOrganizationAsync();
         await InviteAsync(organizationId, adminId, "bob@example.com");
@@ -59,12 +86,14 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         var response = await factory.CreateClient().PostAsJsonAsync("/accounts/activation", new ActivateAccountDto
         {
             Email = "bob@example.com",
-            Name = "Bob",
+            FirstName = "Bob",
+            LastName = "Builder",
             Password = TestData.StrongPassword,
-            InvitationToken = token,
+            LinkToken = token,
+            Code = "GUESS1",
         });
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Theory]
@@ -124,19 +153,50 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    [Theory]
-    [InlineData(AccountStatus.Invited)]
-    [InlineData(AccountStatus.Active)]
-    public async Task GivenAnEmailAlreadyRegistered_WhenInviting_ThenItRejectsWithConflict(AccountStatus status)
+    [Fact]
+    public async Task GivenAnActiveEmailAlreadyRegistered_WhenInviting_ThenItRejectsWithConflict()
     {
         var (organizationId, adminId) = await SeedOrganizationAsync();
-        await AddAccountAsync(organizationId, "bob@example.com", Role.Member, status);
+        await AddAccountAsync(organizationId, "bob@example.com", Role.Member, AccountStatus.Active);
 
         var response = await InviteAsync(organizationId, adminId, "BOB@example.com");
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         await AssertAccountCountAsync(2);
         Assert.Empty(factory.Emails.Sent);
+    }
+
+    [Fact]
+    public async Task GivenAnEmailAlreadyPendingInAnotherOrganization_WhenInviting_ThenItRejectsWithConflict()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        var (otherOrganizationId, _) = await SeedOrganizationAsync("Other Club", "other@example.com");
+        await AddAccountAsync(otherOrganizationId, "bob@example.com", Role.Member, AccountStatus.Invited);
+
+        var response = await InviteAsync(organizationId, adminId, "BOB@example.com");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        await AssertAccountCountAsync(3);
+        Assert.Empty(factory.Emails.Sent);
+    }
+
+    [Fact]
+    public async Task GivenAnEmailAlreadyPendingInTheSameOrganization_WhenInviting_ThenItReplacesTheInvitationInstead()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        var accountId = await AddAccountAsync(organizationId, "bob@example.com", Role.Member, AccountStatus.Invited);
+
+        var response = await InviteAsync(organizationId, adminId, "BOB@example.com");
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await AssertAccountCountAsync(2);
+        var email = Assert.Single(factory.Emails.Sent);
+        var token = CapturingEmailSender.TokenIn(email);
+        var code = CapturingEmailSender.CodeIn(email);
+        await using var db = NewDbContext();
+        var account = await db.Accounts.SingleAsync(a => a.Id == accountId);
+        Assert.True(InvitationTokens.TokenMatches(token, account.InvitationTokenHash));
+        Assert.True(InvitationTokens.CodeMatches(code, account.InvitationCodeHash));
     }
 
     [Fact]
@@ -170,7 +230,8 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         var response = await factory.CreateClient().PostAsJsonAsync("/organizations", new RegisterOrganizationDto
         {
             OrganizationName = name,
-            AdminName = "Ana Admin",
+            AdminFirstName = "Ana",
+            AdminLastName = "Admin",
             AdminEmail = adminEmail,
             Password = TestData.StrongPassword,
         });

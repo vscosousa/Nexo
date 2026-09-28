@@ -47,7 +47,8 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
         await Assert.ThrowsAsync<ConflictException>(() => service.Register(new RegisterOrganizationDto
         {
             OrganizationName = "Other Club",
-            AdminName = "Ana Again",
+            AdminFirstName = "Ana",
+            AdminLastName = "Again",
             AdminEmail = "ana@example.com",
             Password = TestData.StrongPassword,
         }));

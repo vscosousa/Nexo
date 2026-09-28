@@ -3,21 +3,57 @@ using System.Text;
 
 namespace Nexo.Api.Services;
 
-/// <summary>One-time invitation tokens: the plain token goes to the admin, only its SHA-256 hash is stored.</summary>
+/// <summary>
+/// An invitation has two independent secrets, both hashed (SHA-256) for storage:
+/// - the link token: a long opaque value embedded in the invitation link's URL. On its own it only
+///   unlocks the activation page, never the account, so it is fine for it to sit in a URL (and so leak
+///   through browser history or a forwarded link) without exposing the account.
+/// - the code: a short value sent only in the email body text, never in the link, which the person must
+///   separately read and type in. Someone who only has the link (not the email itself) cannot supply it.
+/// Activating requires both, so having the link alone is not enough.
+/// </summary>
 public static class InvitationTokens
 {
-    public static (string Token, string Hash) Create()
+    /// <summary>How long an invitation stays usable; an admin re-invites the email to issue a fresh one.</summary>
+    public static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
+
+    public const int CodeLength = 6;
+
+    // No 0/O/1/I/L, so a person reading or typing the code cannot confuse characters.
+    private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+    public static (string Token, string Hash) CreateLinkToken()
     {
-        var token = Base64Url(RandomNumberGenerator.GetBytes(32));
-        return (token, Hash(token));
+        var token = Base64Url(RandomNumberGenerator.GetBytes(24));
+        return (token, HashToken(token));
     }
 
-    public static string Hash(string token) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+    // ponytail: 6 chars from a 32-symbol alphabet is ~30 bits of entropy, weak against brute force on its
+    // own. Paired with the separate, much larger link token and a 7-day expiry that's an acceptable trade
+    // for now; add throttling on /accounts/activation and /accounts/activation/verify before this handles
+    // real invitations at scale.
+    public static (string Code, string Hash) CreateCode()
+    {
+        var code = new string(RandomNumberGenerator.GetItems<char>(CodeAlphabet, CodeLength));
+        return (code, HashCode(code));
+    }
 
-    public static bool Matches(string token, string? hash) =>
+    public static string HashToken(string token) => Hash(token);
+
+    // Codes are typed by hand, so matching ignores case; link tokens are copy-pasted exactly and base64url
+    // is case-sensitive, so those are hashed as-is.
+    public static string HashCode(string code) => Hash(code.ToUpperInvariant());
+
+    public static bool TokenMatches(string token, string? hash) => Matches(HashToken(token), hash);
+
+    public static bool CodeMatches(string code, string? hash) => Matches(HashCode(code), hash);
+
+    private static bool Matches(string computedHash, string? hash) =>
         hash is not null
-        && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(Hash(token)), Encoding.UTF8.GetBytes(hash));
+        && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(computedHash), Encoding.UTF8.GetBytes(hash));
+
+    private static string Hash(string value) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     private static string Base64Url(byte[] bytes) =>
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');

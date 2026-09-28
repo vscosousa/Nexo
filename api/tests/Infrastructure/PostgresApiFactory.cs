@@ -28,6 +28,7 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting(
             "ConnectionStrings:NexoDb",
             Environment.GetEnvironmentVariable("NEXO_TEST_DB") ?? DefaultConnectionString);
+        builder.UseSetting("Jwt:Key", TestData.JwtKey);
         builder.ConfigureTestServices(services => services.Replace(ServiceDescriptor.Singleton<IEmailSender>(Emails)));
     }
 
@@ -43,6 +44,7 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
         await db.Database.MigrateAsync();
+        await db.ExternalLogins.ExecuteDeleteAsync();
         await db.Accounts.ExecuteDeleteAsync();
         await db.Organizations.ExecuteDeleteAsync();
     }

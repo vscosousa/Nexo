@@ -5,7 +5,9 @@ public class RegisterOrganizationDto
 {
     public string? OrganizationName { get; set; }
 
-    public string? AdminName { get; set; }
+    public string? AdminFirstName { get; set; }
+
+    public string? AdminLastName { get; set; }
 
     public string? AdminEmail { get; set; }
 

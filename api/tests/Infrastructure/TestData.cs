@@ -5,5 +5,9 @@ internal static class TestData
 {
     public const string StrongPassword = "Str0ng!Passw0rd";
 
-    public const string InvitationToken = "test-invitation-token";
+    public const string JwtKey = "test-signing-key-at-least-32-bytes-long!";
+
+    public const string InvitationLinkToken = "test-invitation-link-token";
+
+    public const string InvitationCode = "ABC123";
 }

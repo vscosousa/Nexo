@@ -6,9 +6,10 @@ namespace Nexo.Api.Tests.Services;
 public class InvitationEmailTests
 {
     [Fact]
-    public void GivenAnInvitation_WhenTheEmailIsCreated_ThenItNamesTheOrganizationAndCarriesTheActivationLink()
+    public void GivenAnInvitation_WhenTheEmailIsCreated_ThenItNamesTheOrganizationAndCarriesTheLinkAndCode()
     {
-        var email = InvitationEmail.Create("bob@example.com", "Local Club", "Ana Admin", "http://localhost:5173/", "tok_en-1");
+        var email = InvitationEmail.Create(
+            "bob@example.com", "Local Club", "Ana Admin", "http://localhost:5173/", "tok_en-1", "ABC123");
 
         Assert.Equal("bob@example.com", email.To);
         Assert.Contains("Local Club", email.Subject);
@@ -17,12 +18,17 @@ public class InvitationEmailTests
         Assert.Contains(link, email.Text);
         Assert.Contains($"href=\"{link.Replace("&", "&amp;")}\"", email.Html);
         Assert.Contains("tok_en-1", email.Text);
+        Assert.Contains("ABC123", email.Text);
+        Assert.Contains("ABC123", email.Html);
+        // The code never appears inside the link itself: it is a second, separate secret.
+        Assert.DoesNotContain($"token=tok_en-1&code=ABC123", email.Text);
     }
 
     [Fact]
     public void GivenNamesWithMarkup_WhenTheEmailIsCreated_ThenTheHtmlIsEncoded()
     {
-        var email = InvitationEmail.Create("bob@example.com", "<b>Evil</b> Club", "<i>Ana</i>", "http://localhost:5173", "t");
+        var email = InvitationEmail.Create(
+            "bob@example.com", "<b>Evil</b> Club", "<i>Ana</i>", "http://localhost:5173", "t", "ABC123");
 
         Assert.DoesNotContain("<b>Evil</b>", email.Html);
         Assert.Contains("&lt;b&gt;Evil&lt;/b&gt; Club", email.Html);
