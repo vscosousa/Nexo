@@ -51,7 +51,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 ## Level 3 - Backend
 
-**Participants:** `Web App` (the frontend, as a whole), `AccountInvitationsController`, `AccountInvitationService`, `IAccountRepository`, `IOrganizationRepository`, `AccountMapper`, `NexoDbContext`, `Database`.
+**Participants:** `Web App` (the frontend, as a whole), `AccountInvitationsController`, `AccountInvitationService`, `IAccountRepository`, `IOrganizationRepository`, `InvitationTokens`, `AccountMapper`, `IEmailSender`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-002-level-3-backend.svg)](sd/level-3/backend/puml/US-002-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation |
@@ -60,7 +60,8 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 | 2 | Service → AccountRepository | `GetByIdAsync` |
 | 3 | Service → OrganizationRepository, AccountRepository | `GetByIdAsync`, `CountByOrganizationAndStatusAsync(Active)` |
 | 4 | Service → AccountRepository | `FindByEmailAsync` |
-| 5 | Service → Mapper → repository → DbContext → Database | `ToInvitedAccount`, `Add`, `SaveChangesAsync` |
+| 5 | Service → InvitationTokens → Mapper → repository → DbContext → Database | `Create`, `ToInvitedAccount`, `Add`, `SaveChangesAsync` |
+| 6 | Service → IEmailSender | `SendAsync` (invitation email; on failure the account is removed again) |
 
 See the [LLD service logic](../../requirements/US-002-LLD.md#service-logic-accountinvitationserviceinvite) for what each step does and its [error handling](../../requirements/US-002-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
 

@@ -36,6 +36,7 @@ See [ADR-004](../decisions/ADR-004-frontend-architecture.md) and [ADR-005](../de
 | Setting | Description | Type | Required | Default |
 | --- | --- | --- | --- | --- |
 | `ConnectionStrings:NexoDb` | PostgreSQL connection string used by `NexoDbContext` | String | Yes | None, must be set locally |
+| `Email:*` | Outgoing email; see [Email](#email) | Section | No | Fake SMTP server at `localhost:1025` |
 
 With Docker, [compose.yaml](../../compose.yaml) supplies `ConnectionStrings__NexoDb` using the internal `db:5432` address. PostgreSQL creates the `nexo` database and user on first startup, using disposable development credentials. Data lives in the `postgres-data` named volume; the database port is not published. The API runs in Development on container port 8080, published at `127.0.0.1:5122`; Vite is published at `127.0.0.1:5173`. No host user secrets are mounted.
 
@@ -47,11 +48,28 @@ dotnet user-secrets set "ConnectionStrings:NexoDb" "Host=localhost;Port=5432;Dat
 
 Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-secrets` stores the value outside the repository, keyed by the `UserSecretsId` in `Nexo.Api.csproj`.
 
+### Email
+
+The API sends email through SMTP. The defaults in `appsettings.json` target the [fake mail server](../guides/fake-mail-server.md); Compose overrides them from `.env` (template: [.env.example](../../.env.example)). A real provider needs only these values, and credentials belong in `.env`, user secrets, or environment variables, never in committed files.
+
+| Setting | Compose variable | Description | Default |
+| --- | --- | --- | --- |
+| `Email:Host` | `EMAIL_HOST` | SMTP server host | `localhost` (`mail` in Compose) |
+| `Email:Port` | `EMAIL_PORT` | SMTP port | `1025` |
+| `Email:EnableSsl` | `EMAIL_ENABLE_SSL` | Upgrade the connection with STARTTLS (implicit TLS on 465 is not supported) | `false` |
+| `Email:Username` | `EMAIL_USERNAME` | SMTP login; empty means none | empty |
+| `Email:Password` | `EMAIL_PASSWORD` | SMTP password | empty |
+| `Email:From` | `EMAIL_FROM` | Sender address | `Nexo <no-reply@nexo.local>` |
+| `Email:WebBaseUrl` | `EMAIL_WEB_BASE_URL` | Web app address used for links in emails | `http://localhost:5173` |
+| `Email:TimeoutSeconds` | none | SMTP timeout | `15` |
+
+The `mail` service settings are `Smtp:Address` (`0.0.0.0` in the container, `127.0.0.1` otherwise), `Smtp:Port` (`1025`), `Store:Directory` (`/data` in the container, mounted from `MAIL_DATA_DIR`, default `./.data/mail`), and `urls` (`http://localhost:8025` outside Docker). Its inbox API is under `/api` (`/messages`, `/messages/{id}`, `/raw`, `/attachments/{index}`, `/read`, `DELETE`) and is unauthenticated: run it on loopback only.
+
 ## Commands
 
 | Command | Working directory | Inputs | Result |
 | --- | --- | --- | --- |
-| `docker compose up --build` | repository root | Running Docker Desktop (Linux containers) | Builds and starts frontend, database, and API; applies migrations before the API starts |
+| `docker compose up --build` | repository root | Running Docker Desktop (Linux containers) | Builds and starts frontend, database, fake mail server, and API; applies migrations before the API starts |
 | `docker compose up --build -d` | repository root | Docker | Starts the same stack in the background; rebuild after source edits |
 | `docker compose logs -f` | repository root | Running stack | Follows service logs |
 | `docker compose down` | repository root | Compose stack | Removes containers/network; retains database volume |
@@ -63,6 +81,7 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | `dotnet restore` | `api/` | None | Restores backend NuGet packages |
 | `dotnet restore Nexo.slnx` | repository root | None | Restores API and test project dependencies |
 | `dotnet run` | `api/` | None | Starts the ASP.NET Core Web API |
+| `dotnet run --project tools/fake-smtp` | repository root | None | Starts the fake mail server (inbox `http://localhost:8025`, SMTP `127.0.0.1:1025`) without Docker |
 | `dotnet run --launch-profile http` | `api/` | Local configuration | Starts the development API at `http://localhost:5122` |
 | `dotnet tool restore` | `api/` | None | Restores local .NET tools (`dotnet-ef`) |
 | `dotnet ef migrations add <Name>` | `api/` | Migration name | Generates a new EF Core migration in `Migrations/` |
@@ -87,7 +106,9 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | Method and path | Current behavior |
 | --- | --- |
 | `GET /WeatherForecast` | Returns five generated forecasts from the sample controller; no authentication or database access |
-| `POST /organizations/{organizationId}/invitations` | US-002: registers `{ "email" }` as an `Invited` member account; returns `201` with `AccountDto`, or `400`, `403`, `409`. The caller is the account id in the temporary `X-Account-Id` header until JWT authentication exists |
+| `POST /organizations/{organizationId}/invitations` | US-002: registers `{ "email" }` as an `Invited` member account; emails the person an invitation with a one-time token and returns `201` with `AccountDto`, or `400`, `403`, `409`; `500` if the email cannot be sent (no account is kept). The caller is the account id in the temporary `X-Account-Id` header until JWT authentication exists |
+| `POST /accounts/activation` | US-003: activates the invited account for `{ "email", "name", "password", "invitationToken" }`; returns `200` with `AccountDto`, or `400`, `403` (no account for the email, or wrong token), `409` (already active, or member limit reached). No sign-in or session yet |
+| `GET http://localhost:8025/` | Fake mail server inbox (separate service, not the API) |
 | `GET /openapi/v1.json` | Generated OpenAPI document, exposed only in Development |
 | `GET /scalar/v1` | Scalar UI for manually exercising the API, exposed only in Development |
 
@@ -95,6 +116,6 @@ The forecast response is an array with `date` (date string), `temperatureC` (int
 
 The HTTP launch profile uses port 5122; the HTTPS profile also uses `https://localhost:7110`. The SPA's Axios base URL is `/api`, but neither a Vite proxy nor that API route prefix is configured. The frontend and backend therefore require separate verification today.
 
-Activation, resource, and sign-in endpoints in [story HLDs](../requirements/README.md#user-stories) are proposed contracts. OAuth settings and JWT configuration are not yet implemented; no secret names or defaults have been selected for them.
+Resource and sign-in endpoints in [story HLDs](../requirements/README.md#user-stories) are proposed contracts. OAuth settings and JWT configuration are not yet implemented; no secret names or defaults have been selected for them.
 
 For step-by-step instructions, see [guides](../guides/README.md).

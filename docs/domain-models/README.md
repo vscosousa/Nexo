@@ -155,6 +155,7 @@ The three levels use the same entity associations and multiplicities. Attribute 
 | Organization → Account | One organization has `1..*` accounts; each account belongs to one organization | US-001 creates the organization and its admin atomically; exactly one admin is the current assumption |
 | Account → ExternalLogin | `0..*` logins per account; one account per login | Invited and password-only accounts may have none; provider/key pair is unique |
 | Account.Name / PasswordHash | `0..1` each | Invited accounts lack both; active SSO-only accounts lack a password hash |
+| Account invitation token | `0..1` | Implementation detail not drawn in the diagrams: a hashed one-time token present only while the account is `Invited` (US-002/US-003) |
 | Resource.Description | `0..1` | Optional in US-004 |
 | Resource → Incident | `0..*` incidents per resource; `0..1` resource per incident | Matches the current provisional table; whether standalone incidents remain supported is open |
 | Account → HistoryEntry | `0..*` entries per account; `0..1` attributed account per entry | Allows system or unattributed changes |

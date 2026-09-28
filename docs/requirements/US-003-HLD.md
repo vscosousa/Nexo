@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-003](US-003-create-member-account.md) · [LLD](US-003-LLD.md)
 
-**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+**Status:** backend implemented for the password path; the response stops at `AccountDto` (no sign-in or session yet) and OAuth activation is not implemented; frontend not implemented. See [design review gaps](README.md#design-review-gaps).
 
 ## Requirements recap
 
@@ -34,9 +34,10 @@ Request body (`ActivateAccountDto`):
 
 ```json
 {
-  "email": "string, required, valid email",
-  "name": "string, required",
-  "password": "string, required"
+  "email": "string, required, valid email, at most 320 characters",
+  "name": "string, required, at most 200 characters",
+  "password": "string, required, must satisfy the password rules",
+  "invitationToken": "string, required, the one-time token from the invitation email"
 }
 ```
 
@@ -45,9 +46,9 @@ Responses:
 | Status | Body | Condition |
 | --- | --- | --- |
 | 200 OK | `AccountDto` (id, email, name, role, status: Active, organizationId) | Pending account activated |
-| 400 Bad Request | Validation errors | Missing or invalid fields |
-| 403 Forbidden | Error detail | No account (`Invited` or otherwise) exists for `email` |
-| 409 Conflict | Error detail | The account for `email` is already `Active` |
+| 400 Bad Request | Validation errors | Missing or invalid fields, over-long fields, or a password that breaks the [password rules](US-003-LLD.md#password-rules) |
+| 403 Forbidden | Error detail | No account exists for `email`, or `invitationToken` does not match (same message for both, so it does not reveal which) |
+| 409 Conflict | Error detail | The account for `email` is already `Active` (also when another request activated it first), or the organization's `MemberLimit` of active accounts is reached |
 
 ## Related artifacts
 

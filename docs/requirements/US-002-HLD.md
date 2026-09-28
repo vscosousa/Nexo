@@ -35,7 +35,7 @@ Request body (`InviteMemberDto`):
 
 ```json
 {
-  "email": "string, required, valid email"
+  "email": "string, required, valid email, at most 320 characters"
 }
 ```
 
@@ -43,10 +43,11 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 201 Created | `AccountDto` (id, email, name: null, role: Member, status: Invited, organizationId) | Pending account created |
-| 400 Bad Request | Validation errors | Missing or invalid email format |
+| 201 Created | `AccountDto` (id, email, name: null, role: Member, status: Invited, organizationId); the invitation token is only emailed, never returned | Pending account created and invitation email sent |
+| 400 Bad Request | Validation errors | Missing or invalid email, or longer than 320 characters |
 | 403 Forbidden | Error detail | Caller is not the admin of `organizationId` |
 | 409 Conflict | Error detail | Organization's `MemberLimit` reached (counting `Active` accounts only), or the email already has an account (`Invited` or `Active`) anywhere |
+| 500 Internal Server Error | `ProblemDetails` | The invitation email could not be sent; the pending account is removed again so the invitation can be retried |
 
 ## Related artifacts
 

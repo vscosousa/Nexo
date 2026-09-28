@@ -23,6 +23,8 @@ The layers below exist in the weather sample. Organization, account, and resourc
 | `api` Infrastructure/Repositories | Data access | `api` Infrastructure/Persistence | Internal (C# interfaces) |
 | `api` Infrastructure/Persistence | EF Core `DbContext`, migrations | PostgreSQL | SQL (Npgsql) |
 | `api` Mappers | Domain model ↔ DTO conversion | `api` Domain/Models, Domain/Dtos | Internal (static methods) |
+| `api` Infrastructure/Email | Sends outgoing email (`IEmailSender`, `SmtpEmailSender`) using the `Email` settings | SMTP server (fake `mail` service or a real provider) | SMTP |
+| `tools/fake-smtp` | Local fake SMTP server: stores received mail as `.eml` files and serves a webmail-style inbox | Host directory `MAIL_DATA_DIR` | SMTP (1025), HTTP (8025) |
 
 `web/` folder layout: `app/` (shell, router), `auth/` (session, guard, login), `shared/` (HTTP client, reusable UI), `features/<name>/` (one per business module, see [ADR-004](../decisions/ADR-004-frontend-architecture.md)).
 
@@ -30,7 +32,7 @@ The layers below exist in the weather sample. Organization, account, and resourc
 
 ## Deployment
 
-The local stack starts with `docker compose up --build`: `web` runs Vite, `api` runs ASP.NET Core Kestrel, and `db` runs PostgreSQL 17 with a named data volume. The API waits for database health and applies migrations before serving HTTP. Images include source snapshots; rebuild after edits. Only frontend/API ports are published, on loopback. See [ADR-007](../decisions/ADR-007-local-docker-compose.md) for the setup rationale and review status.
+The local stack starts with `docker compose up --build`: `web` runs Vite, `api` runs ASP.NET Core Kestrel, `db` runs PostgreSQL 17 with a named data volume, and `mail` runs the [fake SMTP server](../guides/fake-mail-server.md) that receives the API's emails (stored in the git-ignored `.data/mail` folder). The API waits for database health and applies migrations before serving HTTP. Images include source snapshots; rebuild after edits. Only the frontend, API, and mail ports are published, on loopback. See [ADR-007](../decisions/ADR-007-local-docker-compose.md) for the setup rationale and review status.
 
 Manual execution remains available through `npm run dev`, `dotnet run`, and a local PostgreSQL service. No hosted/remote deployment exists yet. See [ADR-003](../decisions/ADR-003-postgresql-database.md) for the database choice.
 
@@ -39,6 +41,7 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 - **Authentication:** email/password and Google/Microsoft sign-in with an API-issued JWT are planned in [ADR-006](../decisions/ADR-006-authentication.md). The scaffold stores a token in `localStorage`; `auth/RequireAuth.tsx` checks its presence to control navigation. This is not server-side authorization or token validation. The login page is a placeholder, and backend authentication is not implemented.
 - **Development HTTP routing:** the shared Axios client uses the relative `/api` base URL. A Vite API proxy is not configured yet, so API integration still needs routing configuration.
 - **Configuration:** manual execution uses `dotnet user-secrets`; Compose supplies a connection string with disposable development credentials through the environment. See [technical reference](../reference/README.md#configuration).
+- **Email:** the API sends through SMTP using the `Email` settings; Compose points them at the fake `mail` service, and configuration alone repoints them at a real provider. See [ADR-008](../decisions/ADR-008-fake-smtp-server.md).
 - **Persistence:** EF Core against PostgreSQL via `Npgsql.EntityFrameworkCore.PostgreSQL`; schema changes go through EF Core Migrations (`api/Migrations/`).
 
 ## Risks and trade-offs

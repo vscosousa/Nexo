@@ -14,6 +14,8 @@ participant "AccountInvitationsController" as Controller
 participant "AccountInvitationService" as Service
 participant "IAccountRepository" as AccountRepo
 participant "IOrganizationRepository" as OrgRepo
+participant "InvitationTokens" as Tokens
+participant "IEmailSender" as Email
 participant "AccountMapper" as Mapper
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
@@ -91,9 +93,13 @@ else Valid input
                 Service --> Controller: throw ConflictException (already registered)
                 Controller --> FE: 409 Conflict
             else Email available
-                Service -> Mapper: ToInvitedAccount(dto, organizationId)
+                Service -> Tokens: Create()
+                activate Tokens
+                Tokens --> Service: one-time token and its SHA-256 hash
+                deactivate Tokens
+                Service -> Mapper: ToInvitedAccount(dto, organizationId, tokenHash)
                 activate Mapper
-                Mapper --> Service: new Account(email, role: Member, status: Invited, organization)
+                Mapper --> Service: new Account(email, role: Member, status: Invited, InvitationTokenHash, organization)
                 deactivate Mapper
                 Service -> AccountRepo: Add(account)
                 activate AccountRepo
@@ -112,12 +118,32 @@ else Valid input
                 DbContext --> Service: Save result or persistence exception
                 deactivate DbContext
                 alt Save succeeded
-                    Service -> Mapper: Map account to AccountDto
-                    activate Mapper
-                    Mapper --> Service: AccountDto
-                    deactivate Mapper
-                    Service --> Controller: AccountDto
-                    Controller --> FE: 201 Created (AccountDto)
+                    Service -> Email: SendAsync(invitation email with activation link and token)
+                    activate Email
+                    Email --> Service: Accepted by the SMTP server, or send failed
+                    deactivate Email
+                    alt Email sent
+                        Service -> Mapper: Map account to AccountDto
+                        activate Mapper
+                        Mapper --> Service: AccountDto
+                        deactivate Mapper
+                        Service --> Controller: AccountDto
+                        Controller --> FE: 201 Created (AccountDto)
+                    else Email failed
+                        Service -> DbContext: Remove(account), SaveChangesAsync()
+                        activate DbContext
+                        DbContext -> DB: DELETE Account
+                        activate DB
+                        DB --> DbContext: Committed
+                        deactivate DB
+                        DbContext --> Service: Invited account removed
+                        deactivate DbContext
+                        Service --> Controller: rethrow email failure
+                        Controller --> FE: 500 Internal Server Error
+                    end
+                else Same email invited concurrently (unique violation)
+                    Service --> Controller: throw ConflictException
+                    Controller --> FE: 409 Conflict
                 else Save failed
                     Service --> Controller: Persistence failure
                     Controller --> FE: 500 Internal Server Error

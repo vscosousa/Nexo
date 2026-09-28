@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [HLD](US-001-HLD.md)
 
-**Status:** backend implemented up to the `OrganizationDto` contract; credentials and session delivery remain open ([design review gaps](README.md#design-review-gaps)); frontend not implemented.
+**Status:** backend implemented up to the `OrganizationDto` contract, with the password path (SSO registration and session delivery remain open, see [design review gaps](README.md#design-review-gaps)); frontend not implemented.
 
 Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-001/README.md#level-3---backend) for the call sequence.
 
@@ -32,18 +32,19 @@ Business rules (defaults, limits, status transitions) are defined once in the [d
 | --- | --- | --- |
 | `Id` | Guid | Generated on creation |
 | `Email` | string | Required, valid format, stored trimmed and lowercased (`Account.NormalizeEmail`), unique across all accounts |
-| `Name` | string, nullable | Required for this feature; nullability rule per domain model (`Invited` accounts) |
+| `Name` | string, nullable | Required for this feature (at most 200 characters, stored trimmed); nullability rule per domain model (`Invited` accounts) |
+| `PasswordHash` | string, nullable | `PasswordHasher<Account>` hash of the submitted password; null for invited accounts and, later, SSO-only accounts |
 | `Role` | enum (`Admin`, `Member`) | `Admin` when created via this feature |
 | `Status` | enum (`Invited`, `Active`) | `Active` immediately for an admin account (this feature); see domain model for the member lifecycle and limit counting |
 | `OrganizationId` | Guid | Foreign key to `Organization` |
 
 ## Service logic (`OrganizationService.Register`)
 
-1. Validate `RegisterOrganizationDto`: `OrganizationName`, `AdminName` non-empty; `AdminEmail` a valid email format. Fail with a validation error (→ 400) otherwise.
+1. Validate `RegisterOrganizationDto`: `OrganizationName`, `AdminName` non-empty and at most 200 characters; `AdminEmail` a valid email format of at most 320 characters; `Password` present and satisfying the [password rules](US-003-LLD.md#password-rules) with the organization and admin names as forbidden content. Fail with a validation error (→ 400) otherwise.
 2. Normalize the email (`Account.NormalizeEmail`: trim, lowercase) and call `IAccountRepository.FindByEmailAsync(email)`. If an account already exists, fail with a conflict error (→ 409); do not proceed.
 3. Call `IPlanRepository.FindByNameAsync("Free")`. The plan is seeded by migration; if it is missing, fail with an unexpected error (→ 500).
 4. Map the DTO and the plan to a new `Organization` (`OrganizationMapper.ToOrganization`).
-5. Map the DTO and the new organization to a new `Account` (`OrganizationMapper.ToAdminAccount`), with the normalized email, `Role = Admin` and `Status = Active`.
+5. Map the DTO and the new organization to a new `Account` (`OrganizationMapper.ToAdminAccount`), with the normalized email, trimmed names, the hashed password (`PasswordHasher<Account>`), `Role = Admin` and `Status = Active`.
 6. Add both via `IOrganizationRepository.Add` and `IAccountRepository.Add`.
 7. Call `NexoDbContext.SaveChangesAsync()` once, committing both inserts atomically.
 8. Map the persisted `Organization` to `OrganizationDto` and return it (→ 201).

@@ -61,9 +61,9 @@ These are inconsistencies or missing details in the current proposals, not new d
 
 | Area | Gap to resolve |
 | --- | --- |
-| US-001 registration | Acceptance criteria require password/SSO registration and automatic sign-in, but the HLD only supplies organization/name/email fields and returns `OrganizationDto`. Credential input and session delivery are missing. |
+| US-001 registration | Acceptance criteria require password/SSO registration and automatic sign-in. The password is now part of the request, but SSO registration is not designed and the response is `OrganizationDto`, so session delivery is missing. |
 | US-003 activation | The story requires sign-in after activation, but the HLD returns only `AccountDto`; the session response is unspecified. |
-| US-002/US-003 plan limits | Text alternates between active members and all active accounts. The invitation design checks the limit, while activation does not; concurrent activations are unspecified. |
+| US-002/US-003 plan limits | Text alternates between active members and all active accounts. Both invitation and activation now check the Active count, but without locking, so concurrent requests can overshoot the limit; the intended semantics are unspecified. |
 | US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
 | US-005 sign-in | A null password hash also occurs on invited accounts, not only SSO-only accounts. The active-status gate and provider-linking behavior need explicit treatment. The scaffold redirects on every HTTP 401, whereas the sign-in design needs to render a generic credential error; these behaviors must be reconciled. |
 | Shared contracts | API prefix, error bodies (US-001 currently uses ASP.NET `ProblemDetails`), OAuth endpoints, and database uniqueness/concurrency handling (email normalization is decided: trimmed and lowercased) need consistent specifications. |

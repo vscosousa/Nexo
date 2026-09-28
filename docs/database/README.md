@@ -6,7 +6,7 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
 
 Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
 
@@ -21,6 +21,9 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | `Accounts` | `Id` | uuid | Primary key |
 | | `Email` | varchar(320) | Not null, unique; stored trimmed and lowercased |
 | | `Name` | varchar(200) | Nullable |
+| | `PasswordHash` | varchar(200) | Nullable; set at registration (US-001) or activation (US-003), null for invited accounts |
+| | `InvitationTokenHash` | varchar(64) | Nullable; SHA-256 (hex) of the one-time invitation token, set while `Invited` and cleared on activation |
+| | `xmin` | xid | PostgreSQL system column used as the EF concurrency token; not created by a migration |
 | | `Role` | varchar(20) | Not null (`Admin`, `Member`) |
 | | `Status` | varchar(20) | Not null (`Invited`, `Active`) |
 | | `OrganizationId` | uuid | Not null, foreign key to `Organizations`, on delete restrict, indexed |

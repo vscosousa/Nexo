@@ -35,15 +35,16 @@ Install Docker Desktop with Linux containers and Docker Compose v2, then run fro
 docker compose up --build
 ```
 
-This builds the frontend and API, starts PostgreSQL 17, and starts the API. No host Node.js, .NET SDK, PostgreSQL installation, or user-secrets setup is needed for this path. The first run downloads images and dependencies. See [database migrations and lifecycle](docs/database/README.md#migrations-and-lifecycle) for what happens to the database on startup, `down`, and `down -v`.
+This builds the frontend, API, and fake mail server, starts PostgreSQL 17, and starts the API. No host Node.js, .NET SDK, PostgreSQL installation, or user-secrets setup is needed for this path. The first run downloads images and dependencies. See [database migrations and lifecycle](docs/database/README.md#migrations-and-lifecycle) for what happens to the database on startup, `down`, and `down -v`.
 
 - Frontend: `http://localhost:5173` (login placeholder).
 - API sample: `http://localhost:5122/WeatherForecast`.
 - Development OpenAPI: `http://localhost:5122/openapi/v1.json`, browsable at `http://localhost:5122/scalar/v1`.
+- Mail inbox (every email the API sends, such as invitations): `http://localhost:8025`; SMTP is `localhost:1025`. See the [fake mail server guide](docs/guides/fake-mail-server.md), including how to switch to a real email service through a git-ignored `.env` (template: [.env.example](.env.example)).
 
 Use `docker compose up --build -d` to run in the background and `docker compose logs -f` to follow logs. Stop with Ctrl+C in attached mode, or `docker compose down` in either mode.
 
-Source is copied into the images; rerun `docker compose up --build` after edits. Ports 5173 and 5122 must be free. PostgreSQL is accessible only inside the Compose network (backend tests publish it on loopback through `compose.test.yaml`), so an existing local PostgreSQL service can keep running. The fixed database credentials in [compose.yaml](compose.yaml) are disposable development values, not production credentials. This setup uses HTTP and development servers on loopback only; it is not a production deployment.
+Source is copied into the images; rerun `docker compose up --build` after edits. Ports 5173, 5122, 1025, and 8025 must be free. PostgreSQL is accessible only inside the Compose network (backend tests publish it on loopback through `compose.test.yaml`), so an existing local PostgreSQL service can keep running. The fixed database credentials in [compose.yaml](compose.yaml) are disposable development values, not production credentials. This setup uses HTTP and development servers on loopback only; it is not a production deployment.
 
 The frontend and API still expose separate scaffolds; authentication and a Vite API proxy are not implemented. See [configuration and commands](docs/reference/README.md).
 

@@ -8,18 +8,19 @@ Full technical detail, building on the [HLD](US-002-HLD.md)'s contract and struc
 
 ## Domain
 
-Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new entity. This feature creates an `Account` row with `Status = Invited`, `Role = Member`, `Email` set, and `Name`/`PasswordHash` left null.
+Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new entity. This feature creates an `Account` row with `Status = Invited`, `Role = Member`, `Email` set, and `Name`/`PasswordHash` left null. It also stores `InvitationTokenHash`, the SHA-256 of a random one-time token (`InvitationTokens.Create`); the plain token is emailed to the invited person (`InvitationEmail`, sent through `IEmailSender`, see [ADR-008](../decisions/ADR-008-fake-smtp-server.md)) and is what [US-003](US-003-LLD.md) requires, together with the email, to activate the account. It is never returned by the API.
 
 ## Service logic (`AccountInvitationService.Invite`)
 
-1. Validate `InviteMemberDto`: `Email` non-empty and a valid email format. Fail with a validation error (→ 400) otherwise.
+1. Validate `InviteMemberDto`: `Email` non-empty, a valid email format, and at most 320 characters. Fail with a validation error (→ 400) otherwise.
 2. Call `IAccountRepository.GetByIdAsync(callerAccountId)`; a missing or unknown caller id is also an authorization error. If the caller's `Role` is not `Admin` or their `OrganizationId` does not match the route's `organizationId`, fail with an authorization error (→ 403).
 3. Call `IOrganizationRepository.GetByIdAsync(organizationId)` for `MemberLimit`, and `IAccountRepository.CountByOrganizationAndStatusAsync(organizationId, Status.Active)` for the current **active** account count. If the count has reached `MemberLimit`, fail with a conflict error (→ 409); do not proceed. `Invited` accounts do not count toward this limit.
 4. Call `IAccountRepository.FindByEmailAsync(dto.Email)`. If a match is found (in any `Status`), fail with a conflict error (→ 409); do not proceed.
-5. Map the DTO and `organizationId` to a new `Account` (`AccountMapper.ToInvitedAccount`), with `Role = Member` and `Status = Invited`.
+5. Create the invitation token (`InvitationTokens.Create`) and map the DTO, `organizationId`, and the token hash to a new `Account` (`AccountMapper.ToInvitedAccount`), with `Role = Member` and `Status = Invited`.
 6. Add via `IAccountRepository.Add`.
 7. Call `NexoDbContext.SaveChangesAsync()`.
-8. Map the persisted `Account` to `AccountDto` and return it (→ 201).
+8. Build the invitation email (`InvitationEmail.Create`: organization name, inviter's name, activation link, and the token) and send it with `IEmailSender.SendAsync`. If sending fails, remove the just-saved account (so the address can be invited again) and let the failure surface (→ 500).
+9. Map the persisted `Account` to `AccountDto` and return it (→ 201).
 
 ## Error handling
 
@@ -31,6 +32,7 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 | Email already has an account (`Invited` or `Active`) | Step 4 (repository lookup) | 409, no write attempted |
 | Same email invited concurrently (unique-index violation on save) | Step 7 | 409, same as the step 4 conflict; no partial state persisted |
 | Other database failure on save | Step 7 | 500; no partial state persisted |
+| Invitation email cannot be sent | Step 8 | 500; the pending account is removed again so the invitation can be retried |
 
 ## Related artifacts
 

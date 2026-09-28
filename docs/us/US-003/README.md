@@ -18,11 +18,11 @@
 **Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
 
 - Sign-in after activation is required, but the HLD returns only `AccountDto`; the session response is unspecified.
-- Plan-limit counting and concurrency (shared with US-002).
+- Plan-limit concurrency (shared with US-002): activation re-checks the Active count without locking.
 
 Implementation must not assume answers to these; stop at `AccountDto` as the diagrams show.
 
-**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** password-path backend implemented; frontend and OAuth not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
@@ -38,9 +38,9 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 | Step | Actor input | System response |
 | --- | --- | --- |
-| 1 | Email, name, password | Existing account activated and signed in, or activation rejected |
+| 1 | Email, invitation token, name, password | Existing account activated and signed in, or activation rejected |
 
-**Alternative and failure flows:** No account exists for the email, or it is already active, reject with no change made.
+**Alternative and failure flows:** No account exists for the email, the invitation token is wrong, it is already active, the organization's member limit is reached, or the password breaks the rules: reject with no change made.
 **Postconditions:** The account is `Active`, scoped to the organization with the `Member` role; the person is signed in.
 **Diagram:** [![SSD](ssd/level-1/svg/US-003-level-1.svg)](ssd/level-1/puml/US-003-level-1.puml)
 
@@ -51,15 +51,16 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 ## Level 3 - Backend
 
-**Participants:** `Web App` (the frontend, as a whole), `AccountActivationsController`, `AccountActivationService`, `IAccountRepository`, `AccountMapper`, `PasswordHasher<Account>`, `NexoDbContext`, `Database`.
+**Participants:** `Web App` (the frontend, as a whole), `AccountActivationsController`, `AccountActivationService`, `IAccountRepository`, `IOrganizationRepository`, `AccountMapper`, `PasswordHasher<Account>`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-003-level-3-backend.svg)](sd/level-3/backend/puml/US-003-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation |
 | --- | --- | --- |
 | 1 | Web App → Controller | `POST /accounts/activation` |
 | 2 | Service → AccountRepository | `FindByEmailAsync` |
-| 3 | Service → Mapper | `ApplyActivation` |
-| 4 | Service → DbContext → Database | `SaveChangesAsync` |
+| 3 | Service → OrganizationRepository, AccountRepository | Token check, `GetByIdAsync`, `CountByOrganizationAndStatusAsync(Active)`, password rules |
+| 4 | Service → Mapper | `ApplyActivation` |
+| 5 | Service → DbContext → Database | `SaveChangesAsync` (fails on a concurrent activation) |
 
 See the [LLD service logic](../../requirements/US-003-LLD.md#service-logic-accountactivationserviceactivate) for what each step does and its [error handling](../../requirements/US-003-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
 

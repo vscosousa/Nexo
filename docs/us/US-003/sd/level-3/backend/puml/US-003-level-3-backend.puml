@@ -13,6 +13,7 @@ participant "Web App" as FE
 participant "AccountActivationsController" as Controller
 participant "AccountActivationService" as Service
 participant "IAccountRepository" as AccountRepo
+participant "IOrganizationRepository" as OrgRepo
 participant "AccountMapper" as Mapper
 participant "PasswordHasher<Account>" as Hasher
 participant "NexoDbContext" as DbContext
@@ -51,32 +52,74 @@ else Valid input
             Service --> Controller: throw ConflictException
             Controller --> FE: 409 Conflict
         else Account is Invited
-            Service -> Mapper: ApplyActivation(account, dto)
-            activate Mapper
-            Mapper -> Hasher: HashPassword(account, dto.Password)
-            activate Hasher
-            Hasher --> Mapper: Password hash
-            deactivate Hasher
-            Mapper --> Service: account (Name, PasswordHash set; Status: Active)
-            deactivate Mapper
-            Service -> DbContext: SaveChangesAsync()
-            activate DbContext
-            DbContext -> DB: UPDATE Account
-            activate DB
-            DB --> DbContext: Committed, or save failed (rolled back)
-            deactivate DB
-            DbContext --> Service: Save result or persistence exception
-            deactivate DbContext
-            alt Save succeeded
-                Service -> Mapper: Map account to AccountDto
-                activate Mapper
-                Mapper --> Service: AccountDto
-                deactivate Mapper
-                Service --> Controller: AccountDto
-                Controller --> FE: 200 OK (AccountDto)
-            else Save failed
-                Service --> Controller: Persistence failure
-                Controller --> FE: 500 Internal Server Error
+            alt Invitation token does not match the stored hash
+                Service --> Controller: throw ForbiddenException
+                Controller --> FE: 403 Forbidden
+            else Token matches
+                Service -> OrgRepo: GetByIdAsync(account.OrganizationId)
+                activate OrgRepo
+                OrgRepo -> DbContext: Query by Id (organizationId)
+                activate DbContext
+                DbContext -> DB: SELECT Organization by Id
+                activate DB
+                DB --> DbContext: Query result
+                deactivate DB
+                DbContext --> OrgRepo: Materialized result
+                deactivate DbContext
+                OrgRepo --> Service: Organization (Name, MemberLimit)
+                deactivate OrgRepo
+                Service -> AccountRepo: CountByOrganizationAndStatusAsync(organizationId, Active)
+                activate AccountRepo
+                AccountRepo -> DbContext: Count active accounts (organizationId, Active)
+                activate DbContext
+                DbContext -> DB: COUNT active Accounts in organization
+                activate DB
+                DB --> DbContext: Query result
+                deactivate DB
+                DbContext --> AccountRepo: Materialized result
+                deactivate DbContext
+                AccountRepo --> Service: current active account count
+                deactivate AccountRepo
+                alt Active-member limit reached
+                    Service --> Controller: throw ConflictException (limit reached)
+                    Controller --> FE: 409 Conflict
+                else Under limit
+                    alt Password breaks the policy or contains the organization or person name
+                        Service --> Controller: Validation failure
+                        Controller --> FE: 400 Bad Request
+                    else Password accepted
+                        Service -> Mapper: ApplyActivation(account, dto)
+                        activate Mapper
+                        Mapper -> Hasher: HashPassword(account, dto.Password)
+                        activate Hasher
+                        Hasher --> Mapper: Password hash
+                        deactivate Hasher
+                        Mapper --> Service: account (Name, PasswordHash set; token hash cleared; Status: Active)
+                        deactivate Mapper
+                        Service -> DbContext: SaveChangesAsync()
+                        activate DbContext
+                        DbContext -> DB: UPDATE Account (only if the row is unchanged since it was read)
+                        activate DB
+                        DB --> DbContext: Committed, or save failed (rolled back)
+                        deactivate DB
+                        DbContext --> Service: Save result or persistence exception
+                        deactivate DbContext
+                        alt Save succeeded
+                            Service -> Mapper: Map account to AccountDto
+                            activate Mapper
+                            Mapper --> Service: AccountDto
+                            deactivate Mapper
+                            Service --> Controller: AccountDto
+                            Controller --> FE: 200 OK (AccountDto)
+                        else Account changed concurrently (already activated)
+                            Service --> Controller: throw ConflictException
+                            Controller --> FE: 409 Conflict
+                        else Save failed
+                            Service --> Controller: Persistence failure
+                            Controller --> FE: 500 Internal Server Error
+                        end
+                    end
+                end
             end
         end
     end

@@ -16,6 +16,7 @@ participant "IAccountRepository" as AccountRepo
 participant "IPlanRepository" as PlanRepo
 participant "IOrganizationRepository" as OrgRepo
 participant "OrganizationMapper" as Mapper
+participant "PasswordHasher<Account>" as Hasher
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
 
@@ -66,7 +67,11 @@ else Valid input
         deactivate Mapper
         Service -> Mapper: ToAdminAccount(dto, organization)
         activate Mapper
-        Mapper --> Service: new Account(normalized email, role: Admin, status: Active, organization)
+        Mapper -> Hasher: HashPassword(account, dto.Password)
+        activate Hasher
+        Hasher --> Mapper: Password hash
+        deactivate Hasher
+        Mapper --> Service: new Account(normalized email, role: Admin, status: Active, PasswordHash, organization)
         deactivate Mapper
         Service -> OrgRepo: Add(organization)
         activate OrgRepo
@@ -99,6 +104,9 @@ else Valid input
             deactivate Mapper
             Service --> Controller: OrganizationDto
             Controller --> FE: 201 Created (OrganizationDto)
+        else Same email registered concurrently (unique violation)
+            Service --> Controller: throw ConflictException
+            Controller --> FE: 409 Conflict
         else Save failed
             Service --> Controller: Persistence failure
             Controller --> FE: 500 Internal Server Error

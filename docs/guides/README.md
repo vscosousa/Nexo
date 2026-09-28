@@ -11,6 +11,7 @@ Follow [Run locally](../../README.md#run-locally) to install dependencies, confi
 | Task | Guide |
 | --- | --- |
 | Format staged code and check builds before committing | [Pre-commit hook](pre-commit-hook.md) |
+| Read Nexo's emails locally, or switch to a real email service | [Fake mail server](fake-mail-server.md) |
 | Design a story's four sequence diagrams | [Sequence diagram conventions](sequence-diagrams.md) |
 | Render PlantUML sources as SVGs | [Diagram generation](diagrams.md) |
 | Update the local database | [Database migrations](../database/README.md#migrations-and-lifecycle) |

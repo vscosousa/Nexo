@@ -16,11 +16,11 @@
 
 **Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
 
-- Credential input (password/SSO) and session delivery are required by the acceptance criteria but missing from the HLD contract.
+- SSO registration and session delivery are required by the acceptance criteria but not designed; only the password path exists.
 
 Implementation must not assume answers to these; stop at the `OrganizationDto` contract the diagrams show.
 
-**Status:** backend implemented up to the `OrganizationDto` contract (credentials and session delivery are still open); frontend not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** backend implemented up to the `OrganizationDto` contract (password path only; SSO and session delivery are still open); frontend not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
@@ -49,7 +49,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 ## Level 3 - Backend
 
-**Participants:** `Web App` (the frontend, as a whole), `OrganizationsController`, `OrganizationService`, `IAccountRepository`, `IPlanRepository`, `IOrganizationRepository`, `OrganizationMapper`, `NexoDbContext`, `Database`.
+**Participants:** `Web App` (the frontend, as a whole), `OrganizationsController`, `OrganizationService`, `IAccountRepository`, `IPlanRepository`, `IOrganizationRepository`, `OrganizationMapper`, `PasswordHasher<Account>`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-001-level-3-backend.svg)](sd/level-3/backend/puml/US-001-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation |
@@ -57,7 +57,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 | 1 | Web App → Controller | `POST /organizations` |
 | 2 | Service → AccountRepository | `FindByEmailAsync` (normalized email) |
 | 3 | Service → PlanRepository | `FindByNameAsync("Free")` |
-| 4 | Service → Mapper | `ToOrganization`, `ToAdminAccount` |
+| 4 | Service → Mapper → PasswordHasher | `ToOrganization`, `ToAdminAccount` (hashes the password) |
 | 5 | Service → repositories → DbContext → Database | `Add`, `SaveChangesAsync` |
 
 See the [LLD service logic](../../requirements/US-001-LLD.md#service-logic-organizationserviceregister) for what each step does and its [error handling](../../requirements/US-001-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.

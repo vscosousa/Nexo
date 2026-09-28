@@ -44,9 +44,10 @@ Request body (`RegisterOrganizationDto`):
 
 ```json
 {
-  "organizationName": "string, required",
-  "adminName": "string, required",
-  "adminEmail": "string, required, valid email"
+  "organizationName": "string, required, at most 200 characters",
+  "adminName": "string, required, at most 200 characters",
+  "adminEmail": "string, required, valid email, at most 320 characters",
+  "password": "string, required, must satisfy the password rules"
 }
 ```
 
@@ -55,7 +56,7 @@ Responses:
 | Status | Body | Condition |
 | --- | --- | --- |
 | 201 Created | `OrganizationDto` (id, name, plan name) | Organization and admin account created |
-| 400 Bad Request | `ValidationProblemDetails` (field errors) | Missing or invalid fields |
+| 400 Bad Request | `ValidationProblemDetails` (field errors) | Missing or invalid fields, over-long fields, or a password that breaks the [password rules](US-003-LLD.md#password-rules) |
 | 409 Conflict | `ProblemDetails` | `adminEmail` already has an account (compared trimmed and case-insensitively) |
 
 ## Related artifacts
