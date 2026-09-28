@@ -1,0 +1,324 @@
+/* Mobile-first: the form alone on phones; the brand panel joins from 1024px. */
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100svh;
+  background: var(--color-canvas);
+}
+
+.auth-panel {
+  display: none;
+}
+
+.auth-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xl);
+  padding: var(--space-lg);
+}
+
+/* Back button on the left; on phones the logo (no panel there) sits opposite it. */
+.auth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  align-self: stretch;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: var(--size-touch);
+  padding: 0 var(--space-md) 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.back-btn:hover {
+  background: var(--color-fill);
+  color: var(--color-text);
+}
+
+.back-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.auth-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-xl);
+  width: 100%;
+  max-width: 26rem;
+  padding-bottom: var(--space-2xl);
+}
+
+.auth-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.auth-heading h1 {
+  font-family: var(--font-display);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-display);
+}
+
+.auth-heading p {
+  color: var(--color-text-secondary);
+}
+
+.auth-content form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.auth-content form .btn {
+  margin-top: var(--space-xs);
+}
+
+.auth-content .btn {
+  width: 100%;
+}
+
+/* "or" between the password form and the Google button */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-overline);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: var(--border-width-xs);
+  background: var(--color-border);
+}
+
+.code-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.code-box {
+  width: 2.75rem;
+  height: 3.25rem;
+  padding: 0;
+  border: var(--border-width-sm) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.code-box-filled {
+  border-color: var(--color-border-brand);
+  background: var(--color-primary-soft);
+}
+
+.code-box:focus {
+  outline: none;
+  border-color: var(--color-border-brand);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-border-brand) 20%, transparent);
+}
+
+.code-box:disabled {
+  opacity: 0.6;
+}
+
+.invite-verified {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--success-ink);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.invite-verified svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+
+.resend-invite {
+  display: inline;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-text-brand);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.resend-invite:hover {
+  text-decoration: underline;
+}
+
+.auth-footer {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.auth-footer a {
+  color: var(--color-text-brand);
+  font-weight: var(--font-weight-semibold);
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (min-width: 640px) {
+  .auth-main {
+    padding: var(--space-2xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-shell {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  }
+
+  .auth-panel {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--space-4xl);
+    height: 100svh;
+    padding: var(--space-4xl);
+    background:
+      linear-gradient(rgb(30 27 75 / 90%), rgb(30 27 75 / 94%)),
+      url("../landing/images/hero.jpg") center / cover;
+    color: #fff;
+  }
+
+  /* On the dark panel the wordmark is white and the mark sits on a white tile so it stays visible. */
+  .auth-panel .brand-word {
+    background: #fff;
+  }
+
+  .auth-panel .brand-mark {
+    box-sizing: content-box;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    background-color: #fff;
+    background-origin: content-box;
+  }
+
+  .auth-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3xl);
+    max-width: 30rem;
+  }
+
+  .auth-panel-body h2 {
+    font-family: var(--font-display);
+    font-size: var(--font-size-5xl);
+    font-weight: var(--font-weight-bold);
+    line-height: var(--line-height-display);
+    letter-spacing: var(--letter-spacing-display);
+  }
+
+  .auth-panel-body ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--font-size-xl);
+    color: rgb(255 255 255 / 88%);
+  }
+
+  .auth-panel-body li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .auth-check {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--size-xxs);
+    height: var(--size-xxs);
+    border-radius: 50%;
+    background: rgb(255 255 255 / 16%);
+  }
+
+  .auth-check svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .auth-panel-note {
+    font-size: var(--font-size-sm);
+    color: rgb(255 255 255 / 70%);
+  }
+
+  .auth-main {
+    justify-content: center;
+    padding: var(--space-3xl);
+  }
+
+  .auth-topbar-logo {
+    display: none;
+  }
+
+  /* Pinned to the top-left corner of the form side, out of the form's way. */
+  .auth-main {
+    position: relative;
+  }
+
+  .auth-topbar {
+    position: absolute;
+    top: var(--space-2xl);
+    left: var(--space-3xl);
+    align-self: auto;
+  }
+
+  .auth-content {
+    flex: none;
+    padding-bottom: 0;
+  }
+
+  .auth-heading h1 {
+    font-size: var(--font-size-5xl);
+  }
+}

@@ -1,0 +1,121 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthProvider } from "./AuthContext";
+import { LoginPage } from "./LoginPage";
+import { authService } from "./authService";
+
+vi.mock("./authService");
+
+function renderLogin(entry = "/login") {
+  return render(
+    <MemoryRouter initialEntries={[entry]}>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/app" element={<p>Home</p>} />
+        </Routes>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
+
+async function submit(email: string, password: string) {
+  const user = userEvent.setup();
+  if (email) await user.type(screen.getByLabelText("Email"), email);
+  if (password) await user.type(screen.getByLabelText("Password"), password);
+  await user.click(screen.getByRole("button", { name: "Sign in" }));
+}
+
+describe("SignInForm", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetAllMocks();
+  });
+
+  it("given correct credentials, when submitting, then it stores the session token and opens the app", async () => {
+    vi.mocked(authService.signIn).mockResolvedValue({
+      token: "jwt-1",
+      expiresAt: "2026-09-29T00:00:00Z",
+    });
+    renderLogin();
+
+    await submit("ana@example.com", "secret");
+
+    expect(authService.signIn).toHaveBeenCalledWith(
+      "ana@example.com",
+      "secret",
+    );
+    expect(await screen.findByText("Home")).toBeInTheDocument();
+    expect(localStorage.getItem("token")).toBe("jwt-1");
+  });
+
+  it("given the API rejects the credentials, when submitting, then it shows one generic error and stays on the form", async () => {
+    vi.mocked(authService.signIn).mockRejectedValue({
+      response: { status: 401 },
+    });
+    renderLogin();
+
+    await submit("ana@example.com", "wrong");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The email or password is not correct.",
+    );
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("given an empty field, when submitting, then it asks for it without calling the API", async () => {
+    renderLogin();
+
+    await submit("ana@example.com", "");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Enter your email and password.",
+    );
+    expect(authService.signIn).not.toHaveBeenCalled();
+  });
+
+  it("given the API is unreachable, when submitting, then it shows a retry message", async () => {
+    vi.mocked(authService.signIn).mockRejectedValue(new Error("Network Error"));
+    renderLogin();
+
+    await submit("ana@example.com", "secret");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Something went wrong. Try again.",
+    );
+  });
+
+  it("given a failed Google sign-in redirect, when the page opens, then it shows the generic error", () => {
+    renderLogin("/login?error=oauth");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Google sign-in failed.",
+    );
+  });
+
+  it("when the page opens, then Google sign-in starts at the API’s public address, not the dev proxy", () => {
+    renderLogin();
+
+    expect(
+      screen.getByRole("link", { name: "Continue with Google" }),
+    ).toHaveAttribute("href", "http://localhost:5122/auth/external/google");
+  });
+
+  it("when the show-password button is pressed, then the password is revealed and can be hidden again", async () => {
+    renderLogin();
+    const password = screen.getByLabelText("Password");
+    expect(password).toHaveAttribute("type", "password");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show password" }),
+    );
+    expect(password).toHaveAttribute("type", "text");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Hide password" }),
+    );
+    expect(password).toHaveAttribute("type", "password");
+  });
+});

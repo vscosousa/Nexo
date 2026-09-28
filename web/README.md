@@ -2,7 +2,7 @@
 
 [Project overview](../README.md) · [Documentation](../docs/README.md)
 
-React 19, TypeScript, and Vite SPA. The current scaffold includes routing, a login placeholder, a local token context, an Axios client, and a route-guard test. Business screens and backend authentication are not implemented.
+React 19, TypeScript, and Vite SPA. The current app includes routing, the US-005 sign-in form and Google callback page, a local token context, an Axios client that proxies `/api` to the API, and tests for the guard, sign-in, and 401 handling. Business screens are not implemented.
 
 ## Development
 
@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Open the URL Vite prints. A browser without a stored token redirects to `/login`; the placeholder does not accept credentials. See the [project setup](../README.md#run-locally) for the API and database.
+Open the URL Vite prints. A browser without a stored token redirects to `/login`; sign in with an account's email and password, or with Google if configured. See the [project setup](../README.md#run-locally) for the API and database.
 
 ## Commands
 
@@ -30,13 +30,13 @@ Open the URL Vite prints. A browser without a stored token redirects to `/login`
 
 ## Source layout
 
-| Directory                        | Responsibility                                 |
-| -------------------------------- | ---------------------------------------------- |
-| `src/app/`                       | App shell and router                           |
-| `src/auth/`                      | Token context, route guard, login placeholder  |
-| `src/shared/http/`               | Shared Axios client                            |
-| `src/test/`                      | Vitest setup                                   |
-| `src/features/<name>/` (planned) | Business screens, feature API calls, and types |
+| Directory                        | Responsibility                                       |
+| -------------------------------- | ---------------------------------------------------- |
+| `src/app/`                       | App shell and router                                 |
+| `src/auth/`                      | Token context, route guard, sign-in, Google callback |
+| `src/shared/http/`               | Shared Axios client                                  |
+| `src/test/`                      | Vitest setup                                         |
+| `src/features/<name>/` (planned) | Business screens, feature API calls, and types       |
 
 The Axios base URL is `/api`; Vite has no API proxy yet. The API's sample route is `/WeatherForecast`, so the scaffold does not provide a connected frontend/API workflow. A token's presence controls navigation only; the guard does not validate expiry or permissions.
 
