@@ -1,7 +1,41 @@
 using Microsoft.EntityFrameworkCore;
+using Nexo.Api.Domain.Models;
 
 namespace Nexo.Api.Infrastructure.Persistence;
 
 public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(options)
 {
+    public static readonly Guid FreePlanId = new("6f1c2b1e-7a52-4d0a-9a53-1f3e5c0b8d01");
+
+    public DbSet<Plan> Plans => Set<Plan>();
+
+    public DbSet<Organization> Organizations => Set<Organization>();
+
+    public DbSet<Account> Accounts => Set<Account>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Plan>(plan =>
+        {
+            plan.Property(p => p.Name).HasMaxLength(50);
+            plan.HasIndex(p => p.Name).IsUnique();
+            plan.HasData(new Plan { Id = FreePlanId, Name = Plan.Free, MemberLimit = 20 });
+        });
+
+        modelBuilder.Entity<Organization>(organization =>
+        {
+            organization.Property(o => o.Name).HasMaxLength(200);
+            organization.HasOne(o => o.Plan).WithMany().HasForeignKey(o => o.PlanId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Account>(account =>
+        {
+            account.Property(a => a.Email).HasMaxLength(320);
+            account.HasIndex(a => a.Email).IsUnique();
+            account.Property(a => a.Name).HasMaxLength(200);
+            account.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
+            account.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
+            account.HasOne<Organization>().WithMany().HasForeignKey(a => a.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        });
+    }
 }

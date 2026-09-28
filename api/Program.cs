@@ -15,6 +15,11 @@ builder.Services.AddDbContext<NexoDbContext>(options =>
 builder.Services.AddScoped<IWeatherForecastRepository, WeatherForecastRepository>();
 builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
 
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+builder.Services.AddScoped<IPlanRepository, PlanRepository>();
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
