@@ -66,7 +66,7 @@ These are inconsistencies or missing details in the current proposals, not new d
 | US-002/US-003 plan limits | Text alternates between active members and all active accounts. The invitation design checks the limit, while activation does not; concurrent activations are unspecified. |
 | US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
 | US-005 sign-in | A null password hash also occurs on invited accounts, not only SSO-only accounts. The active-status gate and provider-linking behavior need explicit treatment. The scaffold redirects on every HTTP 401, whereas the sign-in design needs to render a generic credential error; these behaviors must be reconciled. |
-| Shared contracts | API prefix, error bodies, email normalization, OAuth endpoints, and database uniqueness/concurrency handling need consistent specifications. |
+| Shared contracts | API prefix, error bodies (US-001 currently uses ASP.NET `ProblemDetails`), OAuth endpoints, and database uniqueness/concurrency handling (email normalization is decided: trimmed and lowercased) need consistent specifications. |
 
 The [database page](../database/README.md) tracks persistence status. [ADR-006](../decisions/ADR-006-authentication.md) records the accepted authentication direction, while the concrete contracts remain incomplete.
 

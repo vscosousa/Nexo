@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [LLD](US-001-LLD.md)
 
-**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+**Status:** backend endpoint implemented; credentials and session delivery remain open ([design review gaps](README.md#design-review-gaps)); frontend not implemented.
 
 ## Requirements recap
 
@@ -16,8 +16,11 @@ Proposed files for this feature in `api/`:
 api/
 ├── Controllers/OrganizationsController.cs
 ├── Domain/
+│   ├── Models/Plan.cs
 │   ├── Models/Organization.cs
 │   ├── Models/Account.cs
+│   ├── Exceptions/ValidationException.cs
+│   ├── Exceptions/ConflictException.cs
 │   └── Dtos/RegisterOrganizationDto.cs
 ├── Domain/Dtos/OrganizationDto.cs
 ├── Mappers/OrganizationMapper.cs
@@ -27,6 +30,8 @@ api/
 └── Infrastructure/Repositories/
     ├── IOrganizationRepository.cs
     ├── OrganizationRepository.cs
+    ├── IPlanRepository.cs
+    ├── PlanRepository.cs
     ├── IAccountRepository.cs
     └── AccountRepository.cs
 ```
@@ -49,9 +54,9 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 201 Created | `OrganizationDto` (id, name, plan) | Organization and admin account created |
-| 400 Bad Request | Validation errors | Missing or invalid fields |
-| 409 Conflict | Error detail | `adminEmail` already has an account |
+| 201 Created | `OrganizationDto` (id, name, plan name) | Organization and admin account created |
+| 400 Bad Request | `ValidationProblemDetails` (field errors) | Missing or invalid fields |
+| 409 Conflict | `ProblemDetails` | `adminEmail` already has an account (compared trimmed and case-insensitively) |
 
 ## Related artifacts
 

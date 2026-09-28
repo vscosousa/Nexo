@@ -21,11 +21,11 @@ See [ADR-005](../decisions/ADR-005-testing-frameworks.md) for the full reasoning
 | Smoke | A tagged subset of the integration/E2E suites covering only critical paths | — |
 | Performance | Deferred; no measurable target exists yet | — |
 
-Run `dotnet test Nexo.slnx` (backend), `npm test` in `web/` (frontend unit), and `npm test` in `tests/e2e/` (E2E, starts the Vite dev server automatically). See [technical reference](../reference/README.md#commands).
+Backend integration tests run against the Compose PostgreSQL, in a separate `nexo_test` database created and migrated by the test factory. Start it first with `docker compose -f compose.yaml -f compose.test.yaml up -d db` ([compose.test.yaml](../../compose.test.yaml) publishes the port on `127.0.0.1:5433`; set `NEXO_TEST_DB` to use another connection string). Run `dotnet test Nexo.slnx` (backend), `npm test` in `web/` (frontend unit), and `npm test` in `tests/e2e/` (E2E, starts the Vite dev server automatically). See [technical reference](../reference/README.md#commands).
 
 ## Scenario template
 
-Current application coverage consists of the weather mapper and endpoint examples, the frontend route guard, and the browser smoke test. Business-story acceptance tests have not been written. For a feature or fix, reproduce its behavior with a failing test at the narrowest useful level, implement it, then run the relevant suite.
+Current application coverage consists of the weather mapper and endpoint examples, the frontend route guard, the browser smoke test, and the US-001 backend tests (`OrganizationMapperTests`, and the Given/When/Then acceptance tests in `OrganizationsEndpointTests`: successful registration, four missing/invalid-field cases, email conflict, and case-insensitive email conflict). US-001 has no frontend or browser tests yet; other stories have none. For a feature or fix, reproduce its behavior with a failing test at the narrowest useful level, implement it, then run the relevant suite.
 
 **ID:** [TEST-001].
 **Requirement:** [US or NFR link].

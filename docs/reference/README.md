@@ -67,7 +67,8 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | `dotnet tool restore` | `api/` | None | Restores local .NET tools (`dotnet-ef`) |
 | `dotnet ef migrations add <Name>` | `api/` | Migration name | Generates a new EF Core migration in `Migrations/` |
 | `dotnet ef database update` | `api/` | None | Applies pending migrations to the configured PostgreSQL database |
-| `dotnet test Nexo.slnx` | repository root | None | Runs backend unit and integration tests |
+| `docker compose -f compose.yaml -f compose.test.yaml up -d db` | repository root | Docker | Starts the Compose PostgreSQL with port `127.0.0.1:5433` published, as backend integration tests require |
+| `dotnet test Nexo.slnx` | repository root | Test database running (see above); optional `NEXO_TEST_DB` connection string | Runs backend unit and integration tests; integration tests use a separate `nexo_test` database |
 | `npm test` | `web/` | None | Runs frontend unit and component tests |
 | `npm install` | `tests/e2e/` | None | Installs Playwright |
 | `npx playwright install chromium` | `tests/e2e/` | None | Downloads the Chromium browser used by tests |

@@ -9,7 +9,7 @@ Use these terms across requirements, models, code, and tests. They describe the 
 | Term | Definition | Synonyms or terms to avoid | Related artifact |
 | --- | --- | --- | --- |
 | Organization | A single association using the system, with its own admin, members, and resources | Association, org | |
-| Plan | A simulated tier on an organization that caps its member account count (e.g., Free: up to 20); no real payment is processed | Tier, subscription | |
+| Plan | A simulated tier, defined once and referenced by organizations, that caps their member account count (e.g., Free: up to 20); no real payment is processed | Tier, subscription | |
 | Admin | The person who registers an organization, creates its first account, and registers member emails against it | Staff (when used loosely) | |
 | Account | A synthetic identity belonging to exactly one organization, with an admin or member role; invited accounts have no credentials, while active accounts have a password, linked external login, or both | User | [Accounts and organizations](../domain-models/README.md#accounts-and-organizations) |
 | Invited | Pending account state created when an admin registers a member's email; the account has not been activated | Pending | [US-002](../requirements/US-002-register-member-email.md) |

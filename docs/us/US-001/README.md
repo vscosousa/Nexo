@@ -20,7 +20,7 @@
 
 Implementation must not assume answers to these; stop at the `OrganizationDto` contract the diagrams show.
 
-**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** backend implemented up to the `OrganizationDto` contract (credentials and session delivery are still open); frontend not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
@@ -38,7 +38,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 | --- | --- | --- |
 | 1 | Organization and admin details | Organization and admin account created; signed in, or registration rejected |
 
-**Alternative and failure flows:** Missing/invalid fields, or email already in use, reject with no organization or account created.
+**Alternative and failure flows:** Missing/invalid fields, or email already in use (compared trimmed and case-insensitively), reject with no organization or account created.
 **Postconditions:** Organization and admin account exist; the admin is signed in.
 **Diagram:** [![SSD](ssd/level-1/svg/US-001-level-1.svg)](ssd/level-1/puml/US-001-level-1.puml)
 
@@ -49,15 +49,16 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 ## Level 3 - Backend
 
-**Participants:** `Web App` (the frontend, as a whole), `OrganizationsController`, `OrganizationService`, `IAccountRepository`, `IOrganizationRepository`, `OrganizationMapper`, `NexoDbContext`, `Database`.
+**Participants:** `Web App` (the frontend, as a whole), `OrganizationsController`, `OrganizationService`, `IAccountRepository`, `IPlanRepository`, `IOrganizationRepository`, `OrganizationMapper`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-001-level-3-backend.svg)](sd/level-3/backend/puml/US-001-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation |
 | --- | --- | --- |
 | 1 | Web App → Controller | `POST /organizations` |
-| 2 | Service → AccountRepository | `FindByEmailAsync` |
-| 3 | Service → Mapper | `ToOrganization`, `ToAdminAccount` |
-| 4 | Service → repositories → DbContext → Database | `Add`, `SaveChangesAsync` |
+| 2 | Service → AccountRepository | `FindByEmailAsync` (normalized email) |
+| 3 | Service → PlanRepository | `FindByNameAsync("Free")` |
+| 4 | Service → Mapper | `ToOrganization`, `ToAdminAccount` |
+| 5 | Service → repositories → DbContext → Database | `Add`, `SaveChangesAsync` |
 
 See the [LLD service logic](../../requirements/US-001-LLD.md#service-logic-organizationserviceregister) for what each step does and its [error handling](../../requirements/US-001-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
 

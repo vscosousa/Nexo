@@ -6,9 +6,26 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** persistence infrastructure scaffolded; business tables not implemented.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
 
-[`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs) currently declares no entity sets. The initial migration's `Up` and `Down` methods are empty. Applying it records migration history but creates no organization, account, or resource tables. The weather sample generates values in memory and does not use PostgreSQL.
+Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
+
+| Table | Column | Type | Constraint |
+| --- | --- | --- | --- |
+| `Plans` | `Id` | uuid | Primary key |
+| | `Name` | varchar(50) | Not null, unique |
+| | `MemberLimit` | integer | Not null; maximum active member accounts |
+| `Organizations` | `Id` | uuid | Primary key |
+| | `Name` | varchar(200) | Not null |
+| | `PlanId` | uuid | Not null, foreign key to `Plans`, on delete restrict, indexed |
+| `Accounts` | `Id` | uuid | Primary key |
+| | `Email` | varchar(320) | Not null, unique; stored trimmed and lowercased |
+| | `Name` | varchar(200) | Nullable |
+| | `Role` | varchar(20) | Not null (`Admin`, `Member`) |
+| | `Status` | varchar(20) | Not null (`Invited`, `Active`) |
+| | `OrganizationId` | uuid | Not null, foreign key to `Organizations`, on delete restrict, indexed |
+
+Plan rules live in `Plans` rather than on each organization. The migration seeds the `Free` plan (limit 20) with a fixed id; further tiers would be additional rows.
 
 ## Schema template
 
@@ -16,7 +33,7 @@ When a feature introduces persistence, document its tables, fields, database typ
 
 ## Integrity and access patterns
 
-The proposed stories require account email uniqueness, organization ownership, and atomic organization/admin creation. Database constraints, email normalization, plan-limit concurrency, and deletion rules still need a reviewed physical design. See the [requirements review gaps](../requirements/README.md#design-review-gaps).
+The proposed stories require account email uniqueness, organization ownership, and atomic organization/admin creation. Email uniqueness is enforced by a unique index on the normalized (trimmed, lowercased) email, which also stops two concurrent registrations from both succeeding; how that race is reported to the client (the LLD currently maps save failures to 500), plan-limit concurrency, and deletion rules still need a reviewed design. See the [requirements review gaps](../requirements/README.md#design-review-gaps).
 
 ## Migrations and lifecycle
 

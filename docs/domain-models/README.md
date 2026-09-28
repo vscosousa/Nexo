@@ -11,8 +11,9 @@ Domain concepts and their associations are identified from the requirements' [go
 | Concept (A) | Association | Concept (B) |
 | --- | --- | --- |
 | Organization | has | Name |
-| Organization | has | Plan |
-| Organization | has | MemberLimit |
+| Organization | is on | Plan |
+| Plan | has | Name |
+| Plan | has | MemberLimit |
 | Organization | has | Account |
 | Organization | has | Resource |
 | Account | belongs to | Organization |
@@ -62,14 +63,15 @@ Domain concepts and their associations are identified from the requirements' [go
 
 | Concept | Meaning | Relationships | Business rules |
 | --- | --- | --- | --- |
-| Organization | A single association using the system (per [glossary](../glossary/README.md)) | Has one admin Account (the creator) and member Accounts (0..*, `Invited` or `Active`); has Resources (0..*) | Starts on the "Free" plan (limit: 20 **active** member accounts) on creation |
-| Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials) or activated (`Status = Active`, independently of any current session) | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created directly `Active` with role "admin" via organization creation (US-001); created `Invited` with role "member" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; only `Active` accounts count toward the organization's plan limit |
+| Organization | A single association using the system (per [glossary](../glossary/README.md)) | Has one admin Account (the creator) and member Accounts (0..*, `Invited` or `Active`); has Resources (0..*); is on exactly one Plan | Starts on the "Free" plan on creation |
+| Plan | A subscription tier defining the limits an Organization on it is subject to (per [glossary](../glossary/README.md)) | Has Organizations (0..*) | Has a unique name and a member limit, the maximum number of **active** member accounts; the "Free" plan's limit is 20. Plan rules live on the Plan, not on the Organization |
+| Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials) or activated (`Status = Active`, independently of any current session) | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created directly `Active` with role "admin" via organization creation (US-001); created `Invited` with role "member" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; only `Active` accounts count toward the organization's plan limit; the email is trimmed and lowercased before storage and lookup (so it is compared case-insensitively) and is unique across accounts; dots and `+tags` are not altered |
 | ExternalLogin | A link between an Account and a social provider identity (per [glossary](../glossary/README.md)) | Belongs to exactly one Account | Unique per (Provider, ProviderKey); the provider's email must match the Account's email at creation time |
 
 **Assumptions and open questions:**
 
 - Only one admin per organization is assumed for now (the creator). Whether additional admins can be promoted later is open.
-- Plan tiers beyond "Free" (e.g., up to 50, unlimited) are named in conversation but not yet specified as enforced rules; only the Free limit (20 active accounts) is a confirmed business rule so far.
+- Plan tiers beyond "Free" (e.g., up to 50, unlimited) are named in conversation but not yet specified; only the Free plan (limit: 20 active accounts) is defined. Further tiers would be additional Plan rows.
 - Per [ADR-006](../decisions/ADR-006-authentication.md), an SSO-only Account has no password; whether a user can later add a password to an SSO-only account is open.
 - An `Account` was previously modeled with a separate `EligibleEmail` concept for the not-yet-activated state; that was folded into `Account.Status` (`Invited`/`Active`), since an invited email already *is* the future account, not a distinct thing consumed by it.
 - Whether an `Invited` account can be re-invited (e.g., the admin registers the same email again while it's still pending) is open; currently any existing account for the email, `Invited` or `Active`, blocks a new invite (US-002).

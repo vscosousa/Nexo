@@ -15,6 +15,7 @@ skinparam class {
 skinparam packageBackgroundColor #EBF5FB
 
 entity Organization <<entity>> {}
+entity Plan <<entity>> {}
 entity Account <<entity>> {}
 entity ExternalLogin <<entity>> {}
 entity Resource <<entity>> {}
@@ -24,6 +25,7 @@ entity Incident <<entity>> {}
 entity HistoryEntry <<entity>> {}
 entity Notification <<entity>> {}
 
+Organization "0..*" --> "1" Plan : is on
 Organization "1" --> "1..*" Account : has
 Organization "1" --> "0..*" Resource : owns
 Account "1" --> "0..*" ExternalLogin : links
@@ -45,7 +47,7 @@ end note
 
 note top of Organization
   Created with one Active Admin (US-001).
-  Free plan: MemberLimit = 20.
+  Free plan: Plan.MemberLimit = 20.
   Counting rule and activation enforcement
   still need review (US-002 / US-003).
 end note

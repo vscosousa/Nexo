@@ -13,6 +13,7 @@ participant "Web App" as FE
 participant "OrganizationsController" as Controller
 participant "OrganizationService" as Service
 participant "IAccountRepository" as AccountRepo
+participant "IPlanRepository" as PlanRepo
 participant "IOrganizationRepository" as OrgRepo
 participant "OrganizationMapper" as Mapper
 participant "NexoDbContext" as DbContext
@@ -31,9 +32,9 @@ alt Missing or invalid required fields
     Service --> Controller: Validation failure
     Controller --> FE: 400 Bad Request
 else Valid input
-    Service -> AccountRepo: FindByEmailAsync(dto.AdminEmail)
+    Service -> AccountRepo: FindByEmailAsync(normalized email)
     activate AccountRepo
-    AccountRepo -> DbContext: Query Account by Email (dto.AdminEmail)
+    AccountRepo -> DbContext: Query Account by Email (normalized)
     activate DbContext
     DbContext -> DB: SELECT Account by Email
     activate DB
@@ -47,13 +48,25 @@ else Valid input
         Service --> Controller: throw ConflictException
         Controller --> FE: 409 Conflict
     else Email available
-        Service -> Mapper: ToOrganization(dto)
+        Service -> PlanRepo: FindByNameAsync("Free")
+        activate PlanRepo
+        PlanRepo -> DbContext: Query Plan by Name
+        activate DbContext
+        DbContext -> DB: SELECT Plan by Name
+        activate DB
+        DB --> DbContext: Query result
+        deactivate DB
+        DbContext --> PlanRepo: Materialized result
+        deactivate DbContext
+        PlanRepo --> Service: Free Plan
+        deactivate PlanRepo
+        Service -> Mapper: ToOrganization(dto, plan)
         activate Mapper
-        Mapper --> Service: new Organization(name, plan: Free)
+        Mapper --> Service: new Organization(name, plan)
         deactivate Mapper
         Service -> Mapper: ToAdminAccount(dto, organization)
         activate Mapper
-        Mapper --> Service: new Account(email, role: Admin, status: Active, organization)
+        Mapper --> Service: new Account(normalized email, role: Admin, status: Active, organization)
         deactivate Mapper
         Service -> OrgRepo: Add(organization)
         activate OrgRepo

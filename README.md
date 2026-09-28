@@ -2,7 +2,7 @@
 
 Nexo is a local prototype for associations to coordinate resources, spaces, activities, and incidents, with availability, responsibility, and history in one system.
 
-**Status:** React and ASP.NET Core scaffolds, PostgreSQL configuration, and example tests are in place. Business features remain proposed; the frontend and API are not integrated yet.
+**Status:** React and ASP.NET Core scaffolds, PostgreSQL configuration, and example tests are in place. The US-001 registration endpoint exists in the API; other business features remain proposed; the frontend and API are not integrated yet.
 
 [Run locally](#run-locally) · [Features](#features) · [Architecture](docs/architecture/README.md) · [Documentation](docs/README.md)
 
@@ -14,7 +14,7 @@ There is no complete business workflow or published demo yet. Running the fronte
 
 | Area | Intended capability | Status |
 | --- | --- | --- |
-| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); not implemented |
+| Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); US-001 backend endpoint implemented (no credentials or session yet), the rest not implemented |
 | Resources | Register, browse, and update rooms and equipment | Registration designed in US-004; not implemented |
 | Search and availability | Find resources and available periods | Planned |
 | Reservations | Reserve and cancel a resource for a period | Planned |
@@ -43,7 +43,7 @@ This builds the frontend and API, starts PostgreSQL 17, and starts the API. No h
 
 Use `docker compose up --build -d` to run in the background and `docker compose logs -f` to follow logs. Stop with Ctrl+C in attached mode, or `docker compose down` in either mode.
 
-Source is copied into the images; rerun `docker compose up --build` after edits. Ports 5173 and 5122 must be free. PostgreSQL is accessible only inside the Compose network, so an existing local PostgreSQL service can keep running. The fixed database credentials in [compose.yaml](compose.yaml) are disposable development values, not production credentials. This setup uses HTTP and development servers on loopback only; it is not a production deployment.
+Source is copied into the images; rerun `docker compose up --build` after edits. Ports 5173 and 5122 must be free. PostgreSQL is accessible only inside the Compose network (backend tests publish it on loopback through `compose.test.yaml`), so an existing local PostgreSQL service can keep running. The fixed database credentials in [compose.yaml](compose.yaml) are disposable development values, not production credentials. This setup uses HTTP and development servers on loopback only; it is not a production deployment.
 
 The frontend and API still expose separate scaffolds; authentication and a Vite API proxy are not implemented. See [configuration and commands](docs/reference/README.md).
 

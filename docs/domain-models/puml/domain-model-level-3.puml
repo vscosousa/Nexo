@@ -17,8 +17,6 @@ skinparam packageBackgroundColor #EBF5FB
 package "Organization\n(proposed aggregate)" as OrganizationAggregate {
     entity Organization <<entity>> <<root>> {}
     class "Name" as OrganizationName <<valueObject>> {}
-    class "Plan" as OrganizationPlan <<valueObject>> {}
-    class "MemberLimit" as OrganizationMemberLimit <<valueObject>> {}
 }
 
 package "Account\n(proposed aggregate)" as AccountAggregate {
@@ -93,8 +91,9 @@ Resource "1" --> "0..*" Loan : is loaned via
 Resource "0..1" --> "0..*" Incident : is affected by
 
 Organization "1" --> "1" OrganizationName : has
-Organization "1" --> "1" OrganizationPlan : has
-Organization "1" --> "1" OrganizationMemberLimit : has
+Organization "0..*" --> "1" Plan : is on
+Plan "1" --> "1" PlanName : has
+Plan "1" --> "1" PlanMemberLimit : has
 Account "1" --> "1" AccountEmail : has
 Account "1" --> "0..1" AccountName : has
 Account "1" --> "0..1" AccountPasswordHash : has
@@ -131,7 +130,7 @@ end note
 
 note top of Organization
   Created with one Active Admin (US-001).
-  Free plan: MemberLimit = 20.
+  Free plan: Plan.MemberLimit = 20.
   Counting rule and activation enforcement
   still need review (US-002 / US-003).
 end note
