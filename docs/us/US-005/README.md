@@ -17,17 +17,16 @@
 
 **Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
 
-- Null password hash on invited accounts, not only SSO-only accounts, needs explicit treatment.
-- The active-status gate and provider-linking behavior are unspecified.
-- The shared HttpClient redirects on every 401, conflicting with the generic-error requirement for sign-in.
+- Microsoft logins are rejected because Microsoft does not attest email verification.
+- The Google flow (`GET /auth/external/{provider}` and its callback) has no sequence diagrams yet; the diagrams below show the password flow.
 
-Implementation must not assume answers to these; the 401-redirect conflict must be resolved before wiring the form.
+Resolved: invited accounts (null hash, not `Active`) get the same generic 401 as any credential failure and are never linked to a provider; the shared HttpClient redirects on a 401 only when a session token is stored, so a failed sign-in reaches the form.
 
-**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** implemented on backend and frontend (password and Google). The diagrams cover the password flow; see the [open contract details](../../requirements/README.md#design-review-gaps).
 
 ## Diagram scope
 
-The password scenario returns SessionDto and passes its token to AuthProvider.login; see the [sign-in gap](../../requirements/README.md#design-review-gaps) for what remains open, including OAuth linking, the status gate, and the 401-redirect conflict.
+The password scenario returns SessionDto and passes its token to AuthProvider.login; see the [sign-in gap](../../requirements/README.md#design-review-gaps) for what remains open. The Google redirect flow is specified in the [HLD](../../requirements/US-005-HLD.md#api-contract) and [LLD](../../requirements/US-005-LLD.md#service-logic-authservicesigninexternal) but not yet diagrammed.
 
 All diagrams are numbered and use explicit outcome branches. Backend SDs show input validation before reads, EF tracking separately from save, and persistence failure responses where the LLD defines them. Operation tables summarize the collaboration; their row numbers are not diagram message numbers.
 
@@ -76,5 +75,5 @@ See the [LLD service logic](../../requirements/US-005-LLD.md#service-logic-auths
 | 3 | Service → HttpClient | `POST /auth/sign-in` | Shared Axios instance sends the request |
 | 4 | HttpClient → Nexo API | HTTP request | Reaches the backend (detailed in [Level 3 - Backend](#level-3---backend)) |
 
-**Failure handling:** The proposed form needs to render the same generic sign-in error for all credential failures. The current shared HttpClient redirects on every 401, so the contract for sign-in failures must be resolved before implementing this interaction.
+**Failure handling:** The form renders the same generic sign-in error for every credential failure (a 401 or 400). The shared HttpClient redirects to `/login` on a 401 only when a session token is stored, so a failed sign-in reaches the form.
 **Related design:** [Architecture](../../architecture/README.md), [Domain model](../../domain-models/README.md#accounts-and-organizations), [ADR-006](../../decisions/ADR-006-authentication.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md).

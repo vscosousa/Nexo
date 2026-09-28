@@ -10,7 +10,7 @@ Describe how internal participants collaborate to implement a scenario, at two l
 
 See [designing SSD/SD diagrams](../guides/sequence-diagrams.md) for the activation-bar and naming convention. Instances live grouped by user story under [`docs/us/`](../us/README.md) (see there for the full folder layout and the list of stories).
 
-The current diagrams expose validation branches, repository reads, entity tracking versus database writes, and save failures already specified in the LLDs. Frontend diagrams distinguish response/error states; US-005 also shows the existing `AuthProvider.login(token)` boundary. Notes identify incomplete session, OAuth, permission, and plan-limit contracts rather than implying those decisions are settled.
+The current diagrams expose validation branches, repository reads, entity tracking versus database writes, and save failures already specified in the LLDs. Frontend diagrams distinguish response/error states; US-005 also shows the existing `AuthProvider.login(token)` boundary (password flow only; the Google flow has no diagram yet). Notes identify incomplete session, OAuth, permission, and plan-limit contracts rather than implying those decisions are settled.
 
 ## Scenario template
 

@@ -6,7 +6,7 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, and `ExternalLogins` (US-005) in `AddExternalLogins`; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
 
 Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
 
@@ -27,6 +27,11 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | | `Role` | varchar(20) | Not null (`Admin`, `Member`) |
 | | `Status` | varchar(20) | Not null (`Invited`, `Active`) |
 | | `OrganizationId` | uuid | Not null, foreign key to `Organizations`, on delete restrict, indexed |
+
+| `ExternalLogins` | `Id` | uuid | Primary key |
+| | `AccountId` | uuid | Not null, foreign key to `Accounts`, on delete cascade, indexed |
+| | `Provider` | varchar(20) | Not null; lowercase provider name (`google`, `microsoft`) |
+| | `ProviderKey` | varchar(200) | Not null; the account's stable id at the provider; unique together with `Provider` |
 
 Plan rules live in `Plans` rather than on each organization. The migration seeds the `Free` plan (limit 20) with a fixed id; further tiers would be additional rows.
 

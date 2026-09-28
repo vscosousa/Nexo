@@ -37,6 +37,11 @@ See [ADR-004](../decisions/ADR-004-frontend-architecture.md) and [ADR-005](../de
 | --- | --- | --- | --- | --- |
 | `ConnectionStrings:NexoDb` | PostgreSQL connection string used by `NexoDbContext` | String | Yes | None, must be set locally |
 | `Email:*` | Outgoing email; see [Email](#email) | Section | No | Fake SMTP server at `localhost:1025` |
+| `Jwt:Key` | HS256 signing key for session tokens (at least 32 bytes); sign-in fails with a 500 if missing or short | String | Yes for sign-in | None locally (set with user secrets); Compose supplies a development value |
+| `Authentication:Google:*` | Google sign-in `ClientId` and `ClientSecret`; see [Google sign-in](#google-sign-in) | Section | No | Absent: Google sign-in is off and returns 404 |
+| `Authentication:Microsoft:*` | Microsoft `ClientId` and `ClientSecret`; the provider registers, but its logins are rejected (see [design review gaps](../requirements/README.md#design-review-gaps)) | Section | No | Absent |
+| `VITE_API_URL` | Frontend dev server: API address the `/api` proxy forwards to (prefix stripped) | Environment | No | `http://localhost:5122`; Compose sets `http://api:8080` |
+| `VITE_API_ORIGIN` | Frontend: public API address the Google sign-in link opens (must match the redirect URI host) | Environment | No | `http://localhost:5122` |
 
 With Docker, [compose.yaml](../../compose.yaml) supplies `ConnectionStrings__NexoDb` using the internal `db:5432` address. PostgreSQL creates the `nexo` database and user on first startup, using disposable development credentials. Data lives in the `postgres-data` named volume; the database port is not published. The API runs in Development on container port 8080, published at `127.0.0.1:5122`; Vite is published at `127.0.0.1:5173`. No host user secrets are mounted.
 
@@ -101,6 +106,16 @@ The `mail` service settings are `Smtp:Address` (`0.0.0.0` in the container, `127
 | `pwsh -File tools/generate/test-plantuml-diagrams.ps1` | repository root | Diagram prerequisites | Tests rendering, stale-output removal, and malformed-source handling |
 | `pwsh -File tools/generate/generate-plantuml-diagrams.ps1` | repository root | Diagram prerequisites | Regenerates SVGs from PlantUML sources |
 
+## Google sign-in
+
+Google sign-in is enabled only when `Authentication:Google:ClientId` and `ClientSecret` are set. Setup, once per developer:
+
+1. In the Google Cloud console, create a project, configure the OAuth consent screen (External, testing mode) and add your Google account as a test user.
+2. Create an OAuth client of type Web application with the authorized redirect URI `http://localhost:5122/signin-google`.
+3. With Docker, put `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env` (see [.env.example](../../.env.example)). Without Docker, run `dotnet user-secrets set "Authentication:Google:ClientId" "<id>"` and the same for `ClientSecret` from `api/`.
+
+Only an existing `Active` account whose Google email is verified can sign in; Google never creates an account. The provider identity is linked on first use.
+
 ## Interfaces
 
 | Method and path | Current behavior |
@@ -109,6 +124,9 @@ The `mail` service settings are `Smtp:Address` (`0.0.0.0` in the container, `127
 | `POST /organizations` | US-001: registers an organization and its admin account (password path); returns `201` with `OrganizationDto`, or `400`, `409` (email already registered). No session is returned |
 | `POST /organizations/{organizationId}/invitations` | US-002: registers `{ "email" }` as an `Invited` member account; emails the person an invitation with a one-time token and returns `201` with `AccountDto`, or `400`, `403`, `409`; `500` if the email cannot be sent (no account is kept). The caller is the account id in the temporary `X-Account-Id` header until JWT authentication exists |
 | `POST /accounts/activation` | US-003: activates the invited account for `{ "email", "name", "password", "invitationToken" }`; returns `200` with `AccountDto`, or `400`, `403` (no account for the email, or wrong token), `409` (already active, or member limit reached). No sign-in or session yet |
+| `POST /auth/sign-in` | US-005: signs in with `{ "email", "password" }`; returns `200` with `SessionDto` (`token`, `expiresAt`; an HS256 JWT valid for 8 hours with `sub`, `orgId`, and `role` claims), `400` (missing field), or `401` (one generic body for an unknown email, no password set, an account that is not `Active`, or a wrong password) |
+| `GET /auth/external/{provider}` | US-005: starts Google (`google`) or Microsoft (`microsoft`) sign-in by redirecting to the provider; `404` if the provider is unknown or not configured |
+| `GET /auth/external/callback` | US-005: finishes social sign-in and redirects the browser to `{Email:WebBaseUrl}/login/callback#token=...` on success or `{Email:WebBaseUrl}/login?error=oauth` on any failure |
 | `GET http://localhost:8025/` | Fake mail server inbox (separate service, not the API) |
 | `GET /openapi/v1.json` | Generated OpenAPI document, exposed only in Development |
 | `GET /scalar/v1` | Scalar UI for manually exercising the API, exposed only in Development |
@@ -117,6 +135,6 @@ The forecast response is an array with `date` (date string), `temperatureC` (int
 
 The HTTP launch profile uses port 5122; the HTTPS profile also uses `https://localhost:7110`. The SPA's Axios base URL is `/api`, but neither a Vite proxy nor that API route prefix is configured. The frontend and backend therefore require separate verification today.
 
-Resource and sign-in endpoints in [story HLDs](../requirements/README.md#user-stories) are proposed contracts. OAuth settings and JWT configuration are not yet implemented; no secret names or defaults have been selected for them.
+Resource endpoints in [story HLDs](../requirements/README.md#user-stories) are proposed contracts.
 
 For step-by-step instructions, see [guides](../guides/README.md).

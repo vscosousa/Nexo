@@ -12,7 +12,7 @@ autonumber
 actor "Invited Person" as Person
 participant "ActivateAccountPage" as View
 participant "ActivateAccountForm" as Component
-participant "accountsService" as Service
+participant "authService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
 
@@ -20,11 +20,43 @@ note over View, API
   Password flow only. OAuth endpoints and session delivery\nafter activation are not yet specified.
 end note
 
-Person -> View: Submit email, name, and password
+Person -> View: Open the email link (email and link token in the URL)
 activate View
-View -> Component: handleSubmit(email, name, password)
+note right of View
+  Requires both "token" and "email" query params,
+  or redirects to "/" (RequireSearchParam guard).
+end note
+View -> Person: Render the invitation code entry (name/password hidden)
+deactivate View
+
+Person -> Component: Type/paste the 6-character invitation code
 activate Component
-Component -> Service: activate(email, name, password)
+Component -> Service: verifyInvitation(email, linkToken, code)
+activate Service
+Service -> Http: POST /accounts/activation/verify (VerifyInvitationDto)
+activate Http
+Http -> API: HTTP request
+activate API
+alt Link token and code valid
+    API --> Http: 200 OK
+else Link token or code wrong/expired
+    API --> Http: 403/409
+end
+deactivate API
+Http --> Service: Response or rejected request
+deactivate Http
+Service --> Component: Success, or thrown error
+deactivate Service
+alt Verified
+    Component --> Person: Code entry replaced by a confirmation, then name/password fields
+else Rejected
+    Component --> Person: "Invitation is not valid" (code entry stays, Resend invitation offered)
+end
+deactivate Component
+
+Person -> Component: Submit name and password
+activate Component
+Component -> Service: activate({email, linkToken, code, name, password})
 activate Service
 Service -> Http: POST /accounts/activation (ActivateAccountDto)
 activate Http
@@ -38,14 +70,14 @@ end
 deactivate API
 Http --> Service: Response data or rejected request
 deactivate Http
-Service --> Component: AccountDto, or thrown error
+Service --> Component: Success, or thrown error
 deactivate Service
 alt Successful response
-    Component --> View: Existing account activated (Active)
-else Failed response
-    Component --> View: Error state (validation / operation failure)
+    Component --> Person: Redirect to /login?activated=1
+else Failed response (403/409)
+    Component --> Person: Error state; code entry step is shown again
+else Failed response (400/500)
+    Component --> Person: Error state (validation / operation failure)
 end
 deactivate Component
-View --> Person: Render the resulting state
-deactivate View
 @enduml

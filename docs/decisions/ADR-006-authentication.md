@@ -31,6 +31,7 @@ Token strategy: a single JWT per session, with a fixed expiry (no refresh token)
 - New domain fields: `Account.PasswordHash` (nullable, an SSO-only account has none) and a new `ExternalLogin` concept (`Provider`, `ProviderKey`, linked `AccountId`) recording which OAuth identities are linked to which account.
 - OAuth apps must be registered manually with Google and Microsoft (client ID/secret), documented as a setup step, and the secrets stored via `dotnet user-secrets` (same convention as [ADR-003](ADR-003-postgresql-database.md)).
 - The invite-gate check (organization membership) must run identically in both the password sign-up path and the OAuth callback path; it lives once in `OrganizationService`/`AccountService`, not duplicated per auth method.
+- Implemented for US-005: the token carries `sub` (account id), `orgId`, and `role` claims, is signed HS256 with `Jwt:Key`, and lasts 8 hours. After Google sign-in the API redirects the browser to the web app with the token in the URL fragment (never sent to a server); the web app stores it and removes it from the address bar immediately. Only a verified provider email can match an account, so Microsoft logins are rejected until a rule for Microsoft's unverified emails is decided.
 - No refresh tokens for now: a user's session ends when the JWT expires, requiring sign-in again. Acceptable for a local prototype without a "remember me for weeks" requirement.
 
 ## Related artifacts

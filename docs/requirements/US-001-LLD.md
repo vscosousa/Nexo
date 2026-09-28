@@ -40,7 +40,7 @@ Business rules (defaults, limits, status transitions) are defined once in the [d
 
 ## Service logic (`OrganizationService.Register`)
 
-1. Validate `RegisterOrganizationDto`: `OrganizationName`, `AdminName` non-empty and at most 200 characters; `AdminEmail` a valid email format of at most 320 characters; `Password` present and satisfying the [password rules](US-003-LLD.md#password-rules) with the organization and admin names as forbidden content. Fail with a validation error (→ 400) otherwise.
+1. Validate `RegisterOrganizationDto`: `OrganizationName`, `AdminFirstName`, `AdminLastName` non-empty and at most 100 characters each; `AdminEmail` a valid email format of at most 320 characters; `Password` present and satisfying the [password rules](US-003-LLD.md#password-rules) with the organization and admin names as forbidden content. Fail with a validation error (→ 400) otherwise.
 2. Normalize the email (`Account.NormalizeEmail`: trim, lowercase) and call `IAccountRepository.FindByEmailAsync(email)`. If an account already exists, fail with a conflict error (→ 409); do not proceed.
 3. Call `IPlanRepository.FindByNameAsync("Free")`. The plan is seeded by migration; if it is missing, fail with an unexpected error (→ 500).
 4. Map the DTO and the plan to a new `Organization` (`OrganizationMapper.ToOrganization`).

@@ -58,7 +58,7 @@ Domain concepts and their associations are identified from the requirements' [go
 ## Accounts and organizations
 
 **Scope:** Organization, account creation, and sign-in ([US-001](../requirements/US-001-create-organization-admin.md), [US-002](../requirements/US-002-register-member-email.md), [US-003](../requirements/US-003-create-member-account.md), [US-005](../requirements/US-005-sign-in.md)).
-**Status:** `Organization`, `Plan`, and `Account` implemented for the password path; `ExternalLogin` proposed.
+**Status:** `Organization`, `Plan`, `Account`, and `ExternalLogin` implemented; social sign-in creates no account, and social account creation (US-001, US-003) is not implemented.
 **Diagram:** [Domain model diagrams](#domain-model-diagrams).
 
 | Concept | Meaning | Relationships | Business rules |
@@ -66,7 +66,7 @@ Domain concepts and their associations are identified from the requirements' [go
 | Organization | A single association using the system (per [glossary](../glossary/README.md)) | Has one admin Account (the creator) and member Accounts (0..*, `Invited` or `Active`); has Resources (0..*); is on exactly one Plan | Starts on the "Free" plan on creation |
 | Plan | A subscription tier defining the limits an Organization on it is subject to (per [glossary](../glossary/README.md)) | Has Organizations (0..*) | Has a unique name and a member limit, the maximum number of **active** member accounts; the "Free" plan's limit is 20. Plan rules live on the Plan, not on the Organization |
 | Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials) or activated (`Status = Active`, independently of any current session) | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created directly `Active` with role "admin" via organization creation (US-001); created `Invited` with role "member" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; only `Active` accounts count toward the organization's plan limit; the email is trimmed and lowercased before storage and lookup (so it is compared case-insensitively) and is unique across accounts; dots and `+tags` are not altered |
-| ExternalLogin | A link between an Account and a social provider identity (per [glossary](../glossary/README.md)) | Belongs to exactly one Account | Unique per (Provider, ProviderKey); the provider's email must match the Account's email at creation time |
+| ExternalLogin | A link between an Account and a social provider identity (per [glossary](../glossary/README.md)) | Belongs to exactly one Account | Unique per (Provider, ProviderKey); linked on first social sign-in (US-005) to the `Active` account whose email equals the provider's verified email; later sign-ins match on the (Provider, ProviderKey) pair, not the email |
 
 **Assumptions and open questions:**
 
@@ -154,8 +154,8 @@ The three levels use the same entity associations and multiplicities. Attribute 
 | --- | --- | --- |
 | Organization → Account | One organization has `1..*` accounts; each account belongs to one organization | US-001 creates the organization and its admin atomically; exactly one admin is the current assumption |
 | Account → ExternalLogin | `0..*` logins per account; one account per login | Invited and password-only accounts may have none; provider/key pair is unique |
-| Account.Name / PasswordHash | `0..1` each | Invited accounts lack both; active SSO-only accounts lack a password hash |
-| Account invitation token | `0..1` | Implementation detail not drawn in the diagrams: a hashed one-time token present only while the account is `Invited` (US-002/US-003) |
+| Account.FirstName / LastName / PasswordHash | `0..1` each | Invited accounts lack all three; active SSO-only accounts lack a password hash |
+| Account invitation link token and code | `0..1` each | Implementation detail not drawn in the diagrams: two separate hashed one-time secrets present only while the account is `Invited` (US-002/US-003) — a long link token embedded in the email's URL, and a short code shown only in the email body, both required to activate |
 | Resource.Description | `0..1` | Optional in US-004 |
 | Resource → Incident | `0..*` incidents per resource; `0..1` resource per incident | Matches the current provisional table; whether standalone incidents remain supported is open |
 | Account → HistoryEntry | `0..*` entries per account; `0..1` attributed account per entry | Allows system or unattributed changes |

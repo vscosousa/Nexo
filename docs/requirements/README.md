@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path (no frontend, SSO, or session yet); US-004 and US-005 are not, and their HLD/LLD and diagrams describe proposed behavior.
+This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path (no frontend or SSO registration yet); US-005 sign-in (password and Google) is implemented on the backend and frontend; US-004 is not, and its HLD/LLD and diagrams describe proposed behavior.
 
 ## Context and scope
 
@@ -37,7 +37,7 @@ This page defines the intended scope and indexes draft stories. The backends of 
 | [US-002](US-002-register-member-email.md) | Register a member's email to an organization | backend implemented | [HLD](US-002-HLD.md) | [LLD](US-002-LLD.md) |
 | [US-003](US-003-create-member-account.md) | Create a member account | backend implemented | [HLD](US-003-HLD.md) | [LLD](US-003-LLD.md) |
 | [US-004](US-004-register-resource.md) | Register a resource | draft | [HLD](US-004-HLD.md) | [LLD](US-004-LLD.md) |
-| [US-005](US-005-sign-in.md) | Sign in to an existing account | draft | [HLD](US-005-HLD.md) | [LLD](US-005-LLD.md) |
+| [US-005](US-005-sign-in.md) | Sign in to an existing account | implemented (password, Google) | [HLD](US-005-HLD.md) | [LLD](US-005-LLD.md) |
 
 ## User story template
 
@@ -65,7 +65,7 @@ These are inconsistencies or missing details in the current proposals, not new d
 | US-003 activation | The story requires sign-in after activation, but the HLD returns only `AccountDto`; the session response is unspecified. |
 | US-002/US-003 plan limits | Text alternates between active members and all active accounts. Both invitation and activation now check the Active count, but without locking, so concurrent requests can overshoot the limit; the intended semantics are unspecified. |
 | US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
-| US-005 sign-in | A null password hash also occurs on invited accounts, not only SSO-only accounts. The active-status gate and provider-linking behavior need explicit treatment. The scaffold redirects on every HTTP 401, whereas the sign-in design needs to render a generic credential error; these behaviors must be reconciled. |
+| US-005 sign-in | Microsoft sign-in is coded but every Microsoft login is rejected: Microsoft does not attest that an email is verified, and the account-linking rule needs a verified email. The Google flow has no sequence diagrams yet. |
 | Shared contracts | API prefix, error bodies (US-001 currently uses ASP.NET `ProblemDetails`), OAuth endpoints, and database uniqueness/concurrency handling (email normalization is decided: trimmed and lowercased) need consistent specifications. |
 
 The [database page](../database/README.md) tracks persistence status. [ADR-006](../decisions/ADR-006-authentication.md) records the accepted authentication direction, while the concrete contracts remain incomplete.

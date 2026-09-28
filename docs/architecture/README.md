@@ -10,7 +10,7 @@ Nexo is a modular monolith: a single React SPA and a single ASP.NET Core Web API
 
 ## Components
 
-The layers below exist in the weather sample and in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`). Resource classes and the sign-in flow shown in story designs are proposed; their modules are not implemented, and no business module has a frontend.
+The layers below exist in the weather sample, in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`), and in US-005 sign-in (`AuthController`, `AuthService`, `TokenService`, `ExternalLogin`; frontend `auth/`). Resource classes shown in story designs are proposed and not implemented, and no business module other than sign-in has a frontend.
 
 | Component | Responsibility | Dependencies | Interface |
 | --- | --- | --- | --- |
@@ -38,7 +38,7 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 
 ## Cross-cutting concerns
 
-- **Authentication:** email/password and Google/Microsoft sign-in with an API-issued JWT are planned in [ADR-006](../decisions/ADR-006-authentication.md). The scaffold stores a token in `localStorage`; `auth/RequireAuth.tsx` checks its presence to control navigation. This is not server-side authorization or token validation. The login page is a placeholder, and backend authentication is not implemented.
+- **Authentication:** email/password and Google/Microsoft sign-in with an API-issued JWT are planned in [ADR-006](../decisions/ADR-006-authentication.md). The API issues the JWT at `POST /auth/sign-in` and after Google sign-in (US-005); the web app stores it in `localStorage`, and `auth/RequireAuth.tsx` checks its presence to control navigation. This is not server-side authorization or token validation: the API does not yet validate the token on any endpoint.
 - **Development HTTP routing:** the shared Axios client uses the relative `/api` base URL. A Vite API proxy is not configured yet, so API integration still needs routing configuration.
 - **Configuration:** manual execution uses `dotnet user-secrets`; Compose supplies a connection string with disposable development credentials through the environment. See [technical reference](../reference/README.md#configuration).
 - **Email:** the API sends through SMTP using the `Email` settings; Compose points them at the fake `mail` service, and configuration alone repoints them at a real provider. See [ADR-008](../decisions/ADR-008-fake-smtp-server.md).
@@ -46,10 +46,10 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 
 ## Risks and trade-offs
 
-- The presence-only route guard is UI scaffolding. API authentication, authorization, JWT validation, and organization isolation still need implementation.
+- The presence-only route guard is UI scaffolding. JWT validation on the API, authorization, and organization isolation still need implementation; the first protected endpoint (US-004) adds the JWT bearer middleware.
 - The frontend `/api` base URL has no matching development proxy; the sample API route is `/WeatherForecast`.
 - `NexoDbContext` holds `Plans`, `Organizations`, and `Accounts`; resource tables do not exist. The weather repository generates data without database access.
-- Endpoints for US-002 identify the caller by a temporary `X-Account-Id` header, which is not authentication, until JWT sign-in (US-005) exists.
+- Endpoints for US-002 identify the caller by a temporary `X-Account-Id` header, which is not authentication, until the API validates the JWT that US-005 now issues.
 - Story contracts have unresolved details, including registration sessions and plan-limit enforcement. See [design review gaps](../requirements/README.md#design-review-gaps) before implementation.
 - Deployment, backup/recovery, and measurable performance targets are not defined for this local prototype.
 

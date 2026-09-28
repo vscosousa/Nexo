@@ -4,7 +4,7 @@
 
 ## Start here
 
-Follow [Run locally](../../README.md#run-locally) to install dependencies, configure PostgreSQL, and launch the scaffold. The expected first screen is the login placeholder. For frontend-only work, use the [frontend guide](../../web/README.md).
+Follow [Run locally](../../README.md#run-locally) to install dependencies, configure PostgreSQL, and launch the scaffold. The expected first screen is the sign-in form. For frontend-only work, use the [frontend guide](../../web/README.md).
 
 ## Development tasks
 
@@ -22,7 +22,7 @@ Follow [Run locally](../../README.md#run-locally) to install dependencies, confi
 
 | Symptom | Check | Next step |
 | --- | --- | --- |
-| Browser opens a placeholder login page | No session token is stored | Expected scaffold behavior; real sign-in is planned |
+| Browser opens the sign-in page | No session token is stored | Expected; sign in with email and password, or configure [Google sign-in](../reference/README.md#google-sign-in) |
 | Frontend requests to `/api` fail | `web/vite.config.ts` has no proxy | API integration requires routing work; verify the sample API directly |
 | EF cannot connect to PostgreSQL | Service, database, and local connection-string configuration | Follow [configuration](../reference/README.md#configuration); keep credentials outside the repo |
 | `dotnet ef` is unavailable | Local tools have not been restored | Run `dotnet tool restore` in `api/` |
