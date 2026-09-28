@@ -10,7 +10,7 @@
 On every `git commit`, the hook selects work from the Git index:
 
 - **Frontend:** any changed path under `web/` triggers `npm run lint` and `npm run build` (TypeScript and Vite). Added/modified files with extensions `ts`, `tsx`, `js`, `jsx`, `mjs`, `cjs`, `json`, `css`, `md`, `html`, `yaml`, or `yml` are formatted with Prettier and re-staged first.
-- **Backend:** any changed path under `api/` or `api.Tests/`, any `.sln`, `.slnx`, `.props`, or `.targets` file, and root `global.json`, `NuGet.Config`/`nuget.config`, or `.editorconfig` trigger `dotnet build Nexo.slnx -warnaserror`. Added/modified C# files under the two backend directories are formatted with `dotnet format --include` and re-staged first.
+- **Backend:** any changed path under `api/` (including `api/tests/`), any `.sln`, `.slnx`, `.props`, or `.targets` file, and root `global.json`, `NuGet.Config`/`nuget.config`, or `.editorconfig` trigger `dotnet build Nexo.slnx -warnaserror`. Added/modified C# files under `api/` are formatted with `dotnet format --include` and re-staged first.
 - **Deletions and renames:** removed paths still trigger their side's checks but are never sent to a formatter. Renames are evaluated as a removal and addition, so moving a file between sides checks both.
 
 Before formatting, the hook checks all selected files for unstaged changes. If any exist, it stops without changing files or the index. Stage the remaining changes if they belong in this commit, or stash them before retrying.

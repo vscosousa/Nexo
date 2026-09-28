@@ -24,10 +24,10 @@ web/dist/
 # API (.NET)
 api/bin/
 api/obj/
-api.Tests/bin/
-api.Tests/obj/
+api/tests/bin/
+api/tests/obj/
 
 # E2E (Playwright)
-e2e/node_modules/
-e2e/test-results/
-e2e/playwright-report/
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/

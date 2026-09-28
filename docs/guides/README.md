@@ -25,7 +25,7 @@ Follow [Run locally](../../README.md#run-locally) to install dependencies, confi
 | Frontend requests to `/api` fail | `web/vite.config.ts` has no proxy | API integration requires routing work; verify the sample API directly |
 | EF cannot connect to PostgreSQL | Service, database, and local connection-string configuration | Follow [configuration](../reference/README.md#configuration); keep credentials outside the repo |
 | `dotnet ef` is unavailable | Local tools have not been restored | Run `dotnet tool restore` in `api/` |
-| Playwright cannot launch Chromium | Browser binary is not installed | Run `npx playwright install chromium` in `e2e/` |
+| Playwright cannot launch Chromium | Browser binary is not installed | Run `npx playwright install chromium` in `tests/e2e/` |
 | Commit stops because a selected file has unstaged edits | `git diff` and `git diff --cached` | Review the hunks and stage or stash as described in the [hook guide](pre-commit-hook.md) |
 
 For a new guide, state its goal and prerequisites, give commands with their working directory, and describe the observable result. Keep shared command details in the technical reference.

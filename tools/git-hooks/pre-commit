@@ -22,7 +22,7 @@ while IFS= read -r -d '' status && IFS= read -r -d '' path; do
     fi
     case "$path" in
         web/*) check_fe=true ;;
-        api/*|api.Tests/*|*.sln|*.slnx|*.props|*.targets|global.json|[Nn]u[Gg]et.[Cc]onfig|.editorconfig)
+        api/*|*.sln|*.slnx|*.props|*.targets|global.json|[Nn]u[Gg]et.[Cc]onfig|.editorconfig)
             check_be=true ;;
     esac
     # Deleted files still trigger checks, but cannot be formatted or re-staged.
@@ -30,7 +30,7 @@ while IFS= read -r -d '' status && IFS= read -r -d '' path; do
     case "$path" in
         web/*.ts|web/*.tsx|web/*.js|web/*.jsx|web/*.mjs|web/*.cjs|web/*.json|web/*.css|web/*.md|web/*.html|web/*.yaml|web/*.yml)
             fe_staged+=("$path") ;;
-        api/*.cs|api.Tests/*.cs)
+        api/*.cs)
             be_staged+=("$path") ;;
     esac
 done < "$staged_list"

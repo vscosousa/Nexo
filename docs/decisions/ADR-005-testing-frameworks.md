@@ -42,18 +42,18 @@ Functional and smoke tests were not treated as separate options: functional test
 
 ## Decision
 
-- Backend unit and integration: **xUnit** + `Microsoft.AspNetCore.Mvc.Testing`, in `api.Tests/`.
+- Backend unit and integration: **xUnit** + `Microsoft.AspNetCore.Mvc.Testing`, in `api/tests/`.
 - Frontend unit: **Vitest** + React Testing Library, colocated with source in `web/src/`.
-- E2E: **Playwright**, in `e2e/`, running against the Vite dev server.
+- E2E: **Playwright**, in `tests/e2e/`, running against the Vite dev server.
 - Acceptance: plain xUnit tests named in Given/When/Then form, no separate framework.
 - Performance: deferred until a measurable target exists.
 - Functional and smoke tests: covered by tagging a subset of the integration/E2E suites, not by new tooling.
 
 ## Consequences
 
-- Solution file `Nexo.slnx` ties `api/` and `api.Tests/` together for `dotnet test`.
+- Solution file `Nexo.slnx` ties `api/` and `api/tests/` together for `dotnet test`.
 - `Program.cs` exposes a `public partial class Program` so `WebApplicationFactory<Program>` can reference it from the test assembly.
-- `e2e/` has its own `package.json`, separate from `web/`, since it exercises the running app rather than being part of it.
+- `tests/e2e/` has its own `package.json`, separate from `web/`, since it exercises the running app rather than being part of it.
 - When the first real feature (e.g., resources) is built, its acceptance and integration tests follow the same Given/When/Then naming already established by the example tests.
 
 ## Related artifacts

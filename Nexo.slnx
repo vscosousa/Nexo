@@ -1,8 +1,6 @@
 <Solution>
-  <Folder Name="/api.Tests/">
-    <Project Path="api.Tests/Nexo.Api.Tests.csproj" />
-  </Folder>
   <Folder Name="/api/">
     <Project Path="api/Nexo.Api.csproj" />
+    <Project Path="api/tests/Nexo.Api.Tests.csproj" />
   </Folder>
 </Solution>

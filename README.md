@@ -98,7 +98,7 @@ Open the frontend URL. Without a stored token, it redirects to the login placeho
 
 Authentication endpoints and a Vite API proxy are not implemented. Stop each process with Ctrl+C.
 
-For browser tests, install dependencies and Chromium from `e2e/`:
+For browser tests, install dependencies and Chromium from `tests/e2e/`:
 
 ```sh
 npm ci
@@ -146,8 +146,8 @@ The [decision index](docs/decisions/README.md) explains the selected stack and a
 | --- | --- |
 | `web/` | React SPA; see the [frontend guide](web/README.md) |
 | `api/` | Controllers, domain/DTOs, services, mappers, repositories, EF context and migrations |
-| `api.Tests/` | Backend unit/integration tests |
-| `e2e/` | Playwright configuration and smoke test |
+| `api/tests/` | Backend unit/integration tests |
+| `tests/e2e/` | Playwright configuration and smoke test |
 | `docs/` | Requirements, domain models, story designs, decisions, guides, and reference |
 | `tools/git-hooks/` | Pre-commit hook and regression suite |
 | `tools/generate/` | PlantUML generator and its tests |

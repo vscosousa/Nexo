@@ -12,16 +12,16 @@ See [ADR-005](../decisions/ADR-005-testing-frameworks.md) for the full reasoning
 
 | Kind | Tool | Location |
 | --- | --- | --- |
-| Unit (backend) | xUnit | `api.Tests/` |
-| Integration (backend) | xUnit + `Microsoft.AspNetCore.Mvc.Testing` | `api.Tests/` |
+| Unit (backend) | xUnit | `api/tests/` |
+| Integration (backend) | xUnit + `Microsoft.AspNetCore.Mvc.Testing` | `api/tests/` |
 | Unit / component (frontend) | Vitest + React Testing Library | `web/src/` (colocated with source) |
-| E2E | Playwright | `e2e/` |
-| Acceptance | Plain xUnit, named in Given/When/Then form | `api.Tests/` |
+| E2E | Playwright | `tests/e2e/` |
+| Acceptance | Plain xUnit, named in Given/When/Then form | `api/tests/` |
 | Functional | Covered by integration/E2E tests of the same behavior; not a separate suite | — |
 | Smoke | A tagged subset of the integration/E2E suites covering only critical paths | — |
 | Performance | Deferred; no measurable target exists yet | — |
 
-Run `dotnet test Nexo.slnx` (backend), `npm test` in `web/` (frontend unit), and `npm test` in `e2e/` (E2E, starts the Vite dev server automatically). See [technical reference](../reference/README.md#commands).
+Run `dotnet test Nexo.slnx` (backend), `npm test` in `web/` (frontend unit), and `npm test` in `tests/e2e/` (E2E, starts the Vite dev server automatically). See [technical reference](../reference/README.md#commands).
 
 ## Scenario template
 

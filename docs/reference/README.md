@@ -24,8 +24,8 @@ Commands and configuration below describe the current scaffold. Proposed busines
 | `react-router-dom` | `web/` | Client-side routing and the `RequireAuth` route guard |
 | `axios` | `web/` | Shared HTTP client (`shared/http/client.ts`), attaches the auth token, handles `401` |
 | `vitest`, `@testing-library/react` | `web/` | Frontend unit and component tests |
-| `Microsoft.AspNetCore.Mvc.Testing` | `api.Tests/` | Backend integration tests (`WebApplicationFactory`) |
-| `@playwright/test` | `e2e/` | End-to-end tests against the running app |
+| `Microsoft.AspNetCore.Mvc.Testing` | `api/tests/` | Backend integration tests (`WebApplicationFactory`) |
+| `@playwright/test` | `tests/e2e/` | End-to-end tests against the running app |
 | `oxlint` | `web/` | Frontend linting |
 | `prettier` | `web/` | Frontend formatting |
 
@@ -58,7 +58,7 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | `docker compose down -v` | repository root | Disposable database only | Removes containers/network and **deletes database data** |
 | `docker compose config --quiet` | repository root | Docker Compose | Validates Compose configuration |
 | `npm install` | `web/` | None | Installs frontend dependencies |
-| `npm ci` | `web/` or `e2e/` | Committed lockfile | Installs the locked dependency tree for that project |
+| `npm ci` | `web/` or `tests/e2e/` | Committed lockfile | Installs the locked dependency tree for that project |
 | `npm run dev` | `web/` | None | Starts the Vite dev server |
 | `dotnet restore` | `api/` | None | Restores backend NuGet packages |
 | `dotnet restore Nexo.slnx` | repository root | None | Restores API and test project dependencies |
@@ -69,9 +69,9 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | `dotnet ef database update` | `api/` | None | Applies pending migrations to the configured PostgreSQL database |
 | `dotnet test Nexo.slnx` | repository root | None | Runs backend unit and integration tests |
 | `npm test` | `web/` | None | Runs frontend unit and component tests |
-| `npm install` | `e2e/` | None | Installs Playwright |
-| `npx playwright install chromium` | `e2e/` | None | Downloads the Chromium browser used by tests |
-| `npm test` | `e2e/` | None | Runs E2E tests (starts the Vite dev server automatically) |
+| `npm install` | `tests/e2e/` | None | Installs Playwright |
+| `npx playwright install chromium` | `tests/e2e/` | None | Downloads the Chromium browser used by tests |
+| `npm test` | `tests/e2e/` | None | Runs E2E tests (starts the Vite dev server automatically) |
 | `npm run lint` | `web/` | None | Lints the frontend (oxlint) |
 | `npm run build` | `web/` | None | Checks TypeScript and builds the production frontend |
 | `npm run format` / `npm run format:check` | `web/` | None | Formats the frontend (Prettier), or checks without writing |
