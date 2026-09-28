@@ -21,11 +21,30 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__NexoDb: Host=db;Port=5432;Database=nexo;Username=nexo;Password=nexo-local-development
+      # Outgoing mail goes to the fake `mail` service unless `.env` points these at a real SMTP provider.
+      Email__Host: ${EMAIL_HOST:-mail}
+      Email__Port: ${EMAIL_PORT:-1025}
+      Email__EnableSsl: ${EMAIL_ENABLE_SSL:-false}
+      Email__Username: ${EMAIL_USERNAME:-}
+      Email__Password: ${EMAIL_PASSWORD:-}
+      Email__From: "${EMAIL_FROM:-Nexo <no-reply@nexo.local>}"
+      Email__WebBaseUrl: ${EMAIL_WEB_BASE_URL:-http://localhost:5173}
     ports:
       - "127.0.0.1:5122:8080"
     depends_on:
       db:
         condition: service_healthy
+      mail:
+        condition: service_started
+
+  # Fake SMTP server: accepts mail on 1025 and shows it in a webmail-style inbox on 8025. Nothing is relayed.
+  mail:
+    build: ./tools/fake-smtp
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    volumes:
+      - ${MAIL_DATA_DIR:-./.data/mail}:/data
 
   web:
     build: ./web

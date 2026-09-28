@@ -27,6 +27,14 @@ api/obj/
 api/tests/bin/
 api/tests/obj/
 
+# Fake SMTP server (.NET)
+tools/fake-smtp/bin/
+tools/fake-smtp/obj/
+tools/fake-smtp/data/
+
+# Local data (e.g. emails received by the fake mail server); never commit
+.data/
+
 # E2E (Playwright)
 tests/e2e/node_modules/
 tests/e2e/test-results/

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Models;
 using Nexo.Api.Mappers;
@@ -12,13 +13,43 @@ public class AccountMapperTests
     [Fact]
     public void GivenAnEmailAndOrganization_WhenMappedToInvitedAccount_ThenItIsAPendingMemberWithoutAName()
     {
-        var account = AccountMapper.ToInvitedAccount(new InviteMemberDto { Email = "  Bob@Example.COM " }, OrganizationId);
+        var account = AccountMapper.ToInvitedAccount(
+            new InviteMemberDto { Email = "  Bob@Example.COM " }, OrganizationId, "token-hash");
 
         Assert.Equal("bob@example.com", account.Email);
         Assert.Null(account.Name);
+        Assert.Null(account.PasswordHash);
         Assert.Equal(Role.Member, account.Role);
         Assert.Equal(AccountStatus.Invited, account.Status);
         Assert.Equal(OrganizationId, account.OrganizationId);
+        Assert.Equal("token-hash", account.InvitationTokenHash);
+    }
+
+    [Fact]
+    public void GivenAnInvitedAccount_WhenActivationIsApplied_ThenItIsActiveWithANameAndAHashedPasswordAndNoToken()
+    {
+        var account = new Account
+        {
+            Email = "bob@example.com",
+            Role = Role.Member,
+            Status = AccountStatus.Invited,
+            OrganizationId = OrganizationId,
+            InvitationTokenHash = "token-hash",
+        };
+        var hasher = new PasswordHasher<Account>();
+
+        AccountMapper.ApplyActivation(
+            account, new ActivateAccountDto { Name = " Bob ", Password = "s3cret-pass" }, hasher);
+
+        Assert.Equal("Bob", account.Name);
+        Assert.Equal(AccountStatus.Active, account.Status);
+        Assert.Equal(Role.Member, account.Role);
+        Assert.Equal(OrganizationId, account.OrganizationId);
+        Assert.Null(account.InvitationTokenHash);
+        Assert.NotEqual("s3cret-pass", account.PasswordHash);
+        Assert.Equal(
+            PasswordVerificationResult.Success,
+            hasher.VerifyHashedPassword(account, account.PasswordHash!, "s3cret-pass"));
     }
 
     [Fact]

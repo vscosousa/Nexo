@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Identity;
+using Nexo.Api.Domain.Models;
+using Nexo.Api.Infrastructure.Email;
 using Microsoft.EntityFrameworkCore;
 using Nexo.Api.Infrastructure.Persistence;
 using Scalar.AspNetCore;
@@ -20,6 +23,10 @@ builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 builder.Services.AddScoped<IPlanRepository, PlanRepository>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IAccountInvitationService, AccountInvitationService>();
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+builder.Services.AddSingleton<PasswordHasher<Account>>();
+builder.Services.AddScoped<IAccountActivationService, AccountActivationService>();
 
 var app = builder.Build();
 

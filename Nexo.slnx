@@ -3,4 +3,7 @@
     <Project Path="api/Nexo.Api.csproj" />
     <Project Path="api/tests/Nexo.Api.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/fake-smtp/FakeSmtp.csproj" />
+  </Folder>
 </Solution>

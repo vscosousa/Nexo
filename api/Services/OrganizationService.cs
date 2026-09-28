@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Exceptions;
 using Nexo.Api.Domain.Models;
@@ -12,6 +12,7 @@ public class OrganizationService(
     IAccountRepository accounts,
     IOrganizationRepository organizations,
     IPlanRepository plans,
+    PasswordHasher<Account> hasher,
     NexoDbContext db) : IOrganizationService
 {
     private const string EmailInUse = "An account already exists for this email.";
@@ -28,7 +29,7 @@ public class OrganizationService(
             ?? throw new InvalidOperationException("The Free plan is not seeded.");
         var organization = OrganizationMapper.ToOrganization(dto, plan);
         organizations.Add(organization);
-        accounts.Add(OrganizationMapper.ToAdminAccount(dto, organization));
+        accounts.Add(OrganizationMapper.ToAdminAccount(dto, organization, hasher));
         // A concurrent registration of the same email may have passed the lookup and saved first.
         await db.SaveChangesOrConflictAsync(EmailInUse);
 
@@ -38,12 +39,10 @@ public class OrganizationService(
     private static void Validate(RegisterOrganizationDto dto)
     {
         var errors = new Dictionary<string, string[]>();
-        if (string.IsNullOrWhiteSpace(dto.OrganizationName))
-            errors[nameof(dto.OrganizationName)] = ["Organization name is required."];
-        if (string.IsNullOrWhiteSpace(dto.AdminName))
-            errors[nameof(dto.AdminName)] = ["Admin name is required."];
-        if (string.IsNullOrWhiteSpace(dto.AdminEmail) || !new EmailAddressAttribute().IsValid(dto.AdminEmail))
-            errors[nameof(dto.AdminEmail)] = ["A valid email is required."];
+        FieldRules.Text(errors, nameof(dto.OrganizationName), "Organization name", dto.OrganizationName, Organization.NameMaxLength);
+        FieldRules.Text(errors, nameof(dto.AdminName), "Admin name", dto.AdminName, Account.NameMaxLength);
+        FieldRules.Email(errors, nameof(dto.AdminEmail), dto.AdminEmail);
+        FieldRules.Password(errors, nameof(dto.Password), dto.Password, dto.OrganizationName, dto.AdminName);
 
         if (errors.Count > 0)
             throw new Domain.Exceptions.ValidationException(errors);

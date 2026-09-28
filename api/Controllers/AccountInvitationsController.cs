@@ -11,6 +11,7 @@ public class AccountInvitationsController(IAccountInvitationService service) : C
 {
     /// <summary>Registers a member's email as a pending account of the organization.</summary>
     /// <remarks>
+    /// The one-time invitation token is only delivered by email. If the email cannot be sent, no account is created and the request fails with 500.
     /// The caller is read from the temporary <c>X-Account-Id</c> header until JWT authentication (US-005) exists.
     /// </remarks>
     /// <response code="201">Created.</response>

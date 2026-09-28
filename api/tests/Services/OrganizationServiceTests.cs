@@ -41,6 +41,7 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
             new EmailLookupMissesRepository(new AccountRepository(db)),
             new OrganizationRepository(db),
             new PlanRepository(db),
+            new Microsoft.AspNetCore.Identity.PasswordHasher<Account>(),
             db);
 
         await Assert.ThrowsAsync<ConflictException>(() => service.Register(new RegisterOrganizationDto
@@ -48,6 +49,7 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
             OrganizationName = "Other Club",
             AdminName = "Ana Again",
             AdminEmail = "ana@example.com",
+            Password = TestData.StrongPassword,
         }));
     }
 }

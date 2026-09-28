@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Models;
 using Nexo.Api.Mappers;
@@ -12,7 +13,10 @@ public class OrganizationMapperTests
         OrganizationName = "Local Club",
         AdminName = "Ana Admin",
         AdminEmail = "ana@example.com",
+        Password = "Str0ng!Passw0rd",
     };
+
+    private static readonly PasswordHasher<Account> Hasher = new();
 
     private static readonly Plan FreePlan = new() { Name = Plan.Free, MemberLimit = 20 };
 
@@ -31,13 +35,34 @@ public class OrganizationMapperTests
     {
         var organization = OrganizationMapper.ToOrganization(Registration, FreePlan);
 
-        var account = OrganizationMapper.ToAdminAccount(Registration, organization);
+        var account = OrganizationMapper.ToAdminAccount(Registration, organization, Hasher);
 
         Assert.Equal("ana@example.com", account.Email);
         Assert.Equal("Ana Admin", account.Name);
         Assert.Equal(Role.Admin, account.Role);
         Assert.Equal(AccountStatus.Active, account.Status);
         Assert.Equal(organization.Id, account.OrganizationId);
+        Assert.Equal(
+            PasswordVerificationResult.Success,
+            Hasher.VerifyHashedPassword(account, account.PasswordHash!, "Str0ng!Passw0rd"));
+    }
+
+    [Fact]
+    public void GivenNamesWithSurroundingSpaces_WhenMapped_ThenTheyAreStoredTrimmed()
+    {
+        var dto = new RegisterOrganizationDto
+        {
+            OrganizationName = "  Local Club ",
+            AdminName = " Ana Admin  ",
+            AdminEmail = "ana@example.com",
+            Password = "Str0ng!Passw0rd",
+        };
+
+        var organization = OrganizationMapper.ToOrganization(dto, FreePlan);
+        var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher);
+
+        Assert.Equal("Local Club", organization.Name);
+        Assert.Equal("Ana Admin", account.Name);
     }
 
     [Fact]
@@ -48,10 +73,11 @@ public class OrganizationMapperTests
             OrganizationName = "Local Club",
             AdminName = "Ana Admin",
             AdminEmail = "  Ana.Admin+Club@Example.COM ",
+            Password = "Str0ng!Passw0rd",
         };
         var organization = OrganizationMapper.ToOrganization(dto, FreePlan);
 
-        var account = OrganizationMapper.ToAdminAccount(dto, organization);
+        var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher);
 
         Assert.Equal("ana.admin+club@example.com", account.Email);
     }

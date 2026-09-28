@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Models;
 
@@ -7,19 +8,25 @@ public static class OrganizationMapper
 {
     public static Organization ToOrganization(RegisterOrganizationDto dto, Plan plan) => new()
     {
-        Name = dto.OrganizationName!,
+        Name = dto.OrganizationName!.Trim(),
         PlanId = plan.Id,
         Plan = plan,
     };
 
-    public static Account ToAdminAccount(RegisterOrganizationDto dto, Organization organization) => new()
+    public static Account ToAdminAccount(
+        RegisterOrganizationDto dto, Organization organization, PasswordHasher<Account> hasher)
     {
-        Email = Account.NormalizeEmail(dto.AdminEmail!),
-        Name = dto.AdminName,
-        Role = Role.Admin,
-        Status = AccountStatus.Active,
-        OrganizationId = organization.Id,
-    };
+        var account = new Account
+        {
+            Email = Account.NormalizeEmail(dto.AdminEmail!),
+            Name = dto.AdminName!.Trim(),
+            Role = Role.Admin,
+            Status = AccountStatus.Active,
+            OrganizationId = organization.Id,
+        };
+        account.PasswordHash = hasher.HashPassword(account, dto.Password!);
+        return account;
+    }
 
     public static OrganizationDto ToDto(Organization organization) => new()
     {

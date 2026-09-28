@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Identity;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Models;
 using Nexo.Api.Infrastructure.Persistence;
@@ -19,6 +20,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         OrganizationName = "Local Club",
         AdminName = "Ana Admin",
         AdminEmail = "ana@example.com",
+        Password = TestData.StrongPassword,
     };
 
     public Task InitializeAsync() => factory.ResetAsync();
@@ -47,6 +49,9 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         Assert.Equal(Role.Admin, account.Role);
         Assert.Equal(AccountStatus.Active, account.Status);
         Assert.Equal(organization.Id, account.OrganizationId);
+        Assert.Equal(
+            PasswordVerificationResult.Success,
+            new PasswordHasher<Account>().VerifyHashedPassword(account, account.PasswordHash!, TestData.StrongPassword));
     }
 
     [Theory]
@@ -54,19 +59,46 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
     [InlineData("Local Club", "", "ana@example.com")]
     [InlineData("Local Club", "Ana Admin", "")]
     [InlineData("Local Club", "Ana Admin", "not-an-email")]
+    [InlineData("Local Club", "Ana Admin", "ana@example.com", "")]
+    [InlineData("Local Club", "Ana Admin", "ana@example.com", "weak")]
+    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!LocalClub9")]
+    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!L0c@l Cl_ub9")]
+    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!Adm1n-9zq")]
+    [InlineData("Local Club", "Ana Admin", "ana@example.com", "Xx!ANA9zqvw")]
     public async Task GivenMissingOrInvalidFields_WhenRegistering_ThenItRejectsWithValidationErrorsAndCreatesNothing(
-        string organizationName, string adminName, string adminEmail)
+        string organizationName, string adminName, string adminEmail, string password = TestData.StrongPassword)
     {
         var dto = new RegisterOrganizationDto
         {
             OrganizationName = organizationName,
             AdminName = adminName,
             AdminEmail = adminEmail,
+            Password = password,
         };
 
         var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertNothingCreatedAsync();
+    }
+
+    [Fact]
+    public async Task GivenOverLongFields_WhenRegistering_ThenItRejectsWithValidationErrorsAndCreatesNothing()
+    {
+        var dto = new RegisterOrganizationDto
+        {
+            OrganizationName = new string('o', 201),
+            AdminName = new string('n', 201),
+            AdminEmail = new string('e', 310) + "@example.com",
+            Password = TestData.StrongPassword,
+        };
+
+        var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
+        Assert.Equal(
+            ["AdminEmail", "AdminName", "OrganizationName"], problem!.Errors.Keys.Order().ToArray());
         await AssertNothingCreatedAsync();
     }
 
@@ -81,6 +113,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             OrganizationName = "Other Club",
             AdminName = "Ana Again",
             AdminEmail = Valid.AdminEmail,
+            Password = TestData.StrongPassword,
         };
         var response = await client.PostAsJsonAsync("/organizations", second);
 
@@ -101,6 +134,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             OrganizationName = "Other Club",
             AdminName = "Ana Again",
             AdminEmail = " ANA@Example.com ",
+            Password = TestData.StrongPassword,
         };
         var response = await client.PostAsJsonAsync("/organizations", second);
 

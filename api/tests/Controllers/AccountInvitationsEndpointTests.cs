@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Models;
 using Nexo.Api.Infrastructure.Persistence;
+using Nexo.Api.Services;
 using Nexo.Api.Tests.Infrastructure;
 using Xunit;
 
@@ -38,19 +39,48 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         var account = await db.Accounts.SingleAsync(a => a.Id == dto.Id);
         Assert.Equal(AccountStatus.Invited, account.Status);
         Assert.Equal(organizationId, account.OrganizationId);
+
+        var email = Assert.Single(factory.Emails.Sent);
+        Assert.Equal("bob@example.com", email.To);
+        Assert.Contains("Local Club", email.Subject);
+        Assert.Contains("Ana Admin", email.Text);
+        var token = CapturingEmailSender.TokenIn(email);
+        Assert.True(InvitationTokens.Matches(token, account.InvitationTokenHash));
+        Assert.DoesNotContain(token, await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task GivenTheInvitationEmail_WhenTheMemberActivatesWithItsToken_ThenTheAccountIsActive()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        await InviteAsync(organizationId, adminId, "bob@example.com");
+        var token = CapturingEmailSender.TokenIn(Assert.Single(factory.Emails.Sent));
+
+        var response = await factory.CreateClient().PostAsJsonAsync("/accounts/activation", new ActivateAccountDto
+        {
+            Email = "bob@example.com",
+            Name = "Bob",
+            Password = TestData.StrongPassword,
+            InvitationToken = token,
+        });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("not-an-email")]
+    [InlineData("TOO_LONG")]
     public async Task GivenAMissingOrInvalidEmail_WhenTheAdminInvites_ThenItRejectsAndCreatesNothing(string email)
     {
         var (organizationId, adminId) = await SeedOrganizationAsync();
 
+        if (email == "TOO_LONG") email = new string('a', 310) + "@example.com";
         var response = await InviteAsync(organizationId, adminId, email);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         await AssertAccountCountAsync(1);
+        Assert.Empty(factory.Emails.Sent);
     }
 
     [Fact]
@@ -106,6 +136,7 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         await AssertAccountCountAsync(2);
+        Assert.Empty(factory.Emails.Sent);
     }
 
     [Fact]
@@ -141,6 +172,7 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
             OrganizationName = name,
             AdminName = "Ana Admin",
             AdminEmail = adminEmail,
+            Password = TestData.StrongPassword,
         });
         var organization = (await response.Content.ReadFromJsonAsync<OrganizationDto>())!;
         await using var db = NewDbContext();

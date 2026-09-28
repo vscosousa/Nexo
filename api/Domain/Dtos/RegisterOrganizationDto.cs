@@ -8,4 +8,6 @@ public class RegisterOrganizationDto
     public string? AdminName { get; set; }
 
     public string? AdminEmail { get; set; }
+
+    public string? Password { get; set; }
 }
