@@ -14,20 +14,23 @@ public class OrganizationService(
     IPlanRepository plans,
     NexoDbContext db) : IOrganizationService
 {
+    private const string EmailInUse = "An account already exists for this email.";
+
     public async Task<OrganizationDto> Register(RegisterOrganizationDto dto)
     {
         Validate(dto);
 
         var email = Account.NormalizeEmail(dto.AdminEmail!);
         if (await accounts.FindByEmailAsync(email) is not null)
-            throw new ConflictException("An account already exists for this email.");
+            throw new ConflictException(EmailInUse);
 
         var plan = await plans.FindByNameAsync(Plan.Free)
             ?? throw new InvalidOperationException("The Free plan is not seeded.");
         var organization = OrganizationMapper.ToOrganization(dto, plan);
         organizations.Add(organization);
         accounts.Add(OrganizationMapper.ToAdminAccount(dto, organization));
-        await db.SaveChangesAsync();
+        // A concurrent registration of the same email may have passed the lookup and saved first.
+        await db.SaveChangesOrConflictAsync(EmailInUse);
 
         return OrganizationMapper.ToDto(organization);
     }
