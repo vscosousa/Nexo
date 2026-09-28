@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-002](US-002-register-member-email.md) · [HLD](US-002-HLD.md)
 
-**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+**Status:** backend implemented; the caller is read from a temporary `X-Account-Id` header until JWT authentication (US-005) exists; frontend not implemented. See [design review gaps](README.md#design-review-gaps).
 
 Full technical detail, building on the [HLD](US-002-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-002/README.md#level-3---backend) for the call sequence.
 
@@ -13,7 +13,7 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 ## Service logic (`AccountInvitationService.Invite`)
 
 1. Validate `InviteMemberDto`: `Email` non-empty and a valid email format. Fail with a validation error (→ 400) otherwise.
-2. Call `IAccountRepository.GetByIdAsync(callerAccountId)`. If the caller's `Role` is not `Admin` or their `OrganizationId` does not match the route's `organizationId`, fail with an authorization error (→ 403).
+2. Call `IAccountRepository.GetByIdAsync(callerAccountId)`; a missing or unknown caller id is also an authorization error. If the caller's `Role` is not `Admin` or their `OrganizationId` does not match the route's `organizationId`, fail with an authorization error (→ 403).
 3. Call `IOrganizationRepository.GetByIdAsync(organizationId)` for `MemberLimit`, and `IAccountRepository.CountByOrganizationAndStatusAsync(organizationId, Status.Active)` for the current **active** account count. If the count has reached `MemberLimit`, fail with a conflict error (→ 409); do not proceed. `Invited` accounts do not count toward this limit.
 4. Call `IAccountRepository.FindByEmailAsync(dto.Email)`. If a match is found (in any `Status`), fail with a conflict error (→ 409); do not proceed.
 5. Map the DTO and `organizationId` to a new `Account` (`AccountMapper.ToInvitedAccount`), with `Role = Member` and `Status = Invited`.
@@ -29,8 +29,9 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 | Caller is not the organization's admin | Step 2 (authorization check) | 403, no write attempted |
 | Organization's active-member limit reached | Step 3 (repository count, `Active` only) | 409, no write attempted |
 | Email already has an account (`Invited` or `Active`) | Step 4 (repository lookup) | 409, no write attempted |
-| Database failure on save | Step 7 | 500; no partial state persisted |
+| Same email invited concurrently (unique-index violation on save) | Step 7 | 409, same as the step 4 conflict; no partial state persisted |
+| Other database failure on save | Step 7 | 500; no partial state persisted |
 
 ## Related artifacts
 
-[HLD](US-002-HLD.md), [SSD/SD diagrams](../us/US-002/README.md), [Domain model](../domain-models/README.md#accounts-and-organizations), tests (not yet created, required before implementation per [AGENTS.md](../../AGENTS.md#working-rules)).
+[HLD](US-002-HLD.md), [SSD/SD diagrams](../us/US-002/README.md), [Domain model](../domain-models/README.md#accounts-and-organizations), [backend tests](../testing/README.md) (`AccountInvitationsEndpointTests`).

@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-002](US-002-register-member-email.md) · [LLD](US-002-LLD.md)
 
-**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+**Status:** backend implemented; the caller is read from a temporary `X-Account-Id` header until JWT authentication (US-005) exists; frontend not implemented. See [design review gaps](README.md#design-review-gaps).
 
 ## Requirements recap
 

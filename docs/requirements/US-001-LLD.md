@@ -55,7 +55,8 @@ Business rules (defaults, limits, status transitions) are defined once in the [d
 | Missing/invalid fields | Step 1 (service validation) | 400, field-level errors |
 | Email already has an account | Step 2 (repository lookup) | 409, no write attempted; the same email in a different case counts as the same account |
 | Free plan not seeded | Step 3 (plan lookup) | 500, no write attempted |
-| Database failure on save | Step 7 | 500; no partial organization/account persisted, since both inserts are in one `SaveChangesAsync` |
+| Same email registered concurrently (unique-index violation on save) | Step 7 | 409, same as the step 2 conflict; no partial organization/account persisted |
+| Other database failure on save | Step 7 | 500; no partial organization/account persisted, since both inserts are in one `SaveChangesAsync` |
 
 ## Related artifacts
 

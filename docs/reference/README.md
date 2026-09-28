@@ -87,6 +87,7 @@ Use dummy values above; set your own local PostgreSQL credentials. `dotnet user-
 | Method and path | Current behavior |
 | --- | --- |
 | `GET /WeatherForecast` | Returns five generated forecasts from the sample controller; no authentication or database access |
+| `POST /organizations/{organizationId}/invitations` | US-002: registers `{ "email" }` as an `Invited` member account; returns `201` with `AccountDto`, or `400`, `403`, `409`. The caller is the account id in the temporary `X-Account-Id` header until JWT authentication exists |
 | `GET /openapi/v1.json` | Generated OpenAPI document, exposed only in Development |
 | `GET /scalar/v1` | Scalar UI for manually exercising the API, exposed only in Development |
 
@@ -94,6 +95,6 @@ The forecast response is an array with `date` (date string), `temperatureC` (int
 
 The HTTP launch profile uses port 5122; the HTTPS profile also uses `https://localhost:7110`. The SPA's Axios base URL is `/api`, but neither a Vite proxy nor that API route prefix is configured. The frontend and backend therefore require separate verification today.
 
-Organization, invitation, activation, resource, and sign-in endpoints in [story HLDs](../requirements/README.md#user-stories) are proposed contracts. OAuth settings and JWT configuration are not yet implemented; no secret names or defaults have been selected for them.
+Activation, resource, and sign-in endpoints in [story HLDs](../requirements/README.md#user-stories) are proposed contracts. OAuth settings and JWT configuration are not yet implemented; no secret names or defaults have been selected for them.
 
 For step-by-step instructions, see [guides](../guides/README.md).

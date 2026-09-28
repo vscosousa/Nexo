@@ -6,7 +6,7 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
 
 Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
 
@@ -33,7 +33,7 @@ When a feature introduces persistence, document its tables, fields, database typ
 
 ## Integrity and access patterns
 
-The proposed stories require account email uniqueness, organization ownership, and atomic organization/admin creation. Email uniqueness is enforced by a unique index on the normalized (trimmed, lowercased) email, which also stops two concurrent registrations from both succeeding; how that race is reported to the client (the LLD currently maps save failures to 500), plan-limit concurrency, and deletion rules still need a reviewed design. See the [requirements review gaps](../requirements/README.md#design-review-gaps).
+The proposed stories require account email uniqueness, organization ownership, and atomic organization/admin creation. Email uniqueness is enforced by a unique index on the normalized (trimmed, lowercased) email, which also stops two concurrent registrations from both succeeding; how that race is reported to the client (US-001 and US-002 map the unique-index violation to 409, so the loser of two concurrent requests for one email conflicts like a sequential duplicate), plan-limit concurrency (the US-002 limit check counts `Active` rows without locking), and deletion rules still need a reviewed design. See the [requirements review gaps](../requirements/README.md#design-review-gaps).
 
 ## Migrations and lifecycle
 

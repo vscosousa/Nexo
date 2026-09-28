@@ -22,7 +22,7 @@
 
 Implementation must not assume answers to these; the diagrams check the Active count only as currently drawn.
 
-**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** backend implemented (caller from a temporary `X-Account-Id` header until US-005 auth); frontend not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
