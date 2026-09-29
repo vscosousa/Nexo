@@ -11,7 +11,9 @@ namespace Nexo.Api.Services;
 public class AccountActivationService(
     IAccountRepository accounts,
     IOrganizationRepository organizations,
+    IExternalLoginRepository externalLogins,
     PasswordHasher<Account> hasher,
+    ITokenService tokens,
     NexoDbContext db) : IAccountActivationService
 {
     private const string AlreadyActive = "This account is already active.";
@@ -39,11 +41,8 @@ public class AccountActivationService(
 
         var account = await FindInvitedAccount(dto.Email!, dto.LinkToken!, dto.Code!);
 
-        var organization = await organizations.GetByIdAsync(account.OrganizationId)
-            ?? throw new InvalidOperationException("The account's organization does not exist.");
-        var active = await accounts.CountByOrganizationAndStatusAsync(organization.Id, AccountStatus.Active);
-        if (active >= organization.Plan!.MemberLimit)
-            throw new ConflictException("The organization's member limit has been reached.");
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var organization = await LockOrganizationWithASeatAsync(account.OrganizationId);
 
         FieldRules.Password(errors, nameof(dto.Password), dto.Password, organization.Name, dto.FirstName, dto.LastName);
         if (errors.Count > 0)
@@ -51,8 +50,48 @@ public class AccountActivationService(
 
         AccountMapper.ApplyActivation(account, dto, hasher);
         await db.SaveChangesOrConflictAsync(AlreadyActive);
+        await transaction.CommitAsync();
 
         return AccountMapper.ToDto(account);
+    }
+
+    public async Task<(AccountDto Account, SessionDto Session)> ActivateExternal(
+        ActivateAccountExternalDto dto, string email, string linkToken, string code, ExternalIdentity identity)
+    {
+        var errors = new Dictionary<string, string[]>();
+        FieldRules.Text(errors, nameof(dto.FirstName), "First name", dto.FirstName, Account.NameMaxLength);
+        FieldRules.Text(errors, nameof(dto.LastName), "Last name", dto.LastName, Account.NameMaxLength);
+        if (errors.Count > 0)
+            throw new Domain.Exceptions.ValidationException(errors);
+
+        var account = await FindInvitedAccount(email, linkToken, code);
+        if (!identity.EmailVerified || string.IsNullOrWhiteSpace(identity.Email)
+            || Account.NormalizeEmail(identity.Email) != account.Email)
+            throw new ForbiddenException("The social login's email does not match the invitation.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        await LockOrganizationWithASeatAsync(account.OrganizationId);
+        AccountMapper.ApplyExternalActivation(account, dto);
+        externalLogins.Add(new ExternalLogin { AccountId = account.Id, Provider = identity.Provider, ProviderKey = identity.ProviderKey });
+        await db.SaveChangesOrConflictAsync("This account is already active, or the social login is linked to another account.");
+        await transaction.CommitAsync();
+
+        return (AccountMapper.ToDto(account), tokens.GenerateToken(account));
+    }
+
+    /// <summary>
+    /// Locks the organization's row for the rest of the current transaction, so concurrent activations count and
+    /// save one after another, then checks it still has room for one more active member.
+    /// </summary>
+    private async Task<Organization> LockOrganizationWithASeatAsync(Guid organizationId)
+    {
+        await organizations.LockAsync(organizationId);
+        var organization = await organizations.GetByIdAsync(organizationId)
+            ?? throw new InvalidOperationException("The account's organization does not exist.");
+        var active = await accounts.CountByOrganizationAndStatusAsync(organization.Id, AccountStatus.Active);
+        if (active >= organization.Plan!.MemberLimit)
+            throw new ConflictException("The organization's member limit has been reached.");
+        return organization;
     }
 
     /// <summary>

@@ -30,6 +30,17 @@ public static class AccountMapper
         account.InvitationExpiresAt = null;
     }
 
+    /// <summary>Turns a tracked invited account into an active one with the given name and no password; it signs in through its linked social login.</summary>
+    public static void ApplyExternalActivation(Account account, ActivateAccountExternalDto dto)
+    {
+        account.FirstName = dto.FirstName!.Trim();
+        account.LastName = dto.LastName!.Trim();
+        account.Status = AccountStatus.Active;
+        account.InvitationTokenHash = null;
+        account.InvitationCodeHash = null;
+        account.InvitationExpiresAt = null;
+    }
+
     public static AccountDto ToDto(Account account) => new()
     {
         Id = account.Id,

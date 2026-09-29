@@ -42,9 +42,8 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
         var response = await CallbackAsync("google", "g-1", " Ana@Example.com ", verified: true);
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        var location = response.Headers.Location!.ToString();
-        Assert.StartsWith($"{WebBaseUrl}/login/callback#token=", location);
-        var token = new JsonWebToken(location[(location.IndexOf("token=") + 6)..]);
+        Assert.Equal($"{WebBaseUrl}/login/callback", response.Headers.Location!.ToString());
+        var token = new JsonWebToken(SessionCookie.In(response).Value.ToString());
         Assert.Equal(account.Id.ToString(), token.Subject);
         await using var db = NewDbContext();
         var link = await db.ExternalLogins.SingleAsync();
@@ -59,7 +58,7 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
 
         var response = await CallbackAsync("google", "g-1", "ana@example.com", verified: true);
 
-        Assert.StartsWith($"{WebBaseUrl}/login/callback#token=", response.Headers.Location!.ToString());
+        Assert.Equal($"{WebBaseUrl}/login/callback", response.Headers.Location!.ToString());
         await using var db = NewDbContext();
         Assert.Equal(1, await db.ExternalLogins.CountAsync());
     }
@@ -152,7 +151,7 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
     private async Task<Account> AddAccountAsync(string email, AccountStatus status)
     {
         await using var db = NewDbContext();
-        var plan = await db.Plans.SingleAsync();
+        var plan = await db.Plans.SingleAsync(p => p.Name == Plan.Free);
         var organization = new Organization { Name = "Local Club", PlanId = plan.Id };
         var account = new Account { Email = email, Role = Role.Member, Status = status, OrganizationId = organization.Id };
         db.AddRange(organization, account);

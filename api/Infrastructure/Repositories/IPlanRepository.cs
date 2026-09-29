@@ -4,6 +4,9 @@ namespace Nexo.Api.Infrastructure.Repositories;
 
 public interface IPlanRepository
 {
-    /// <summary>Finds a plan by its name, or null if none exists.</summary>
-    Task<Plan?> FindByNameAsync(string name);
+    /// <summary>Finds the plan with the given id, or null if none exists.</summary>
+    Task<Plan?> GetByIdAsync(Guid id);
+
+    /// <summary>Returns all plans.</summary>
+    Task<List<Plan>> GetAllAsync();
 }

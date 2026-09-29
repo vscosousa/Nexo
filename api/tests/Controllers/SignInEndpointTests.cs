@@ -21,21 +21,23 @@ public class SignInEndpointTests(PostgresApiFactory factory)
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task GivenCorrectCredentials_WhenTheUserSignsIn_ThenASessionTokenWithTheirClaimsIsIssued()
+    public async Task GivenCorrectCredentials_WhenTheUserSignsIn_ThenAnHttpOnlySessionCookieWithTheirClaimsIsSet()
     {
         var account = await AddAccountAsync("ana@example.com", Role.Admin, AccountStatus.Active, TestData.StrongPassword);
 
         var response = await SignInAsync(" Ana@Example.com ", TestData.StrongPassword);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var session = await response.Content.ReadFromJsonAsync<SessionDto>();
-        Assert.NotNull(session);
-        var token = new JsonWebToken(session.Token);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var cookie = SessionCookie.In(response);
+        Assert.True(cookie.HttpOnly);
+        Assert.True(cookie.Secure);
+        Assert.Equal(Microsoft.Net.Http.Headers.SameSiteMode.None, cookie.SameSite);
+        var token = new JsonWebToken(cookie.Value.ToString());
         Assert.Equal(account.Id.ToString(), token.Subject);
         Assert.Equal(account.OrganizationId.ToString(), token.GetClaim("orgId").Value);
         Assert.Equal("Admin", token.GetClaim("role").Value);
-        Assert.InRange(session.ExpiresAt - DateTimeOffset.UtcNow, TimeSpan.FromHours(7.9), TimeSpan.FromHours(8.1));
-        Assert.Equal(session.ExpiresAt.ToUnixTimeSeconds(), new DateTimeOffset(token.ValidTo).ToUnixTimeSeconds());
+        Assert.InRange(cookie.Expires!.Value - DateTimeOffset.UtcNow, TimeSpan.FromHours(7.9), TimeSpan.FromHours(8.1));
+        Assert.Equal(cookie.Expires.Value.ToUnixTimeSeconds(), new DateTimeOffset(token.ValidTo).ToUnixTimeSeconds());
     }
 
     [Fact]
@@ -91,7 +93,7 @@ public class SignInEndpointTests(PostgresApiFactory factory)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
-        var plan = await db.Plans.SingleAsync();
+        var plan = await db.Plans.SingleAsync(p => p.Name == Plan.Free);
         var organization = new Organization { Name = "Local Club", PlanId = plan.Id };
         var account = new Account { Email = email, Role = role, Status = status, OrganizationId = organization.Id };
         if (password is not null)

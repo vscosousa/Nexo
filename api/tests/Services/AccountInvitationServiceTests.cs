@@ -25,7 +25,7 @@ public class AccountInvitationServiceTests(PostgresApiFactory factory)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
-        var plan = await db.Plans.SingleAsync();
+        var plan = await db.Plans.SingleAsync(p => p.Name == Plan.Free);
         var organization = new Organization { Name = "Local Club", PlanId = plan.Id };
         var admin = new Account
         {
@@ -56,7 +56,7 @@ public class AccountInvitationServiceTests(PostgresApiFactory factory)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
-        var plan = await db.Plans.SingleAsync();
+        var plan = await db.Plans.SingleAsync(p => p.Name == Plan.Free);
         var organization = new Organization { Name = "Local Club", PlanId = plan.Id };
         var admin = new Account
         {

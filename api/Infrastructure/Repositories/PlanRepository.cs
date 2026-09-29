@@ -6,6 +6,9 @@ namespace Nexo.Api.Infrastructure.Repositories;
 
 public class PlanRepository(NexoDbContext db) : IPlanRepository
 {
-    public Task<Plan?> FindByNameAsync(string name) =>
-        db.Plans.SingleOrDefaultAsync(p => p.Name == name);
+    public Task<Plan?> GetByIdAsync(Guid id) =>
+        db.Plans.SingleOrDefaultAsync(p => p.Id == id);
+
+    public Task<List<Plan>> GetAllAsync() =>
+        db.Plans.ToListAsync();
 }

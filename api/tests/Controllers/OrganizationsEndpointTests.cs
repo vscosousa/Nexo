@@ -22,6 +22,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         AdminLastName = "Admin",
         AdminEmail = "ana@example.com",
         Password = TestData.StrongPassword,
+        PlanId = NexoDbContext.FreePlanId,
     };
 
     public Task InitializeAsync() => factory.ResetAsync();
@@ -55,6 +56,51 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             new PasswordHasher<Account>().VerifyHashedPassword(account, account.PasswordHash!, TestData.StrongPassword));
     }
 
+    [Fact]
+    public async Task GivenAChosenPlan_WhenRegistering_ThenTheOrganizationIsOnThatPlan()
+    {
+        var dto = new RegisterOrganizationDto
+        {
+            OrganizationName = Valid.OrganizationName,
+            AdminFirstName = Valid.AdminFirstName,
+            AdminLastName = Valid.AdminLastName,
+            AdminEmail = Valid.AdminEmail,
+            Password = Valid.Password,
+            PlanId = NexoDbContext.TeamPlanId,
+        };
+
+        var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal("Team", (await response.Content.ReadFromJsonAsync<OrganizationDto>())!.Plan);
+        await using var db = NewDbContext();
+        Assert.Equal(NexoDbContext.TeamPlanId, (await db.Organizations.SingleAsync()).PlanId);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("00000000-0000-0000-0000-000000000000")]
+    [InlineData("0f0f0f0f-0000-4000-8000-000000000000")]
+    public async Task GivenAMissingOrUnknownPlan_WhenRegistering_ThenItRejectsWithAPlanErrorAndCreatesNothing(string? planId)
+    {
+        var dto = new RegisterOrganizationDto
+        {
+            OrganizationName = Valid.OrganizationName,
+            AdminFirstName = Valid.AdminFirstName,
+            AdminLastName = Valid.AdminLastName,
+            AdminEmail = Valid.AdminEmail,
+            Password = Valid.Password,
+            PlanId = planId is null ? null : Guid.Parse(planId),
+        };
+
+        var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ValidationProblemDetails>();
+        Assert.Equal(["PlanId"], problem!.Errors.Keys.ToArray());
+        await AssertNothingCreatedAsync();
+    }
+
     [Theory]
     [InlineData("", "Ana", "Admin", "ana@example.com")]
     [InlineData("Local Club", "", "Admin", "ana@example.com")]
@@ -78,6 +124,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             AdminLastName = adminLastName,
             AdminEmail = adminEmail,
             Password = password,
+            PlanId = NexoDbContext.FreePlanId,
         };
 
         var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
@@ -96,6 +143,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             AdminLastName = new string('n', 101),
             AdminEmail = new string('e', 310) + "@example.com",
             Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
         };
 
         var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
@@ -121,6 +169,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             AdminLastName = "Again",
             AdminEmail = Valid.AdminEmail,
             Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
         };
         var response = await client.PostAsJsonAsync("/organizations", second);
 
@@ -143,6 +192,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             AdminLastName = "Again",
             AdminEmail = " ANA@Example.com ",
             Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
         };
         var response = await client.PostAsJsonAsync("/organizations", second);
 

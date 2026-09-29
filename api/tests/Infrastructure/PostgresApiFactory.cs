@@ -29,6 +29,7 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             "ConnectionStrings:NexoDb",
             Environment.GetEnvironmentVariable("NEXO_TEST_DB") ?? DefaultConnectionString);
         builder.UseSetting("Jwt:Key", TestData.JwtKey);
+        builder.UseSetting("RateLimit:SignInPermitLimit", "1000");
         builder.ConfigureTestServices(services => services.Replace(ServiceDescriptor.Singleton<IEmailSender>(Emails)));
     }
 

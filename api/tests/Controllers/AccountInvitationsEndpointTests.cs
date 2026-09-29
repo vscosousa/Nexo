@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Models;
@@ -136,19 +137,37 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         await AssertAccountCountAsync(2);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("00000000-0000-0000-0000-000000000001")]
-    public async Task GivenNoOrUnknownCaller_WhenInviting_ThenItRejectsWithForbidden(string? header)
+    [Fact]
+    public async Task GivenNoToken_WhenInviting_ThenItRejectsWithUnauthorized()
     {
         var (organizationId, _) = await SeedOrganizationAsync();
-        var request = new HttpRequestMessage(HttpMethod.Post, $"/organizations/{organizationId}/invitations")
-        {
-            Content = JsonContent.Create(new InviteMemberDto { Email = "bob@example.com" }),
-        };
-        if (header is not null) request.Headers.Add("X-Account-Id", header);
+        var response = await factory.CreateClient().PostAsJsonAsync(
+            $"/organizations/{organizationId}/invitations", new InviteMemberDto { Email = "bob@example.com" });
 
-        var response = await factory.CreateClient().SendAsync(request);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        await AssertAccountCountAsync(1);
+    }
+
+    [Fact]
+    public async Task GivenATokenSignedWithAnotherKey_WhenInviting_ThenItRejectsWithUnauthorized()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        var forged = new TokenService(new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Jwt:Key"] = "another-signing-key-at-least-32-bytes!!" })
+            .Build()).GenerateToken(new Account { Email = "ana@example.com", Id = adminId, OrganizationId = organizationId, Role = Role.Admin }).Token;
+
+        var response = await InviteAsync(organizationId, forged, "bob@example.com");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        await AssertAccountCountAsync(1);
+    }
+
+    [Fact]
+    public async Task GivenAValidTokenOfAnUnknownAccount_WhenInviting_ThenItRejectsWithForbidden()
+    {
+        var (organizationId, _) = await SeedOrganizationAsync();
+
+        var response = await InviteAsync(organizationId, Guid.NewGuid(), "bob@example.com");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -234,6 +253,7 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
             AdminLastName = "Admin",
             AdminEmail = adminEmail,
             Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
         });
         var organization = (await response.Content.ReadFromJsonAsync<OrganizationDto>())!;
         await using var db = NewDbContext();
@@ -250,13 +270,17 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         return account.Id;
     }
 
-    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, Guid callerId, string email)
+    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, Guid callerId, string email) =>
+        InviteAsync(organizationId, factory.Services.GetRequiredService<ITokenService>()
+            .GenerateToken(new Account { Email = "caller@example.com", Id = callerId, OrganizationId = organizationId, Role = Role.Admin }).Token, email);
+
+    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, string token, string email)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, $"/organizations/{organizationId}/invitations")
         {
             Content = JsonContent.Create(new InviteMemberDto { Email = email }),
         };
-        request.Headers.Add("X-Account-Id", callerId.ToString());
+        request.Headers.Authorization = new("Bearer", token);
         return factory.CreateClient().SendAsync(request);
     }
 

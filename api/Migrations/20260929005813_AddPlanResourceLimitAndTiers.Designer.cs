@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nexo.Api.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Nexo.Api.Migrations
 {
     [DbContext(typeof(NexoDbContext))]
-    partial class NexoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929005813_AddPlanResourceLimitAndTiers")]
+    partial class AddPlanResourceLimitAndTiers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -141,27 +144,8 @@ namespace Nexo.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("HasAiInsights")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("HasDecisionHistory")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("HasExpenseTracking")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("HasIncidentTracking")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("HasPrioritySupport")
-                        .HasColumnType("boolean");
-
                     b.Property<int>("MemberLimit")
                         .HasColumnType("integer");
-
-                    b.Property<decimal?>("MonthlyPrice")
-                        .HasPrecision(8, 2)
-                        .HasColumnType("numeric(8,2)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -182,37 +166,20 @@ namespace Nexo.Api.Migrations
                         new
                         {
                             Id = new Guid("6f1c2b1e-7a52-4d0a-9a53-1f3e5c0b8d01"),
-                            HasAiInsights = false,
-                            HasDecisionHistory = false,
-                            HasExpenseTracking = false,
-                            HasIncidentTracking = false,
-                            HasPrioritySupport = false,
                             MemberLimit = 20,
-                            MonthlyPrice = 0m,
                             Name = "Free",
                             ResourceLimit = 10
                         },
                         new
                         {
                             Id = new Guid("8b2d4f3a-9c61-4e2b-8a64-2f4e6c0b9d02"),
-                            HasAiInsights = false,
-                            HasDecisionHistory = true,
-                            HasExpenseTracking = true,
-                            HasIncidentTracking = true,
-                            HasPrioritySupport = false,
                             MemberLimit = 100,
-                            MonthlyPrice = 29m,
                             Name = "Team",
                             ResourceLimit = 100
                         },
                         new
                         {
                             Id = new Guid("a1e5c7d4-1b83-4f0c-9b75-3a5f7d1c0e03"),
-                            HasAiInsights = true,
-                            HasDecisionHistory = true,
-                            HasExpenseTracking = true,
-                            HasIncidentTracking = true,
-                            HasPrioritySupport = true,
                             MemberLimit = 2147483647,
                             Name = "Enterprise",
                             ResourceLimit = 2147483647

@@ -23,7 +23,7 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
     {
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
-        var plan = await db.Plans.SingleAsync();
+        var plan = await db.Plans.SingleAsync(p => p.Name == Plan.Free);
         var organization = new Organization { Name = "First Club", PlanId = plan.Id };
         db.AddRange(
             organization,
@@ -41,7 +41,9 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
             new EmailLookupMissesRepository(new AccountRepository(db)),
             new OrganizationRepository(db),
             new PlanRepository(db),
+            new ExternalLoginRepository(db),
             new Microsoft.AspNetCore.Identity.PasswordHasher<Account>(),
+            factory.Services.GetRequiredService<ITokenService>(),
             db);
 
         await Assert.ThrowsAsync<ConflictException>(() => service.Register(new RegisterOrganizationDto
@@ -51,6 +53,7 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
             AdminLastName = "Again",
             AdminEmail = "ana@example.com",
             Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
         }));
     }
 }

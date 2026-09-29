@@ -14,4 +14,14 @@ public interface IAccountActivationService
     /// <exception cref="Domain.Exceptions.ForbiddenException">No account is registered for the email, or the link token or code is wrong or expired.</exception>
     /// <exception cref="Domain.Exceptions.ConflictException">The account is already active or the organization's member limit is reached.</exception>
     Task<AccountDto> Activate(ActivateAccountDto dto);
+
+    /// <summary>
+    /// Activates the invited account with the given name and no password, linking the social login, whose verified
+    /// email must be the invited one. Returns the account and its session.
+    /// </summary>
+    /// <exception cref="Domain.Exceptions.ValidationException">A name is missing or too long.</exception>
+    /// <exception cref="Domain.Exceptions.ForbiddenException">The invitation does not match, or the social login's verified email is not the invited one.</exception>
+    /// <exception cref="Domain.Exceptions.ConflictException">The account is already active, the member limit is reached, or the social login is linked to another account.</exception>
+    Task<(AccountDto Account, SessionDto Session)> ActivateExternal(
+        ActivateAccountExternalDto dto, string email, string linkToken, string code, ExternalIdentity identity);
 }
