@@ -20,8 +20,10 @@ public static class OrganizationMapper
         Plan = plan,
     };
 
+    /// <summary>An admin who must confirm the email (the token's link) before the account becomes active.</summary>
     public static Account ToAdminAccount(
-        RegisterOrganizationDto dto, Organization organization, PasswordHasher<Account> hasher)
+        RegisterOrganizationDto dto, Organization organization, PasswordHasher<Account> hasher,
+        string confirmationTokenHash, DateTime confirmationExpiresAt)
     {
         var account = new Account
         {
@@ -29,8 +31,10 @@ public static class OrganizationMapper
             FirstName = dto.AdminFirstName!.Trim(),
             LastName = dto.AdminLastName!.Trim(),
             Role = Role.Admin,
-            Status = AccountStatus.Active,
+            Status = AccountStatus.Unverified,
             OrganizationId = organization.Id,
+            InvitationTokenHash = confirmationTokenHash,
+            InvitationExpiresAt = confirmationExpiresAt,
         };
         account.PasswordHash = hasher.HashPassword(account, dto.Password!);
         return account;

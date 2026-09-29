@@ -31,12 +31,14 @@ public class AccountInvitationService(
 
         var organization = await organizations.GetByIdAsync(organizationId)
             ?? throw new InvalidOperationException("The caller's organization does not exist.");
-        var active = await accounts.CountByOrganizationAndStatusAsync(organizationId, AccountStatus.Active);
-        if (active >= organization.Plan!.MemberLimit)
-            throw new ConflictException("The organization's member limit has been reached.");
-
         var existing = await accounts.FindByEmailAsync(Account.NormalizeEmail(dto.Email!));
         var reinvite = existing is { Status: AccountStatus.Invited } && existing.OrganizationId == organizationId;
+
+        var active = await accounts.CountByOrganizationAndStatusAsync(organizationId, AccountStatus.Active);
+        var pending = await accounts.CountByOrganizationAndStatusAsync(organizationId, AccountStatus.Invited);
+        if (active >= organization.Plan!.MemberLimit || (!reinvite && active + pending >= organization.Plan.MemberLimit))
+            throw new ConflictException("The organization's member limit has been reached.");
+
         if (existing is not null && !reinvite)
             throw new ConflictException(EmailInUse);
 
@@ -50,6 +52,7 @@ public class AccountInvitationService(
             account.InvitationTokenHash = tokenHash;
             account.InvitationCodeHash = codeHash;
             account.InvitationExpiresAt = expiresAt;
+            account.InvitationFailedAttempts = 0;
         }
         else
         {
@@ -80,13 +83,14 @@ public class AccountInvitationService(
     {
         if (string.IsNullOrWhiteSpace(requestedEmail)) return;
         var account = await accounts.FindByEmailAsync(Account.NormalizeEmail(requestedEmail));
-        if (account is not { Status: AccountStatus.Invited }) return;
+        if (account is not { Status: AccountStatus.Invited, InvitationExpiresAt: { } expiresAt } || expiresAt <= DateTime.UtcNow)
+            return;
         var organization = await organizations.GetByIdAsync(account.OrganizationId);
         if (organization is null) return;
 
         var (code, codeHash) = InvitationTokens.CreateCode();
         account.InvitationCodeHash = codeHash;
-        account.InvitationExpiresAt = DateTime.UtcNow + InvitationTokens.Lifetime;
+        account.InvitationFailedAttempts = 0;
         await db.SaveChangesAsync();
 
         try

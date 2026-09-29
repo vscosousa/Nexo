@@ -9,14 +9,18 @@ public interface IAccountInvitationService
     /// <exception cref="Domain.Exceptions.ValidationException">The email is missing or malformed.</exception>
     /// <exception cref="Domain.Exceptions.ForbiddenException">The caller is not an admin of the organization.</exception>
     /// <exception cref="Exception">The invitation email could not be sent; the pending account is removed again.</exception>
-    /// <exception cref="Domain.Exceptions.ConflictException">The active-member limit is reached or the email already has an account.</exception>
+    /// <exception cref="Domain.Exceptions.ConflictException">
+    /// The member limit is reached (active and pending accounts count toward it, except when re-inviting a pending
+    /// email), or the email already has an account.
+    /// </exception>
     Task<AccountDto> Invite(Guid organizationId, Guid? callerAccountId, InviteMemberDto dto);
 
     /// <summary>
-    /// Re-sends a fresh code and expiry, for a person who lost or outlived the original code. The link token
-    /// does not change, so an already-open activation page (which has it in its URL) keeps working once the
-    /// new code is entered. Silently does nothing when the email has no pending invitation, so this never
-    /// reveals whether an email is registered anywhere.
+    /// Re-sends a fresh code, for a person who lost the original or used up its wrong attempts. The link token and
+    /// the expiry do not change, so an already-open activation page (which has the token in its URL) keeps working
+    /// once the new code is entered, and resending cannot keep an invitation alive past its expiry. Silently does
+    /// nothing when the email has no unexpired pending invitation, so this never reveals whether an email is
+    /// registered anywhere.
     /// </summary>
     Task Resend(string email);
 }

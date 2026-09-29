@@ -70,14 +70,40 @@ public class AuthController(
         Role = User.FindFirstValue("role")!,
     });
 
-    /// <summary>Ends the session by clearing the session cookie.</summary>
+    /// <summary>
+    /// Signs out: clears the session cookie and ends every session of the account, on every device, so a copied or
+    /// stolen session token stops working too.
+    /// </summary>
     /// <response code="204">The cookie is cleared, whether or not a session existed.</response>
     [HttpPost("sign-out")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public IActionResult EndSession()
+    public async Task<IActionResult> EndSession()
     {
+        if (Guid.TryParse(User.FindFirstValue("sub"), out var accountId))
+            await service.EndSessions(accountId);
         Response.Cookies.Delete(SessionCookie, SessionCookieOptions(null));
         return NoContent();
+    }
+
+    /// <summary>Unlocks an account locked by too many wrong passwords, with the token from the emailed unlock link.</summary>
+    /// <response code="200">Unlocked; the owner can sign in again.</response>
+    /// <response code="403">No locked account matches the email and token; the same response for every cause.</response>
+    /// <response code="429">Too many requests from this address; the limit is <c>RateLimit:PublicPermitLimit</c> per minute (default 10).</response>
+    [HttpPost("unlock")]
+    [EnableRateLimiting("public")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Unlock(UnlockAccountDto dto)
+    {
+        try
+        {
+            await service.Unlock(dto.Email ?? "", dto.Token ?? "");
+            return Ok();
+        }
+        catch (ForbiddenException e)
+        {
+            return Problem(e.Message, statusCode: StatusCodes.Status403Forbidden);
+        }
     }
 
     /// <summary>
@@ -203,6 +229,7 @@ public class AuthController(
     /// <response code="401">No registration is pending with a provider.</response>
     /// <response code="409">The email or the provider identity already belongs to an account.</response>
     [HttpPost("external/register")]
+    [EnableRateLimiting("public")]
     [ProducesResponseType<OrganizationDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -231,6 +258,7 @@ public class AuthController(
     /// <response code="403">The invitation is not valid, or the provider's email is not the invited one.</response>
     /// <response code="409">The account is already active, the member limit is reached, or the identity is linked to another account.</response>
     [HttpPost("external/activate")]
+    [EnableRateLimiting("public")]
     [ProducesResponseType<AccountDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

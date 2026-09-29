@@ -16,7 +16,9 @@ services:
       retries: 12
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      target: dev
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080

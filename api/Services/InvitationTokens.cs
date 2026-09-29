@@ -17,6 +17,9 @@ public static class InvitationTokens
     /// <summary>How long an invitation stays usable; an admin re-invites the email to issue a fresh one.</summary>
     public static readonly TimeSpan Lifetime = TimeSpan.FromDays(7);
 
+    /// <summary>How long a self-registered admin has to confirm their email; after that the email can be registered again.</summary>
+    public static readonly TimeSpan ConfirmationLifetime = TimeSpan.FromDays(1);
+
     public const int CodeLength = 6;
 
     /// <summary>Wrong codes tried with the right link token before the invitation stops working; a resend or re-invite resets the count.</summary>

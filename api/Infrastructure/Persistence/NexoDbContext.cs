@@ -75,6 +75,8 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
             account.Property(a => a.InvitationTokenHash).HasMaxLength(64);
             account.Property(a => a.InvitationCodeHash).HasMaxLength(64);
             account.Property(a => a.InvitationExpiresAt).HasColumnType("timestamp with time zone");
+            account.Property(a => a.UnlockTokenHash).HasMaxLength(64);
+            account.Property(a => a.UnlockExpiresAt).HasColumnType("timestamp with time zone");
             account.Property<uint>("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
             account.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
             account.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);

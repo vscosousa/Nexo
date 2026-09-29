@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Domain.Exceptions;
 using Nexo.Api.Domain.Models;
@@ -94,21 +95,42 @@ public class AccountActivationService(
         return organization;
     }
 
+    public async Task ConfirmEmail(string email, string token)
+    {
+        var account = await accounts.FindByEmailAsync(Account.NormalizeEmail(email));
+        if (account is not { Status: AccountStatus.Unverified }
+            || !InvitationTokens.TokenMatches(token, account.InvitationTokenHash)
+            || account.InvitationExpiresAt is not { } expiresAt || expiresAt <= DateTime.UtcNow)
+            throw new ForbiddenException("The confirmation link is not valid or has expired.");
+
+        account.Status = AccountStatus.Active;
+        account.InvitationTokenHash = null;
+        account.InvitationExpiresAt = null;
+        await db.SaveChangesOrConflictAsync(AlreadyActive);
+    }
+
     /// <summary>
-    /// Looks up the pending account for the email and checks both the link token and the code against it,
-    /// without mutating anything. Both are required: the link token alone (it sits in a URL, which can leak
-    /// through browser history or a forwarded link) is not enough to prove the person actually has the email.
+    /// Looks up the pending account for the email and checks both the link token and the code against it. Both are
+    /// required: the link token alone (it sits in a URL, which can leak through browser history or a forwarded link)
+    /// is not enough to prove the person actually has the email. A wrong code with the right link token is counted,
+    /// so whoever holds a leaked link gets only <see cref="InvitationTokens.MaxCodeAttempts"/> guesses at the code.
+    /// Every mismatch is the same <see cref="ForbiddenException"/>, including an already active account, so the
+    /// response does not reveal which emails are registered.
     /// </summary>
     private async Task<Account> FindInvitedAccount(string email, string linkToken, string code)
     {
-        var account = await accounts.FindByEmailAsync(Account.NormalizeEmail(email))
-            ?? throw new ForbiddenException(InvalidInvitation);
-        if (account.Status == AccountStatus.Active)
-            throw new ConflictException(AlreadyActive);
-        if (!InvitationTokens.TokenMatches(linkToken, account.InvitationTokenHash)
-            || !InvitationTokens.CodeMatches(code, account.InvitationCodeHash)
-            || account.InvitationExpiresAt is not { } expiresAt || expiresAt <= DateTime.UtcNow)
+        var account = await accounts.FindByEmailAsync(Account.NormalizeEmail(email));
+        if (account is not { Status: AccountStatus.Invited }
+            || !InvitationTokens.TokenMatches(linkToken, account.InvitationTokenHash)
+            || account.InvitationExpiresAt is not { } expiresAt || expiresAt <= DateTime.UtcNow
+            || account.InvitationFailedAttempts >= InvitationTokens.MaxCodeAttempts)
             throw new ForbiddenException(InvalidInvitation);
+        if (!InvitationTokens.CodeMatches(code, account.InvitationCodeHash))
+        {
+            await db.Accounts.Where(a => a.Id == account.Id).ExecuteUpdateAsync(
+                s => s.SetProperty(a => a.InvitationFailedAttempts, a => a.InvitationFailedAttempts + 1));
+            throw new ForbiddenException(InvalidInvitation);
+        }
         return account;
     }
 }

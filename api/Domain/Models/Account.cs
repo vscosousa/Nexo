@@ -32,14 +32,32 @@ public class Account
     /// <summary>Null until a password is set; an invited or SSO-only account has none.</summary>
     public string? PasswordHash { get; set; }
 
-    /// <summary>SHA-256 of the invitation link's token (in the email's URL); set while <c>Invited</c>, cleared on activation.</summary>
+    /// <summary>
+    /// SHA-256 of the emailed link's token: the invitation link while <c>Invited</c>, or the email confirmation link
+    /// while <c>Unverified</c>. Cleared once the account is active.
+    /// </summary>
     public string? InvitationTokenHash { get; set; }
 
     /// <summary>SHA-256 of the invitation code (in the email's body text, typed in separately); set while <c>Invited</c>, cleared on activation.</summary>
     public string? InvitationCodeHash { get; set; }
 
-    /// <summary>UTC time after which the invitation token and code stop working; set with them, cleared on activation. A missing value counts as expired.</summary>
+    /// <summary>UTC time after which the emailed link (and invitation code) stop working; set with them, cleared on activation. A missing value counts as expired.</summary>
     public DateTime? InvitationExpiresAt { get; set; }
+
+    /// <summary>Wrong invitation codes tried with the right link token; at <c>InvitationTokens.MaxCodeAttempts</c> the invitation stops working until a resend or re-invite.</summary>
+    public int InvitationFailedAttempts { get; set; }
+
+    /// <summary>Wrong passwords in a row; reset by a correct one. At <c>AuthService.MaxSignInAttempts</c> the account is locked.</summary>
+    public int FailedSignInAttempts { get; set; }
+
+    /// <summary>SHA-256 of the emailed unlock link's token; set while the account is locked, which blocks every kind of sign-in.</summary>
+    public string? UnlockTokenHash { get; set; }
+
+    /// <summary>UTC time after which the unlock link stops working; the account stays locked, and the next sign-in attempt emails a fresh link.</summary>
+    public DateTime? UnlockExpiresAt { get; set; }
+
+    /// <summary>Carried in every session token; bumping it (sign-out, lockout) invalidates all the account's sessions.</summary>
+    public int SessionVersion { get; set; }
 
     public Role Role { get; set; }
 

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Hosting;
 using Nexo.Api.Domain.Dtos;
 using Nexo.Api.Tests.Infrastructure;
 using Xunit;
@@ -45,6 +46,27 @@ public class HttpSecurityEndpointTests(PostgresApiFactory factory) : IClassFixtu
     }
 
     [Fact]
+    public async Task GivenAProductionHost_WhenServingHttps_ThenItSendsStrictTransportSecurity()
+    {
+        var client = factory.WithWebHostBuilder(b => b.UseEnvironment("Production"))
+            .CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://nexo.example") });
+
+        var response = await client.GetAsync("/plans");
+
+        Assert.True(response.Headers.Contains("Strict-Transport-Security"));
+    }
+
+    [Fact]
+    public async Task GivenADevelopmentHost_WhenServingHttps_ThenItDoesNotPinHttps()
+    {
+        var client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://nexo.example") });
+
+        var response = await client.GetAsync("/plans");
+
+        Assert.False(response.Headers.Contains("Strict-Transport-Security"));
+    }
+
+    [Fact]
     public async Task GivenTooManySignInAttempts_WhenTheLimitIsExceeded_ThenItRespondsTooManyRequests()
     {
         var client = CreateClient(signInLimit: 3);
@@ -53,7 +75,9 @@ public class HttpSecurityEndpointTests(PostgresApiFactory factory) : IClassFixtu
         for (var i = 0; i < 3; i++)
             Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/auth/sign-in", attempt)).StatusCode);
 
-        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync("/auth/sign-in", attempt)).StatusCode);
+        var rejected = await client.PostAsJsonAsync("/auth/sign-in", attempt);
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.InRange(rejected.Headers.RetryAfter!.Delta!.Value, TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(1));
     }
 
     [Theory]
@@ -64,6 +88,7 @@ public class HttpSecurityEndpointTests(PostgresApiFactory factory) : IClassFixtu
     [InlineData("/accounts/activation/confirm-email")]
     [InlineData("/auth/external/register")]
     [InlineData("/auth/external/activate")]
+    [InlineData("/auth/unlock")]
     public async Task GivenTooManyRequestsToAPublicEndpoint_WhenTheLimitIsExceeded_ThenItRespondsTooManyRequests(string path)
     {
         var client = CreateClient(publicLimit: 3);

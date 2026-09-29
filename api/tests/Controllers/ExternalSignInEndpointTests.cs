@@ -106,6 +106,19 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenALockedAccount_WhenTheCallbackRuns_ThenItRejectsAndLinksNothing()
+    {
+        var account = await AddAccountAsync("ana@example.com", AccountStatus.Active);
+        await using (var db = NewDbContext())
+            await db.Accounts.Where(a => a.Id == account.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.UnlockTokenHash, "locked"));
+
+        var response = await CallbackAsync("google", "g-1", "ana@example.com", verified: true);
+
+        await AssertRejectedAsync(response);
+    }
+
+    [Fact]
     public async Task GivenNoExternalCookie_WhenTheCallbackRuns_ThenItRejects()
     {
         var response = await _configured.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false })

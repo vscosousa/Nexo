@@ -44,6 +44,8 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
             new ExternalLoginRepository(db),
             new Microsoft.AspNetCore.Identity.PasswordHasher<Account>(),
             factory.Services.GetRequiredService<ITokenService>(),
+            factory.Emails,
+            factory.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Nexo.Api.Infrastructure.Email.EmailOptions>>(),
             db);
 
         await Assert.ThrowsAsync<ConflictException>(() => service.Register(new RegisterOrganizationDto

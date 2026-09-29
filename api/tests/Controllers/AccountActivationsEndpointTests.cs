@@ -129,14 +129,14 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
-    public async Task GivenAnAlreadyActiveAccount_WhenSomeoneActivates_ThenItRejectsWithConflict()
+    public async Task GivenAnAlreadyActiveAccount_WhenSomeoneActivates_ThenItRejectsLikeAnyMismatch()
     {
         var organizationId = await SeedOrganizationAsync();
         await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Active);
 
         var response = await ActivateAsync("bob@example.com", "Impostor", "Impostor", TestData.StrongPassword);
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         await using var db = NewDbContext();
         var account = await db.Accounts.SingleAsync(a => a.Email == "bob@example.com");
         Assert.Null(account.FirstName);
@@ -220,6 +220,36 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenAPendingAccount_WhenResendIsRequested_ThenTheInvitationKeepsItsOriginalExpiry()
+    {
+        var organizationId = await SeedOrganizationAsync();
+        await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Invited);
+        DateTime? before;
+        await using (var db = NewDbContext())
+            before = (await db.Accounts.SingleAsync(a => a.Email == "bob@example.com")).InvitationExpiresAt;
+
+        await ResendAsync("bob@example.com");
+
+        await using var check = NewDbContext();
+        Assert.Equal(before, (await check.Accounts.SingleAsync(a => a.Email == "bob@example.com")).InvitationExpiresAt);
+    }
+
+    [Fact]
+    public async Task GivenAnExpiredInvitation_WhenResendIsRequested_ThenItStillAcceptsButSendsNothing()
+    {
+        var organizationId = await SeedOrganizationAsync();
+        await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Invited);
+        await using (var db = NewDbContext())
+            await db.Accounts.Where(a => a.Email == "bob@example.com")
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.InvitationExpiresAt, DateTime.UtcNow.AddMinutes(-1)));
+
+        var response = await ResendAsync("bob@example.com");
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Empty(factory.Emails.Sent);
+    }
+
+    [Fact]
     public async Task GivenAnAlreadyActiveAccount_WhenResendIsRequested_ThenItStillAcceptsButSendsNothing()
     {
         var organizationId = await SeedOrganizationAsync();
@@ -269,14 +299,14 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
-    public async Task GivenAnAlreadyActiveAccount_WhenVerifying_ThenItRejectsWithConflict()
+    public async Task GivenAnAlreadyActiveAccount_WhenVerifying_ThenItRejectsLikeAnUnknownEmail()
     {
         var organizationId = await SeedOrganizationAsync();
         await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Active);
 
         var response = await VerifyAsync("bob@example.com");
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]
@@ -334,7 +364,11 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
             Password = TestData.StrongPassword,
             PlanId = NexoDbContext.FreePlanId,
         });
-        return (await response.Content.ReadFromJsonAsync<OrganizationDto>())!.Id;
+        response.EnsureSuccessStatusCode();
+        factory.Emails.Clear();
+        await using var db = NewDbContext();
+        await db.Accounts.ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, AccountStatus.Active));
+        return (await db.Organizations.SingleAsync()).Id;
     }
 
     private async Task AddAccountAsync(Guid organizationId, string email, AccountStatus status)

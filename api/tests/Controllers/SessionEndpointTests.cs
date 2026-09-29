@@ -55,6 +55,45 @@ public class SessionEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenSessionsOnTwoDevices_WhenOneSignsOut_ThenTheOtherSessionEndsToo()
+    {
+        await AddAccountAsync();
+        var laptop = await SignedInBrowserAsync();
+        var phone = await SignedInBrowserAsync();
+
+        await laptop.SendAsync(await WithAntiforgeryTokenAsync(laptop, SignOutRequest()));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await phone.GetAsync("/auth/me")).StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenATokenSignedWithTheRightKeyButForAnotherAudience_WhenAskingWhoIsSignedIn_ThenItRejects()
+    {
+        var account = await AddAccountAsync();
+        var token = new Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler().CreateToken(
+            new Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor
+            {
+                Issuer = "nexo",
+                Audience = "another-service",
+                Claims = new Dictionary<string, object>
+                {
+                    ["sub"] = account.Id.ToString(),
+                    ["orgId"] = account.OrganizationId.ToString(),
+                    ["role"] = "Admin",
+                    ["sv"] = 0,
+                },
+                Expires = DateTime.UtcNow.AddHours(1),
+                SigningCredentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+                    new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(TestData.JwtKey)),
+                    Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256),
+            });
+        var request = new HttpRequestMessage(HttpMethod.Get, "/auth/me");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().SendAsync(request)).StatusCode);
+    }
+
+    [Fact]
     public async Task GivenACookieSession_WhenAChangeIsSentWithoutTheAntiforgeryToken_ThenItIsRejected()
     {
         await AddAccountAsync();

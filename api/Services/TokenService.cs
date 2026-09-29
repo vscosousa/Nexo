@@ -9,7 +9,16 @@ namespace Nexo.Api.Services;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
+    /// <summary>The claim carrying <see cref="Account.SessionVersion"/>; a token whose value is behind the account's is rejected.</summary>
+    public const string SessionVersionClaim = "sv";
+
     private static readonly TimeSpan Lifetime = TimeSpan.FromHours(8);
+
+    /// <summary>The <c>iss</c> tokens are issued with and validated against: <c>Jwt:Issuer</c>, or <c>nexo</c>.</summary>
+    public static string Issuer(IConfiguration configuration) => configuration["Jwt:Issuer"] is { Length: > 0 } i ? i : "nexo";
+
+    /// <summary>The <c>aud</c> tokens are issued for and validated against: <c>Jwt:Audience</c>, or <c>nexo</c>.</summary>
+    public static string Audience(IConfiguration configuration) => configuration["Jwt:Audience"] is { Length: > 0 } a ? a : "nexo";
 
     public SessionDto GenerateToken(Account account)
     {
@@ -20,11 +29,14 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var expires = DateTime.UtcNow.Add(Lifetime);
         var token = new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
         {
+            Issuer = Issuer(configuration),
+            Audience = Audience(configuration),
             Claims = new Dictionary<string, object>
             {
                 ["sub"] = account.Id.ToString(),
                 ["orgId"] = account.OrganizationId.ToString(),
                 ["role"] = account.Role.ToString(),
+                [SessionVersionClaim] = account.SessionVersion,
             },
             Expires = expires,
             SigningCredentials = new SigningCredentials(

@@ -163,13 +163,13 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
-    public async Task GivenAValidTokenOfAnUnknownAccount_WhenInviting_ThenItRejectsWithForbidden()
+    public async Task GivenAValidTokenOfAnUnknownAccount_WhenInviting_ThenTheSessionIsRejected()
     {
         var (organizationId, _) = await SeedOrganizationAsync();
 
         var response = await InviteAsync(organizationId, Guid.NewGuid(), "bob@example.com");
 
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
@@ -232,13 +232,26 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
-    public async Task GivenTheLimitIsReachedOnlyCountingInvitedAccounts_WhenInviting_ThenItStillCreatesTheAccount()
+    public async Task GivenTheLimitIsReachedCountingPendingInvitations_WhenInvitingSomeoneNew_ThenItRejectsWithConflict()
     {
         var (organizationId, adminId) = await SeedOrganizationAsync();
         for (var i = 1; i < 20; i++)
             await AddAccountAsync(organizationId, $"m{i}@example.com", Role.Member, AccountStatus.Invited);
 
         var response = await InviteAsync(organizationId, adminId, "bob@example.com");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        await AssertAccountCountAsync(20);
+    }
+
+    [Fact]
+    public async Task GivenTheLimitIsReachedCountingPendingInvitations_WhenReinvitingAPendingEmail_ThenItStillSendsAFreshInvitation()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        for (var i = 1; i < 20; i++)
+            await AddAccountAsync(organizationId, $"m{i}@example.com", Role.Member, AccountStatus.Invited);
+
+        var response = await InviteAsync(organizationId, adminId, "m1@example.com");
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
@@ -255,10 +268,13 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
             Password = TestData.StrongPassword,
             PlanId = NexoDbContext.FreePlanId,
         });
-        var organization = (await response.Content.ReadFromJsonAsync<OrganizationDto>())!;
+        response.EnsureSuccessStatusCode();
+        factory.Emails.Clear();
         await using var db = NewDbContext();
+        await db.Accounts.Where(a => a.Email == adminEmail)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, AccountStatus.Active));
         var admin = await db.Accounts.SingleAsync(a => a.Email == adminEmail);
-        return (organization.Id, admin.Id);
+        return (admin.OrganizationId, admin.Id);
     }
 
     private async Task<Guid> AddAccountAsync(Guid organizationId, string email, Role role, AccountStatus status)

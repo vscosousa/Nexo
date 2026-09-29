@@ -5,17 +5,44 @@ namespace Nexo.Api.Tests.Services;
 
 public class PasswordPolicyTests
 {
+    [Theory]
+    [InlineData("Sh0rt!a", PasswordStrength.Weak)]
+    [InlineData("abcdefgh", PasswordStrength.Weak)]
+    [InlineData("ALLUPPERCASE", PasswordStrength.Weak)]
+    [InlineData("abcdefghijklmno", PasswordStrength.Weak)]
+    [InlineData("Abcdefg1", PasswordStrength.Reasonable)]
+    [InlineData("abcdef1!", PasswordStrength.Reasonable)]
+    [InlineData("Abcdefg1!", PasswordStrength.Reasonable)]
+    [InlineData("NoSymbols1234Ab", PasswordStrength.Reasonable)]
+    [InlineData("abcdefghijklmnop", PasswordStrength.Reasonable)]
+    [InlineData("abcdefghijklmnopqrs", PasswordStrength.Reasonable)]
+    [InlineData("Abcdefgh1!xy", PasswordStrength.Strong)]
+    [InlineData("Str0ng!Passw0rd", PasswordStrength.Strong)]
+    [InlineData("NoSymbols1234Abcd", PasswordStrength.Strong)]
+    [InlineData("correct horse battery", PasswordStrength.Strong)]
+    [InlineData("Str0ng!Passw0rd!!", PasswordStrength.VeryStrong)]
+    [InlineData("NoSymbols1234Abcdefgh", PasswordStrength.VeryStrong)]
+    [InlineData("correct horse battery staple", PasswordStrength.VeryStrong)]
+    public void GivenAPassword_WhenMeasured_ThenItGetsTheExpectedStrength(string password, PasswordStrength expected) =>
+        Assert.Equal(expected, PasswordPolicy.Measure(password));
+
     [Fact]
-    public void GivenAStrongPassword_WhenChecked_ThenThereAreNoErrors() =>
-        Assert.Empty(PasswordPolicy.Check("Str0ng!Passw0rd", "Local Club", "Ana Admin"));
+    public void GivenALongPasswordContainingAName_WhenMeasured_ThenItIsWeak() =>
+        Assert.Equal(PasswordStrength.Weak, PasswordPolicy.Measure("Xx!AnaAdmin9-long-enough", "Ana Admin"));
+
+    [Theory]
+    [InlineData("Str0ng!Passw0rd")]
+    [InlineData("Abcdefg1")]
+    [InlineData("abcdefghijklmnop")]
+    public void GivenAReasonableOrStrongPassword_WhenChecked_ThenThereAreNoErrors(string password) =>
+        Assert.Empty(PasswordPolicy.Check(password, "Local Club", "Ana Admin"));
 
     [Theory]
     [InlineData("Sh0rt!a")]
-    [InlineData("alllowercase1!")]
-    [InlineData("ALLUPPERCASE1!")]
-    [InlineData("NoDigitsHere!!")]
-    [InlineData("NoSymbols1234Ab")]
-    public void GivenAPasswordMissingARequiredRule_WhenChecked_ThenItIsRejected(string password) =>
+    [InlineData("abcdefgh")]
+    [InlineData("ALLUPPERCASE")]
+    [InlineData("abcdefghijklmno")]
+    public void GivenAWeakPassword_WhenChecked_ThenItIsRejected(string password) =>
         Assert.NotEmpty(PasswordPolicy.Check(password));
 
     [Fact]

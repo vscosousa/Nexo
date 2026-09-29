@@ -1,8 +1,10 @@
+using System.Net;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Nexo.Api.Domain.Models;
@@ -41,7 +43,8 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
     .AllowAnyHeader()
     .AllowAnyMethod()
-    .AllowCredentials()));
+    .AllowCredentials()
+    .WithExposedHeaders("Retry-After")));
 
 builder.Services.AddAntiforgery(o =>
 {
@@ -58,14 +61,23 @@ builder.Services.AddAntiforgery(o =>
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    o.AddPolicy("sign-in", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>()
-                .GetValue("RateLimit:SignInPermitLimit", 10),
-            Window = TimeSpan.FromMinutes(1),
-        }));
+    o.OnRejected = (context, _) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            context.HttpContext.Response.Headers.RetryAfter = ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+        return ValueTask.CompletedTask;
+    };
+    o.AddPolicy("sign-in", context => PerClientPerMinute(context, "RateLimit:SignInPermitLimit"));
+    o.AddPolicy("public", context => PerClientPerMinute(context, "RateLimit:PublicPermitLimit"));
+
+    static RateLimitPartition<string> PerClientPerMinute(HttpContext context, string limitSetting) =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = context.RequestServices.GetRequiredService<IConfiguration>().GetValue(limitSetting, 10),
+                Window = TimeSpan.FromMinutes(1),
+            });
 });
 
 builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
@@ -80,11 +92,20 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
                     context.Token = context.Request.Cookies[AuthController.SessionCookie];
                 return Task.CompletedTask;
             },
+            OnTokenValidated = async context =>
+            {
+                var current = Guid.TryParse(context.Principal?.FindFirst("sub")?.Value, out var accountId)
+                    ? await context.HttpContext.RequestServices.GetRequiredService<NexoDbContext>().Accounts
+                        .Where(a => a.Id == accountId).Select(a => (int?)a.SessionVersion).SingleOrDefaultAsync()
+                    : null;
+                if (current is null || context.Principal!.FindFirst(TokenService.SessionVersionClaim)?.Value != current.ToString())
+                    context.Fail("The session has ended.");
+            },
         };
         o.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            ValidIssuer = TokenService.Issuer(configuration),
+            ValidAudience = TokenService.Audience(configuration),
             ClockSkew = TimeSpan.FromMinutes(1),
             IssuerSigningKey = configuration["Jwt:Key"] is { Length: > 0 } key
                 ? new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
@@ -116,12 +137,29 @@ if (builder.Configuration["Authentication:Microsoft:ClientId"] is { Length: > 0 
         o.SignInScheme = AuthController.ExternalScheme;
     });
 
+var trustedProxies = builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [];
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownProxies.Clear();
+    o.KnownIPNetworks.Clear();
+    foreach (var proxy in trustedProxies)
+        o.KnownProxies.Add(IPAddress.Parse(proxy));
+});
+
 var app = builder.Build();
+
+if (trustedProxies.Length > 0)
+    app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+}
+else
+{
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();

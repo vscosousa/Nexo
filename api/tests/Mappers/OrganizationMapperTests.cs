@@ -32,17 +32,19 @@ public class OrganizationMapperTests
     }
 
     [Fact]
-    public void GivenRegistrationDetailsAndOrganization_WhenMappedToAccount_ThenItIsAnActiveAdminOfThatOrganization()
+    public void GivenRegistrationDetailsAndOrganization_WhenMappedToAccount_ThenItIsAnUnconfirmedAdminOfThatOrganization()
     {
         var organization = OrganizationMapper.ToOrganization(Registration, FreePlan);
+        var expiresAt = DateTime.UtcNow.AddDays(1);
 
-        var account = OrganizationMapper.ToAdminAccount(Registration, organization, Hasher);
+        var account = OrganizationMapper.ToAdminAccount(Registration, organization, Hasher, "confirmation-hash", expiresAt);
 
         Assert.Equal("ana@example.com", account.Email);
         Assert.Equal("Ana", account.FirstName);
         Assert.Equal("Admin", account.LastName);
         Assert.Equal(Role.Admin, account.Role);
-        Assert.Equal(AccountStatus.Active, account.Status);
+        Assert.Equal(AccountStatus.Unverified, account.Status);
+        Assert.Equal(("confirmation-hash", expiresAt), (account.InvitationTokenHash, account.InvitationExpiresAt));
         Assert.Equal(organization.Id, account.OrganizationId);
         Assert.Equal(
             PasswordVerificationResult.Success,
@@ -62,7 +64,7 @@ public class OrganizationMapperTests
         };
 
         var organization = OrganizationMapper.ToOrganization(dto, FreePlan);
-        var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher);
+        var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher, "hash", DateTime.UtcNow);
 
         Assert.Equal("Local Club", organization.Name);
         Assert.Equal("Ana", account.FirstName);
@@ -82,7 +84,7 @@ public class OrganizationMapperTests
         };
         var organization = OrganizationMapper.ToOrganization(dto, FreePlan);
 
-        var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher);
+        var account = OrganizationMapper.ToAdminAccount(dto, organization, Hasher, "hash", DateTime.UtcNow);
 
         Assert.Equal("ana.admin+club@example.com", account.Email);
     }

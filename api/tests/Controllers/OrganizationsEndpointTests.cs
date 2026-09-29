@@ -30,19 +30,16 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
     public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
-    public async Task GivenValidDetails_WhenRegistering_ThenItCreatesTheOrganizationAndItsAdminAccount()
+    public async Task GivenValidDetails_WhenRegistering_ThenItCreatesTheOrganizationAndAnUnconfirmedAdminAccount()
     {
         var response = await factory.CreateClient().PostAsJsonAsync("/organizations", Valid);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var dto = await response.Content.ReadFromJsonAsync<OrganizationDto>();
-        Assert.NotNull(dto);
-        Assert.Equal("Local Club", dto.Name);
-        Assert.Equal("Free", dto.Plan);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Empty(await response.Content.ReadAsStringAsync());
 
         await using var db = NewDbContext();
         var organization = await db.Organizations.SingleAsync();
-        Assert.Equal(dto.Id, organization.Id);
+        Assert.Equal("Local Club", organization.Name);
         var plan = await db.Plans.SingleAsync(p => p.Id == organization.PlanId);
         Assert.Equal("Free", plan.Name);
         Assert.Equal(20, plan.MemberLimit);
@@ -129,7 +126,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
             PlanId = NexoDbContext.FreePlanId,
         });
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         await using var db = NewDbContext();
         Assert.Equal("Other Club", (await db.Organizations.SingleAsync()).Name);
         Assert.Equal("Again", (await db.Accounts.SingleAsync()).LastName);
@@ -150,8 +147,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
 
         var response = await factory.CreateClient().PostAsJsonAsync("/organizations", dto);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        Assert.Equal("Team", (await response.Content.ReadFromJsonAsync<OrganizationDto>())!.Plan);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         await using var db = NewDbContext();
         Assert.Equal(NexoDbContext.TeamPlanId, (await db.Organizations.SingleAsync()).PlanId);
     }
@@ -236,7 +232,7 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
-    public async Task GivenAnEmailAlreadyInUse_WhenRegistering_ThenItRejectsWithConflictAndCreatesNothingMore()
+    public async Task GivenAnEmailAlreadyInUse_WhenRegistering_ThenItRespondsTheSameButOnlyEmailsTheOwner()
     {
         var client = factory.CreateClient();
         await client.PostAsJsonAsync("/organizations", Valid);
@@ -252,10 +248,15 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         };
         var response = await client.PostAsJsonAsync("/organizations", second);
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        Assert.Empty(await response.Content.ReadAsStringAsync());
         await using var db = NewDbContext();
         Assert.Equal(1, await db.Organizations.CountAsync());
         Assert.Equal(1, await db.Accounts.CountAsync());
+        var notice = factory.Emails.Sent[^1];
+        Assert.Equal("ana@example.com", notice.To);
+        Assert.Contains("already has an account", notice.Text);
+        Assert.DoesNotContain("token=", notice.Text);
     }
 
     [Fact]
@@ -275,7 +276,9 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         };
         var response = await client.PostAsJsonAsync("/organizations", second);
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        await using var db = NewDbContext();
+        Assert.Equal(1, await db.Accounts.CountAsync());
     }
 
     private Task<HttpResponseMessage> SignInAsync() =>
