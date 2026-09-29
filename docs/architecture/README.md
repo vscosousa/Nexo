@@ -10,7 +10,7 @@ Nexo is a modular monolith: a single React SPA and a single ASP.NET Core Web API
 
 ## Components
 
-The layers below exist in the weather sample, in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`), and in US-005 sign-in (`AuthController`, `AuthService`, `TokenService`, `ExternalLogin`; frontend `auth/`). Resource classes shown in story designs are proposed and not implemented, and no business module other than sign-in has a frontend.
+The layers below exist in the weather sample, in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`), and in US-005 sign-in (`AuthController`, `AuthService`, `TokenService`, `ExternalLogin`; frontend `auth/`). US-001 (register) and US-003 (activate) also have a frontend, in `auth/` alongside sign-in; US-002 (invite a member) has no UI, only the API. Resource classes shown in story designs are proposed and not implemented.
 
 | Component | Responsibility | Dependencies | Interface |
 | --- | --- | --- | --- |

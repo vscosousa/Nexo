@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path (no frontend or SSO registration yet); US-005 sign-in (password and Google) is implemented on the backend and frontend; US-004 is not, and its HLD/LLD and diagrams describe proposed behavior.
+This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path; US-001 (register) and US-003 (activate) also have a frontend (no SSO registration/activation yet, and neither flow signs the person in automatically - both redirect to `/login`), but US-002 (invite a member) has no UI, only the API. US-005 sign-in (password and Google) is implemented on the backend and frontend; US-004 and US-006 are not, and their HLD/LLD and diagrams describe proposed behavior.
 
 ## Context and scope
 
@@ -38,6 +38,7 @@ This page defines the intended scope and indexes draft stories. The backends of 
 | [US-003](US-003-create-member-account.md) | Create a member account | backend implemented | [HLD](US-003-HLD.md) | [LLD](US-003-LLD.md) |
 | [US-004](US-004-register-resource.md) | Register a resource | draft | [HLD](US-004-HLD.md) | [LLD](US-004-LLD.md) |
 | [US-005](US-005-sign-in.md) | Sign in to an existing account | implemented (password, Google) | [HLD](US-005-HLD.md) | [LLD](US-005-LLD.md) |
+| [US-006](US-006-choose-plan-before-registering.md) | Choose a plan before registering an organization | draft | [HLD](US-006-HLD.md) | [LLD](US-006-LLD.md) |
 
 ## User story template
 
@@ -67,6 +68,7 @@ These are inconsistencies or missing details in the current proposals, not new d
 | US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
 | US-005 sign-in | Microsoft sign-in is coded but every Microsoft login is rejected: Microsoft does not attest that an email is verified, and the account-linking rule needs a verified email. The Google flow has no sequence diagrams yet. |
 | Shared contracts | API prefix, error bodies (US-001 currently uses ASP.NET `ProblemDetails`), OAuth endpoints, and database uniqueness/concurrency handling (email normalization is decided: trimmed and lowercased) need consistent specifications. |
+| US-006 plan hand-off | Requires adding a required `planId` to US-001's already-implemented `RegisterOrganizationDto` and replacing its hardcoded "Free" plan lookup. No plans seeded, or the organization/admin form reached directly without a plan chosen, are undefined. |
 
 The [database page](../database/README.md) tracks persistence status. [ADR-006](../decisions/ADR-006-authentication.md) records the accepted authentication direction, while the concrete contracts remain incomplete.
 

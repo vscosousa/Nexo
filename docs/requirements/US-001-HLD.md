@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [LLD](US-001-LLD.md)
 
-**Status:** backend endpoint implemented; credentials and session delivery remain open ([design review gaps](README.md#design-review-gaps)); frontend not implemented.
+**Status:** backend endpoint implemented; credentials and session delivery remain open ([design review gaps](README.md#design-review-gaps)); frontend implemented (`RegisterForm` two-step wizard at `/register`), but redirects to `/login` instead of signing in automatically, since the backend returns no session.
 
 ## Requirements recap
 

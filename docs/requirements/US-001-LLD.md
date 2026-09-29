@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [HLD](US-001-HLD.md)
 
-**Status:** backend implemented up to the `OrganizationDto` contract, with the password path (SSO registration and session delivery remain open, see [design review gaps](README.md#design-review-gaps)); frontend not implemented.
+**Status:** backend implemented up to the `OrganizationDto` contract, with the password path (SSO registration and session delivery remain open, see [design review gaps](README.md#design-review-gaps)); frontend implemented (`RegisterForm` two-step wizard at `/register`), but redirects to `/login` instead of signing in automatically, since the backend returns no session.
 
 Full technical detail, building on the [HLD](US-001-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-001/README.md#level-3---backend) for the call sequence.
 

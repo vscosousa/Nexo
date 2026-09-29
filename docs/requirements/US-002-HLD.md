@@ -56,7 +56,7 @@ Responses:
 
 **`POST /accounts/activation/resend`**
 
-Lets the invited person themselves ask for a fresh code — no authentication, and distinct from the admin re-inviting above: only the code is rotated, never the link token, so an activation page the person already has open (with the original link's token in its URL) keeps working once they enter the new code.
+Lets the invited person themselves ask for a fresh code. No authentication, and distinct from the admin re-inviting above: only the code is rotated, never the link token, so an activation page the person already has open (with the original link's token in its URL) keeps working once they enter the new code.
 
 Request body (`ResendInvitationDto`):
 
@@ -70,7 +70,7 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 202 Accepted | none | Always, whether or not the email has a pending invitation — an email with a fresh code (no link) is sent if, and only if, one does; this response never reveals which |
+| 202 Accepted | none | Always, whether or not the email has a pending invitation. An email with a fresh code (no link) is sent if, and only if, one does; this response never reveals which |
 
 ## Related artifacts
 
