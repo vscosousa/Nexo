@@ -23,9 +23,6 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<NexoDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("NexoDb")));
 
-builder.Services.AddScoped<IWeatherForecastRepository, WeatherForecastRepository>();
-builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
-
 builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 builder.Services.AddScoped<IPlanRepository, PlanRepository>();
