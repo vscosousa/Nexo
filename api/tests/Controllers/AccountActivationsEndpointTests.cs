@@ -118,7 +118,6 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
     [Fact]
     public async Task GivenTheRightLinkTokenButAWrongCode_WhenSomeoneActivates_ThenItRejectsWithForbiddenAndChangesNothing()
     {
-        // The link token alone (e.g. lifted from a forwarded URL) must not be enough on its own.
         var organizationId = await SeedOrganizationAsync();
         await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Invited);
 
@@ -195,7 +194,6 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var email = Assert.Single(factory.Emails.Sent);
         Assert.Equal("bob@example.com", email.To);
-        // No link in a resend email: the original one (already open in the person's browser) still works.
         Assert.DoesNotContain("/activate?", email.Text);
         var newCode = CapturingEmailSender.CodeIn(email);
         Assert.NotEqual(TestData.InvitationCode, newCode);
@@ -203,7 +201,6 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
         var oldCodeAttempt = await ActivateAsync("bob@example.com", "Bob", "Builder", TestData.StrongPassword);
         Assert.Equal(HttpStatusCode.Forbidden, oldCodeAttempt.StatusCode);
 
-        // The original link token (unchanged) plus the freshly emailed code activates the account.
         var newAttempt = await ActivateAsync(
             "bob@example.com", "Bob", "Builder", TestData.StrongPassword, TestData.InvitationLinkToken, newCode);
         Assert.Equal(HttpStatusCode.OK, newAttempt.StatusCode);

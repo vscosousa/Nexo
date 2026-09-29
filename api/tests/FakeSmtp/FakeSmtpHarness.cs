@@ -61,7 +61,6 @@ public sealed class FakeSmtpHarness : IAsyncLifetime
         foreach (var line in clientLines)
         {
             await writer.WriteLineAsync(line);
-            // Data lines get no reply; the terminating "." does.
             if (inData && line != ".") continue;
             received.AddRange(await ReadReplyAsync(reader));
             inData = !inData && line == "DATA" && received[^1].StartsWith("354");

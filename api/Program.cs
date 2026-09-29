@@ -33,7 +33,6 @@ builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Social providers are registered only when their credentials are configured (dotnet user-secrets or environment).
 var authentication = builder.Services.AddAuthentication()
     .AddCookie(AuthController.ExternalScheme, o => o.ExpireTimeSpan = TimeSpan.FromMinutes(5));
 if (builder.Configuration["Authentication:Google:ClientId"] is { Length: > 0 } googleId)
@@ -44,7 +43,6 @@ if (builder.Configuration["Authentication:Google:ClientId"] is { Length: > 0 } g
         o.SignInScheme = AuthController.ExternalScheme;
         o.ClaimActions.MapJsonKey("email_verified", "email_verified");
     });
-// Microsoft does not attest that an email is verified, so its logins are rejected until that is decided.
 if (builder.Configuration["Authentication:Microsoft:ClientId"] is { Length: > 0 } microsoftId)
     authentication.AddMicrosoftAccount("microsoft", o =>
     {

@@ -48,7 +48,6 @@ public class AuthController(IAuthService service, IAuthenticationSchemeProvider 
         if (provider is not ("google" or "microsoft") || await schemes.GetSchemeAsync(provider) is null)
             return NotFound();
         var properties = new AuthenticationProperties { RedirectUri = "/auth/external/callback" };
-        // Always show the account chooser, so a shared browser never signs in as the previous account.
         properties.SetParameter("prompt", "select_account");
         return Challenge(properties, provider);
     }
@@ -61,7 +60,6 @@ public class AuthController(IAuthService service, IAuthenticationSchemeProvider 
         var web = configuration["Email:WebBaseUrl"]!.TrimEnd('/');
         var external = await HttpContext.AuthenticateAsync(ExternalScheme);
         await HttpContext.SignOutAsync(ExternalScheme);
-        // The provider handler stamps its scheme name, which is the provider, as the claims' issuer.
         var id = external.Principal?.FindFirst(ClaimTypes.NameIdentifier);
         if (!external.Succeeded || id is null)
             return Redirect($"{web}/login?error=oauth");
@@ -73,7 +71,6 @@ public class AuthController(IAuthService service, IAuthenticationSchemeProvider 
                 id.Value,
                 external.Principal!.FindFirstValue(ClaimTypes.Email),
                 string.Equals(external.Principal.FindFirstValue("email_verified"), "true", StringComparison.OrdinalIgnoreCase));
-            // A fragment is never sent to servers or written to their logs.
             return Redirect($"{web}/login/callback#token={session.Token}");
         }
         catch (Exception e) when (e is UnauthorizedException or ConflictException)

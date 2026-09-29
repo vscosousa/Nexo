@@ -30,7 +30,6 @@ public class OrganizationService(
         var organization = OrganizationMapper.ToOrganization(dto, plan);
         organizations.Add(organization);
         accounts.Add(OrganizationMapper.ToAdminAccount(dto, organization, hasher));
-        // A concurrent registration of the same email may have passed the lookup and saved first.
         await db.SaveChangesOrConflictAsync(EmailInUse);
 
         return OrganizationMapper.ToDto(organization);

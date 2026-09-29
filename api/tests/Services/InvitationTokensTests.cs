@@ -23,7 +23,6 @@ public class InvitationTokensTests
     [Fact]
     public void GivenALinkToken_WhenMatchedInADifferentCase_ThenItDoesNotMatch()
     {
-        // Unlike the code, the link token is copy-pasted from a URL, never typed, so case matters.
         var (token, hash) = InvitationTokens.CreateLinkToken();
 
         Assert.False(InvitationTokens.TokenMatches(token.ToLowerInvariant(), hash));

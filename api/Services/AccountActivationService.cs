@@ -50,7 +50,6 @@ public class AccountActivationService(
             throw new Domain.Exceptions.ValidationException(errors);
 
         AccountMapper.ApplyActivation(account, dto, hasher);
-        // A concurrent activation of the same account may have committed after the status check.
         await db.SaveChangesOrConflictAsync(AlreadyActive);
 
         return AccountMapper.ToDto(account);

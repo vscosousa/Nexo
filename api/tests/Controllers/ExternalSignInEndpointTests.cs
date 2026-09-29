@@ -113,7 +113,6 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
 
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         Assert.StartsWith("https://accounts.google.com/", response.Headers.Location!.ToString());
-        // Always show the account chooser, so a shared browser never signs in as the previous account.
         Assert.Contains("prompt=select_account", response.Headers.Location.Query);
     }
 
@@ -139,7 +138,6 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
     private async Task<HttpResponseMessage> CallbackAsync(string provider, string key, string email, bool verified)
     {
         var options = _configured.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get("External");
-        // The provider handler stamps its scheme name (the provider) as the claims' issuer.
         var identity = new ClaimsIdentity(
             [new Claim(ClaimTypes.NameIdentifier, key, null, provider), new Claim(ClaimTypes.Email, email, null, provider),
                 new Claim("email_verified", verified ? "true" : "false", null, provider)],

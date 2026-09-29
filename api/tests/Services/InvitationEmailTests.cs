@@ -20,7 +20,6 @@ public class InvitationEmailTests
         Assert.Contains("tok_en-1", email.Text);
         Assert.Contains("ABC123", email.Text);
         Assert.Contains("ABC123", email.Html);
-        // The code never appears inside the link itself: it is a second, separate secret.
         Assert.DoesNotContain($"token=tok_en-1&code=ABC123", email.Text);
     }
 

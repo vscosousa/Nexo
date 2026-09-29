@@ -19,7 +19,6 @@ public static class InvitationTokens
 
     public const int CodeLength = 6;
 
-    // No 0/O/1/I/L, so a person reading or typing the code cannot confuse characters.
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
     public static (string Token, string Hash) CreateLinkToken()
@@ -28,10 +27,6 @@ public static class InvitationTokens
         return (token, HashToken(token));
     }
 
-    // ponytail: 6 chars from a 32-symbol alphabet is ~30 bits of entropy, weak against brute force on its
-    // own. Paired with the separate, much larger link token and a 7-day expiry that's an acceptable trade
-    // for now; add throttling on /accounts/activation and /accounts/activation/verify before this handles
-    // real invitations at scale.
     public static (string Code, string Hash) CreateCode()
     {
         var code = new string(RandomNumberGenerator.GetItems<char>(CodeAlphabet, CodeLength));
@@ -40,8 +35,6 @@ public static class InvitationTokens
 
     public static string HashToken(string token) => Hash(token);
 
-    // Codes are typed by hand, so matching ignores case; link tokens are copy-pasted exactly and base64url
-    // is case-sensitive, so those are hashed as-is.
     public static string HashCode(string code) => Hash(code.ToUpperInvariant());
 
     public static bool TokenMatches(string token, string? hash) => Matches(HashToken(token), hash);

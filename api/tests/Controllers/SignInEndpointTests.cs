@@ -64,7 +64,6 @@ public class SignInEndpointTests(PostgresApiFactory factory)
     [Fact]
     public async Task GivenAnInvitedAccount_WhenTheUserSignsIn_ThenItRejectsWithTheGenericError()
     {
-        // Even a stored hash must not open a session before the account is active.
         await AddAccountAsync("bob@example.com", Role.Member, AccountStatus.Invited, TestData.StrongPassword);
 
         var response = await SignInAsync("bob@example.com", TestData.StrongPassword);

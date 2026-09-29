@@ -23,8 +23,6 @@ namespace Nexo.Api.Migrations
                 type: "character varying(200)",
                 maxLength: 200,
                 nullable: true);
-
-            // xmin is PostgreSQL's built-in row version column (the Account concurrency token); it already exists.
         }
 
         /// <inheritdoc />
