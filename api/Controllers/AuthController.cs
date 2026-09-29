@@ -20,7 +20,8 @@ public class AuthController(
     IAccountActivationService activations,
     IAuthenticationSchemeProvider schemes,
     IOptions<EmailOptions> emailOptions,
-    IAntiforgery antiforgery)
+    IAntiforgery antiforgery,
+    IOptions<AntiforgeryOptions> antiforgeryOptions)
     : ControllerBase
 {
     /// <summary>The cookie scheme where provider handlers park the identity between the provider and our callback.</summary>
@@ -67,10 +68,10 @@ public class AuthController(
         await service.GetCurrent(Guid.Parse(User.FindFirstValue("sub")!)) is { } me ? Ok(me) : Unauthorized();
 
     /// <summary>
-    /// Signs out: clears the session cookie and ends every session of the account, on every device, so a copied or
-    /// stolen session token stops working too.
+    /// Signs out: clears the session and anti-forgery cookies and ends every session of the account, on every device,
+    /// so a copied or stolen session token stops working too.
     /// </summary>
-    /// <response code="204">The cookie is cleared, whether or not a session existed.</response>
+    /// <response code="204">The cookies are cleared, whether or not a session existed.</response>
     [HttpPost("sign-out")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> EndSession()
@@ -78,6 +79,8 @@ public class AuthController(
         if (Guid.TryParse(User.FindFirstValue("sub"), out var accountId))
             await service.EndSessions(accountId);
         Response.Cookies.Delete(SessionCookie, SessionCookieOptions(null));
+        var antiforgeryCookie = antiforgeryOptions.Value.Cookie;
+        Response.Cookies.Delete(antiforgeryCookie.Name!, antiforgeryCookie.Build(HttpContext));
         return NoContent();
     }
 

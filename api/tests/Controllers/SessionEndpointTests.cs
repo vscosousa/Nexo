@@ -52,6 +52,10 @@ public class SessionEndpointTests(PostgresApiFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         Assert.True(SessionCookie.In(response).Expires < DateTimeOffset.UtcNow);
+        var antiforgery = SessionCookie.In(response, "nexo_xsrf");
+        Assert.True(antiforgery.Expires < DateTimeOffset.UtcNow);
+        Assert.True(antiforgery.Secure);
+        Assert.Equal("/", antiforgery.Path.ToString());
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.GetAsync("/auth/me")).StatusCode);
     }
 
