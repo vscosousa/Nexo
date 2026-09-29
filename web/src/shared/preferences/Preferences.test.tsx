@@ -24,20 +24,9 @@ describe("Preferences", () => {
     await userEvent.click(screen.getByRole("button", { name: "PT" }));
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Gerir a sua associação nunca foi tão simples",
+      "Reservas, equipamento e voluntários, sem confusão",
     );
     expect(document.documentElement.lang).toBe("pt");
     expect(localStorage.getItem("lang")).toBe("pt");
-  });
-
-  it("when the theme is toggled, then <html data-theme> switches to dark and the choice is saved", async () => {
-    renderLanding();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Toggle light/dark theme" }),
-    );
-
-    expect(document.documentElement.dataset.theme).toBe("dark");
-    expect(localStorage.getItem("theme")).toBe("dark");
   });
 });

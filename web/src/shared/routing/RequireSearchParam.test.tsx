@@ -8,6 +8,15 @@ function renderGuardedRoute(url: string) {
     <MemoryRouter initialEntries={[url]}>
       <Routes>
         <Route path="/" element={<p>Landing</p>} />
+        <Route path="/register" element={<p>Plans</p>} />
+        <Route
+          path="/register/organization"
+          element={
+            <RequireSearchParam name="planId" redirectTo="/register">
+              <p>Organization form</p>
+            </RequireSearchParam>
+          }
+        />
         <Route
           path="/activate"
           element={
@@ -27,6 +36,12 @@ describe("RequireSearchParam", () => {
 
     expect(screen.getByText("Landing")).toBeInTheDocument();
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
+  });
+
+  it("given a redirect target and the param is missing, when rendering a guarded route, then it redirects there", () => {
+    renderGuardedRoute("/register/organization");
+
+    expect(screen.getByText("Plans")).toBeInTheDocument();
   });
 
   it("given the param is present, when rendering a guarded route, then it renders the content", () => {

@@ -34,11 +34,8 @@ describe("SignInForm", () => {
     vi.resetAllMocks();
   });
 
-  it("given correct credentials, when submitting, then it stores the session token and opens the app", async () => {
-    vi.mocked(authService.signIn).mockResolvedValue({
-      token: "jwt-1",
-      expiresAt: "2026-09-29T00:00:00Z",
-    });
+  it("given correct credentials, when submitting, then it opens the app without keeping any token in script-readable storage", async () => {
+    vi.mocked(authService.signIn).mockResolvedValue(undefined);
     renderLogin();
 
     await submit("ana@example.com", "secret");
@@ -48,7 +45,7 @@ describe("SignInForm", () => {
       "secret",
     );
     expect(await screen.findByText("Home")).toBeInTheDocument();
-    expect(localStorage.getItem("token")).toBe("jwt-1");
+    expect(localStorage.length).toBe(0);
   });
 
   it("given the API rejects the credentials, when submitting, then it shows one generic error and stays on the form", async () => {
@@ -60,9 +57,9 @@ describe("SignInForm", () => {
     await submit("ana@example.com", "wrong");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The email or password is not correct.",
+      "The email or password is incorrect.",
     );
-    expect(localStorage.getItem("token")).toBeNull();
+    expect(screen.queryByText("Home")).not.toBeInTheDocument();
   });
 
   it("given an empty field, when submitting, then it asks for it without calling the API", async () => {
@@ -72,6 +69,17 @@ describe("SignInForm", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Enter your email and password.",
+    );
+    expect(authService.signIn).not.toHaveBeenCalled();
+  });
+
+  it("given a malformed email, when submitting, then it asks for a valid one without calling the API", async () => {
+    renderLogin();
+
+    await submit("not-an-email", "secret");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Enter a valid email.",
     );
     expect(authService.signIn).not.toHaveBeenCalled();
   });

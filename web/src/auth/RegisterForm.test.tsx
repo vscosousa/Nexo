@@ -9,13 +9,14 @@ import { authService } from "./authService";
 
 vi.mock("./authService");
 
-function renderRegister() {
+function renderRegister(url = "/register/organization?planId=team-id") {
   return render(
-    <MemoryRouter initialEntries={["/register"]}>
+    <MemoryRouter initialEntries={[url]}>
       <AuthProvider>
         <Routes>
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/register/organization" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/app" element={<p>Home</p>} />
         </Routes>
       </AuthProvider>
     </MemoryRouter>,
@@ -66,6 +67,7 @@ describe("RegisterForm", () => {
       adminLastName: "Admin",
       adminEmail: "ana@example.com",
       password: "Secret-123",
+      planId: "team-id",
     });
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Organization registered",
@@ -111,6 +113,43 @@ describe("RegisterForm", () => {
     expect(authService.register).not.toHaveBeenCalled();
   });
 
+  it("given step two, when typing the password, then the requirements checklist updates live", async () => {
+    const user = userEvent.setup();
+    renderRegister();
+
+    await fillStep1("Associação Horizonte");
+    const requirement = () => screen.getByText("At least 8 characters");
+    expect(requirement().closest("li")).not.toHaveAttribute("data-met");
+
+    await user.type(screen.getByLabelText("Password"), "Secret-1");
+
+    expect(requirement().closest("li")).toHaveAttribute("data-met");
+  });
+
+  it("given a malformed email on step two, when submitting, then it asks for a valid one without calling the API", async () => {
+    renderRegister();
+
+    await fillStep1("Associação Horizonte");
+    await fillStep2({ ...valid, Email: "not-an-email" });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Enter a valid email.",
+    );
+    expect(authService.register).not.toHaveBeenCalled();
+  });
+
+  it("given a password missing a symbol on step two, when submitting, then it asks for a stronger one without calling the API", async () => {
+    renderRegister();
+
+    await fillStep1("Associação Horizonte");
+    await fillStep2({ ...valid, Password: "Secret123" });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "at least 8 characters",
+    );
+    expect(authService.register).not.toHaveBeenCalled();
+  });
+
   it("given the email already registered, when submitting, then it says so", async () => {
     vi.mocked(authService.register).mockRejectedValue({
       response: { status: 409 },
@@ -139,6 +178,72 @@ describe("RegisterForm", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Password is too short.",
+    );
+  });
+
+  it("given step two, when offering Google, then its link carries the plan and organization name", async () => {
+    renderRegister();
+
+    await fillStep1("Local Club");
+
+    const link = screen.getByRole("link", { name: "Continue with Google" });
+    const url = new URL(link.getAttribute("href")!);
+    expect(url.pathname).toBe("/auth/external/google");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      intent: "register",
+      planId: "team-id",
+      organizationName: "Local Club",
+    });
+  });
+
+  it("given pending Google details, when the form opens, then the names are prefilled and editable and no password is asked", async () => {
+    vi.mocked(authService.pendingExternal).mockResolvedValue({
+      intent: "register",
+      email: "ana@example.com",
+      firstName: "Ana",
+      lastName: "Silva",
+      organizationName: "Local Club",
+    });
+    vi.mocked(authService.registerExternal).mockResolvedValue(undefined);
+    renderRegister("/register/organization?planId=team-id&external=google");
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/ana@example\.com/)).toBeInTheDocument();
+    const firstName = screen.getByLabelText("First name");
+    expect(firstName).toHaveValue("Ana");
+    expect(screen.getByLabelText("Last name")).toHaveValue("Silva");
+    expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+    await user.clear(firstName);
+    await user.type(firstName, "Anabela");
+    await user.click(
+      screen.getByRole("button", { name: "Register organization" }),
+    );
+
+    expect(authService.registerExternal).toHaveBeenCalledWith({
+      organizationName: "Local Club",
+      adminFirstName: "Anabela",
+      adminLastName: "Silva",
+      planId: "team-id",
+    });
+    expect(await screen.findByText("Home")).toBeInTheDocument();
+  });
+
+  it("given Google sign-in failed, when the form opens, then it says so", async () => {
+    renderRegister("/register/organization?planId=team-id&error=oauth");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Google sign-in failed.",
+    );
+  });
+
+  it("given the Google details expired, when the form opens, then it asks to try again", async () => {
+    vi.mocked(authService.pendingExternal).mockRejectedValue({
+      response: { status: 401 },
+    });
+    renderRegister("/register/organization?planId=team-id&external=google");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Your Google sign-in expired",
     );
   });
 });

@@ -9,6 +9,28 @@
   gap: var(--space-sm);
 }
 
+/* Fades and lifts elements into place as they scroll into view; see useScrollReveal. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--space-xl));
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 .lp-header {
   display: flex;
   flex-wrap: wrap;
@@ -265,7 +287,8 @@
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   transition:
-    transform 0.2s,
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out,
     box-shadow 0.2s,
     border-color 0.2s;
 }
@@ -314,7 +337,8 @@
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   transition:
-    transform 0.2s,
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out,
     box-shadow 0.2s,
     border-color 0.2s;
 }
@@ -404,69 +428,6 @@
   align-items: stretch;
 }
 
-.lp-footer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5xl);
-  padding: var(--space-6xl) var(--inset) var(--space-3xl);
-  border-top: var(--border-width-xs) solid var(--color-border);
-  background: var(--color-surface-muted);
-}
-
-.lp-footer-top {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-3xl);
-}
-
-.lp-footer-about {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-  max-width: var(--width-card);
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-body);
-  color: var(--color-text-secondary);
-}
-
-.lp-footer-col {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-  min-width: var(--width-partner);
-  font-size: var(--font-size-sm);
-}
-
-.lp-footer-col h3 {
-  font-size: var(--font-size-2xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--letter-spacing-overline);
-  text-transform: uppercase;
-}
-
-.lp-footer-col ul {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--color-text-secondary);
-}
-
-.lp-copyright {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-lg);
-  padding-top: var(--space-2xl);
-  border-top: var(--border-width-xs) solid var(--color-border);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-}
-
 /* Mobile-first: everything above is the phone layout; these breakpoints (matching theme.css) add room. */
 @media (min-width: 640px) {
   .lp-cta .lp-row {
@@ -547,10 +508,6 @@
 
   .lp-partners {
     justify-content: space-around;
-  }
-
-  .lp-footer {
-    padding-top: var(--space-7xl);
   }
 }
 

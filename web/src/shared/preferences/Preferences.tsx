@@ -2,10 +2,11 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { Moon, Sun } from "lucide-react";
 import { messages, type Lang } from "./messages";
 
 type Theme = "light" | "dark";
@@ -100,31 +101,47 @@ export function usePreferences() {
   return { ...prefs, m: messages[prefs.lang] };
 }
 
-/** Language switch and theme toggle, shown on every public page. */
+/**
+ * Language switch, shown on every public page. Switching languages changes text
+ * lengths above the fold, which reflows the page; this keeps the toggle itself
+ * anchored on screen instead of jumping out from under the reader.
+ */
 export function PreferenceToggles() {
-  const { lang, setLang, theme, toggleTheme, m } = usePreferences();
+  const { lang, setLang, m } = usePreferences();
+  const groupRef = useRef<HTMLDivElement>(null);
+  const anchorTop = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (anchorTop.current === null || !groupRef.current) return;
+    const after = groupRef.current.getBoundingClientRect().top;
+    window.scrollBy(0, after - anchorTop.current);
+    anchorTop.current = null;
+  }, [lang]);
+
+  const handleLang = (code: Lang) => {
+    anchorTop.current = groupRef.current?.getBoundingClientRect().top ?? null;
+    setLang(code);
+  };
+
   return (
     <div className="prefs">
-      <div className="segmented" role="group" aria-label={m.common.language}>
+      <div
+        className="segmented"
+        role="group"
+        aria-label={m.common.language}
+        ref={groupRef}
+      >
         {(["pt", "en"] as const).map((code) => (
           <button
             key={code}
             type="button"
             aria-pressed={lang === code}
-            onClick={() => setLang(code)}
+            onClick={() => handleLang(code)}
           >
             {code.toUpperCase()}
           </button>
         ))}
       </div>
-      <button
-        type="button"
-        className="icon-btn"
-        aria-label={m.common.theme}
-        onClick={toggleTheme}
-      >
-        {theme === "dark" ? <Sun /> : <Moon />}
-      </button>
     </div>
   );
 }

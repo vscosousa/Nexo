@@ -1,34 +1,59 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { resetCsrfToken, setUnauthorizedHandler } from "../shared/http/client";
+import { authService } from "./authService";
+
+type AuthStatus = "loading" | "signedIn" | "signedOut";
 
 interface AuthContextValue {
-  token: string | null;
-  login: (token: string) => void;
-  logout: () => void;
+  status: AuthStatus;
+  login: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
- * Provides the auth token to descendants and persists it to `localStorage`
- * so a session survives a page reload.
+ * Tracks whether there is a session. The session itself is an httpOnly cookie script cannot read,
+ * so on mount this asks the API (`GET /auth/me`), and any 401 afterwards marks the user signed out.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token"),
-  );
+  const [status, setStatus] = useState<AuthStatus>("loading");
 
-  const login = (newToken: string) => {
-    localStorage.setItem("token", newToken);
-    setToken(newToken);
+  useEffect(() => {
+    setUnauthorizedHandler(() => setStatus("signedOut"));
+    const check = async () => {
+      let account = null;
+      try {
+        account = await authService.currentAccount();
+      } catch {
+        account = null;
+      }
+      setStatus((current) =>
+        current !== "loading" ? current : account ? "signedIn" : "signedOut",
+      );
+    };
+    void check();
+  }, []);
+
+  const login = () => {
+    resetCsrfToken();
+    setStatus("signedIn");
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
+  const logout = async () => {
+    await authService.signOut();
+    resetCsrfToken();
+    setStatus("signedOut");
   };
 
   return (
-    <AuthContext.Provider value={{ token, login, logout }}>
+    <AuthContext.Provider value={{ status, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

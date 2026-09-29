@@ -1,8 +1,26 @@
 import { apiClient } from "../shared/http/client";
 
-export interface Session {
-  token: string;
-  expiresAt: string;
+/** What Google reported for a registration or activation still to be confirmed on the form. */
+export interface PendingExternal {
+  intent: "register" | "activate";
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  organizationName: string | null;
+}
+
+export interface RegisterOrganizationExternal {
+  organizationName: string;
+  adminFirstName: string;
+  adminLastName: string;
+  planId: string;
+}
+
+/** The signed-in account, as `GET /auth/me` reports it. */
+export interface CurrentAccount {
+  id: string;
+  organizationId: string;
+  role: string;
 }
 
 export interface RegisterOrganization {
@@ -11,7 +29,26 @@ export interface RegisterOrganization {
   adminLastName: string;
   adminEmail: string;
   password: string;
+  /** The plan picked on the plans page, from `GET /plans`. */
+  planId: string;
 }
+
+export interface PlanDto {
+  id: string;
+  name: string;
+  memberLimit: number;
+  resourceLimit: number;
+  /** Monthly price in euros, or null for a custom/"contact us" plan. */
+  monthlyPrice: number | null;
+  hasIncidentTracking: boolean;
+  hasExpenseTracking: boolean;
+  hasDecisionHistory: boolean;
+  hasAiInsights: boolean;
+  hasPrioritySupport: boolean;
+}
+
+/** A `memberLimit` or `resourceLimit` value of this size means the plan applies no cap. */
+export const UNLIMITED = 2147483647;
 
 export interface ActivateAccount {
   email: string;
@@ -35,17 +72,34 @@ export const authService = {
   },
 
   /**
-   * Signs in with email and password.
+   * Signs in with email and password; the API sets the httpOnly session cookie.
    *
-   * @returns The session issued by the API.
    * @throws The Axios error; a 401 means the credentials were not accepted.
    */
-  async signIn(email: string, password: string): Promise<Session> {
-    const { data } = await apiClient.post<Session>("/auth/sign-in", {
-      email,
-      password,
-    });
-    return data;
+  async signIn(email: string, password: string): Promise<void> {
+    await apiClient.post("/auth/sign-in", { email, password });
+  },
+
+  /**
+   * Reads who the session cookie belongs to.
+   *
+   * @returns The account, or `null` when there is no valid session.
+   * @throws The Axios error for anything other than a 401.
+   */
+  async currentAccount(): Promise<CurrentAccount | null> {
+    try {
+      const { data } = await apiClient.get<CurrentAccount>("/auth/me");
+      return data;
+    } catch (e) {
+      if ((e as { response?: { status?: number } }).response?.status === 401)
+        return null;
+      throw e;
+    }
+  },
+
+  /** Ends the session; the API clears the cookie. */
+  async signOut(): Promise<void> {
+    await apiClient.post("/auth/sign-out");
   },
 
   /**
@@ -80,5 +134,44 @@ export const authService = {
    */
   async resendInvitation(email: string): Promise<void> {
     await apiClient.post("/accounts/activation/resend", { email });
+  },
+
+  /**
+   * Reads the Google details waiting to be confirmed after returning from Google.
+   *
+   * @throws The Axios error; a 401 means nothing is pending or it expired.
+   */
+  async pendingExternal(): Promise<PendingExternal> {
+    const { data } = await apiClient.get<PendingExternal>(
+      "/auth/external/pending",
+    );
+    return data;
+  },
+
+  /**
+   * Registers an organization whose admin signs in with the pending Google account; the API sets the session cookie.
+   *
+   * @throws The Axios error; 400 carries per-field messages, 401 means the Google details expired, 409 the email has an account.
+   */
+  async registerExternal(dto: RegisterOrganizationExternal): Promise<void> {
+    await apiClient.post("/auth/external/register", dto);
+  },
+
+  /**
+   * Activates the invited account with the pending Google account; the API sets the session cookie.
+   *
+   * @throws The Axios error; 401 means the Google details expired, 403 the invitation or Google email does not match, 409 a conflict.
+   */
+  async activateExternal(dto: {
+    firstName: string;
+    lastName: string;
+  }): Promise<void> {
+    await apiClient.post("/auth/external/activate", dto);
+  },
+
+  /** Lists the plans an organization can register on. */
+  async listPlans(): Promise<PlanDto[]> {
+    const { data } = await apiClient.get<PlanDto[]>("/plans");
+    return data;
   },
 };

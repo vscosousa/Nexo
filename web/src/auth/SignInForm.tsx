@@ -3,10 +3,10 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { authService } from "./authService";
+import { googleSignInUrl } from "./googleSignInUrl";
 import { Field } from "./Field";
 import { GoogleIcon } from "./GoogleIcon";
-
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:5122";
+import { isEmailValid } from "./validation";
 
 /** Email/password sign-in, plus the entry point for Google sign-in. */
 export function SignInForm({ initialError }: { initialError?: string }) {
@@ -25,11 +25,14 @@ export function SignInForm({ initialError }: { initialError?: string }) {
       setError(m.auth.enterCredentials);
       return;
     }
+    if (!isEmailValid(email)) {
+      setError(m.auth.invalidEmail);
+      return;
+    }
     setSubmitting(true);
-    setError("");
     try {
-      const session = await authService.signIn(email, password);
-      login(session.token);
+      await authService.signIn(email, password);
+      login();
       navigate("/app", { replace: true });
     } catch (e) {
       const status = (e as { response?: { status?: number } }).response?.status;
@@ -71,10 +74,7 @@ export function SignInForm({ initialError }: { initialError?: string }) {
         </button>
       </form>
       <p className="auth-divider">{m.auth.or}</p>
-      <a
-        className="btn btn-secondary btn-lg"
-        href={`${API_ORIGIN}/auth/external/google`}
-      >
+      <a className="btn btn-secondary btn-lg" href={googleSignInUrl()}>
         <GoogleIcon />
         {m.auth.google}
       </a>

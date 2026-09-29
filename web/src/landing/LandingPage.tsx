@@ -6,12 +6,17 @@ import {
   ScrollText,
   Wrench,
 } from "lucide-react";
-import { useEffect, useRef, type CSSProperties, type RefObject } from "react";
-import { Link } from "react-router-dom";
 import {
-  PreferenceToggles,
-  usePreferences,
-} from "../shared/preferences/Preferences";
+  useEffect,
+  useRef,
+  type CSSProperties,
+  type MouseEvent,
+  type RefObject,
+} from "react";
+import { Link } from "react-router-dom";
+import { usePreferences } from "../shared/preferences/Preferences";
+import { SiteFooter } from "../shared/SiteFooter";
+import { useScrollReveal } from "../shared/useScrollReveal";
 import heroImage from "./images/hero.jpg";
 import step1Image from "./images/step-1.jpg";
 import step2Image from "./images/step-2.jpg";
@@ -94,6 +99,14 @@ const partners = [
     color: "#2c4cfd",
   },
 ];
+
+/** Scrolls to an in-page section without pushing a #hash onto the URL. */
+function scrollToSection(id: string) {
+  return (e: MouseEvent) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  };
+}
 
 type Partner = (typeof partners)[number];
 
@@ -190,8 +203,12 @@ function usePartnerMarquee(ref: RefObject<HTMLDivElement | null>) {
 }
 
 function Brand() {
+  const scrollToTop = (e: MouseEvent) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
   return (
-    <a href="#" className="brand" aria-label="Nexo">
+    <a href="/" className="brand" aria-label="Nexo" onClick={scrollToTop}>
       <span className="brand-mark" aria-hidden="true" />
       <span className="brand-word" aria-hidden="true" />
     </a>
@@ -204,15 +221,28 @@ export function LandingPage() {
   const t = m.landing;
   const marquee = useRef<HTMLDivElement>(null);
   usePartnerMarquee(marquee);
+  const root = useRef<HTMLDivElement>(null);
+  useScrollReveal(root);
   return (
-    <div className="landing">
+    <div className="landing" ref={root}>
       <header className="lp-header">
         <Brand />
         <nav aria-label={t.navLabel} className="lp-nav">
-          <a href="#funcionalidades">{t.nav.features}</a>
-          <a href="#como-funciona">{t.nav.how}</a>
-          <a href="#parceiros">{t.nav.partners}</a>
-          <a href="#sobre">{t.nav.about}</a>
+          <a
+            href="#funcionalidades"
+            onClick={scrollToSection("funcionalidades")}
+          >
+            {t.nav.features}
+          </a>
+          <a href="#como-funciona" onClick={scrollToSection("como-funciona")}>
+            {t.nav.how}
+          </a>
+          <a href="#parceiros" onClick={scrollToSection("parceiros")}>
+            {t.nav.partners}
+          </a>
+          <a href="#sobre" onClick={scrollToSection("sobre")}>
+            {t.nav.about}
+          </a>
         </nav>
         <div className="lp-actions">
           <Link to="/login" className="btn btn-secondary">
@@ -236,7 +266,11 @@ export function LandingPage() {
               <Link to="/register" className="btn btn-primary btn-lg">
                 {m.common.getStarted}
               </Link>
-              <a href="#como-funciona" className="btn btn-secondary btn-lg">
+              <a
+                href="#como-funciona"
+                className="btn btn-secondary btn-lg"
+                onClick={scrollToSection("como-funciona")}
+              >
                 {t.seeHow}
               </a>
             </div>
@@ -266,7 +300,7 @@ export function LandingPage() {
         </section>
 
         <section id="funcionalidades" className="lp-section">
-          <div className="lp-heading lp-heading-center">
+          <div className="lp-heading lp-heading-center" data-reveal>
             <p className="lp-eyebrow">{t.featuresEyebrow}</p>
             <h2>{t.featuresTitle}</h2>
           </div>
@@ -274,7 +308,7 @@ export function LandingPage() {
             {t.features.map((f, i) => {
               const Icon = featureIcons[i];
               return (
-                <li key={f.title} className="lp-card">
+                <li key={i} className="lp-card" data-reveal>
                   <span className="lp-icon">
                     <Icon />
                   </span>
@@ -289,13 +323,13 @@ export function LandingPage() {
         </section>
 
         <section id="como-funciona" className="lp-section lp-alt">
-          <div className="lp-heading">
+          <div className="lp-heading" data-reveal>
             <p className="lp-eyebrow">{t.stepsEyebrow}</p>
             <h2>{t.stepsTitle}</h2>
           </div>
           <ol className="lp-grid">
             {t.steps.map((s, i) => (
-              <li key={s.title} className="lp-step">
+              <li key={i} className="lp-step" data-reveal>
                 <img
                   className="lp-photo lp-photo-step"
                   src={stepImages[i]}
@@ -314,7 +348,7 @@ export function LandingPage() {
         </section>
 
         <section className="lp-section lp-cta-wrap">
-          <div className="lp-cta">
+          <div className="lp-cta" data-reveal>
             <div className="lp-stack">
               <h2>{t.ctaTitle}</h2>
               <p>{t.ctaText}</p>
@@ -323,7 +357,11 @@ export function LandingPage() {
               <Link to="/register" className="btn btn-primary btn-lg">
                 {t.createAccount}
               </Link>
-              <a href="#sobre" className="btn btn-secondary btn-lg">
+              <a
+                href="#sobre"
+                className="btn btn-secondary btn-lg"
+                onClick={scrollToSection("sobre")}
+              >
                 {t.contactUs}
               </a>
             </div>
@@ -331,28 +369,9 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer id="sobre" className="lp-footer">
-        <div className="lp-footer-top">
-          <div className="lp-footer-about">
-            <Brand />
-            <p>{t.footerAbout}</p>
-          </div>
-          {t.footerColumns.map((column) => (
-            <div key={column.title} className="lp-footer-col">
-              <h3>{column.title}</h3>
-              <ul>
-                {column.links.map((link) => (
-                  <li key={link}>{link}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        <div className="lp-copyright">
-          <p>{t.copyright}</p>
-          <PreferenceToggles />
-        </div>
-      </footer>
+      <div id="sobre">
+        <SiteFooter />
+      </div>
     </div>
   );
 }

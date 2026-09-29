@@ -12,12 +12,15 @@ export function Field({
   type = "text",
   autoComplete,
   defaultValue,
+  onValueChange,
 }: {
   label: string;
   name: string;
   type?: "text" | "email" | "password";
   autoComplete?: string;
   defaultValue?: string;
+  /** Reports each keystroke's value without making the input controlled, for live feedback (e.g. a password checklist). */
+  onValueChange?: (value: string) => void;
 }) {
   const id = useId();
   const { m } = usePreferences();
@@ -33,6 +36,9 @@ export function Field({
           type={isPassword && shown ? "text" : type}
           autoComplete={autoComplete}
           defaultValue={defaultValue}
+          onChange={
+            onValueChange && ((event) => onValueChange(event.target.value))
+          }
         />
         {isPassword && (
           <button

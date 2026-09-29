@@ -1,0 +1,342 @@
+.cp-shell {
+  --inset: max(var(--gutter), calc((100% - var(--width-page)) / 2));
+  min-height: 100vh;
+  background: var(--color-canvas);
+}
+
+/* Fades and lifts elements into place as they scroll into view; see useScrollReveal. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(var(--space-xl));
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.cp-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-lg) var(--inset);
+  border-bottom: var(--border-width-xs) solid var(--color-border);
+}
+
+.cp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* At least a screen tall so the footer stays below the fold while the plans load, instead of
+   jumping up into view and back down once they arrive. */
+.cp-main {
+  min-height: 100svh;
+  padding: var(--space-5xl) var(--inset) var(--space-7xl);
+}
+
+.cp-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: var(--width-text);
+  margin: 0 auto var(--space-4xl);
+  text-align: center;
+}
+
+.cp-eyebrow {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-overline);
+  text-transform: uppercase;
+  color: var(--color-text-brand);
+}
+
+.cp-heading h1 {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-display);
+  font-family: var(--font-display);
+}
+
+.cp-lead {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-body);
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+  max-width: var(--width-card);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-lg);
+  padding: var(--space-2xl);
+  border: var(--border-width-sm) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-card[data-recommended] {
+  border-color: var(--color-border-brand);
+  box-shadow: var(--shadow-md);
+}
+
+.plan-badge {
+  align-self: flex-start;
+  padding: var(--space-xxs) var(--space-md);
+  border-radius: var(--radius-xs);
+  background: var(--color-primary-soft);
+  color: var(--color-text-brand);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.plan-name {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-display);
+}
+
+.plan-price {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-extrabold);
+  font-family: var(--font-display);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.plan-features svg {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.1875rem;
+  color: var(--success);
+}
+
+.plan-compare {
+  max-width: none;
+  margin-top: var(--space-7xl);
+}
+
+.plan-compare h2 {
+  margin-bottom: var(--space-2xl);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+/* The table is desktop-only; .plan-compare-mobile below covers phones instead of scrolling it sideways. */
+.plan-table-wrap {
+  display: none;
+  overflow-x: auto;
+  border: var(--border-width-xs) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.plan-table-wrap table {
+  width: 100%;
+  min-width: 40rem;
+  border-collapse: collapse;
+  /* Fixes column widths from below instead of content length, so the three plan columns match. */
+  table-layout: fixed;
+}
+
+.plan-table-wrap th,
+.plan-table-wrap td {
+  padding: var(--space-lg);
+  border-bottom: var(--border-width-xs) solid var(--color-border);
+  text-align: center;
+  vertical-align: middle;
+  font-size: var(--font-size-sm);
+}
+
+.plan-table-wrap th:first-child,
+.plan-table-wrap td:first-child {
+  width: 30%;
+}
+
+.plan-table-wrap thead th:first-child {
+  text-align: left;
+  font-size: var(--font-size-base);
+}
+
+.plan-table-wrap tbody th {
+  text-align: left;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.plan-table-wrap tbody tr:last-child th,
+.plan-table-wrap tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.plan-table-name {
+  display: block;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+}
+
+.plan-table-price {
+  display: block;
+  margin-top: var(--space-xs);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-regular);
+}
+
+.plan-table-infinity {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
+.plan-table-yes {
+  color: var(--success);
+}
+
+.plan-table-no {
+  color: var(--color-text-disabled);
+}
+
+.plan-table-wrap svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Phone-only stacked comparison: each row's label sits on its own line above a grid of its values, one
+ * per plan column, so every plan stays visible without a sideways scroll (matches claude.com/pricing). */
+.plan-compare-mobile {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-width-xs) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  padding: var(--space-lg);
+}
+
+.pcm-header,
+.pcm-values {
+  display: grid;
+  grid-template-columns: repeat(var(--plan-count), 1fr);
+  gap: var(--space-sm);
+}
+
+.pcm-header {
+  padding-bottom: var(--space-md);
+  border-bottom: var(--border-width-xs) solid var(--color-border);
+}
+
+.pcm-header .plan-table-name {
+  text-align: center;
+}
+
+.pcm-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-block: var(--space-lg);
+  border-bottom: var(--border-width-xs) solid var(--color-border);
+}
+
+.pcm-row:last-child {
+  border-bottom: 0;
+}
+
+.pcm-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.pcm-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+}
+
+.pcm-value svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* Mobile-first: everything above is the phone layout; these breakpoints (matching theme.css) add room. */
+@media (min-width: 640px) {
+  .cp-heading h1 {
+    font-size: var(--font-size-5xl);
+  }
+
+  .plan-table-wrap {
+    display: block;
+  }
+
+  .plan-compare-mobile {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .plan-grid {
+    grid-template-columns: repeat(3, 1fr);
+    max-width: none;
+    /* Leaves room above the row for the recommended card's negative margin to pop into. */
+    margin-top: var(--space-2xl);
+  }
+
+  .plan-card {
+    height: 100%;
+  }
+
+  .plan-card[data-recommended] {
+    position: relative;
+    z-index: 1;
+    height: auto;
+    margin-block: calc(-1 * var(--space-2xl));
+  }
+}

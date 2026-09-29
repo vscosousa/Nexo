@@ -1,0 +1,69 @@
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5xl);
+  padding: var(--space-6xl) var(--inset) var(--space-3xl);
+  border-top: var(--border-width-xs) solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.site-footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3xl);
+}
+
+.site-footer-about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  max-width: var(--width-card);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  color: var(--color-text-secondary);
+}
+
+.site-footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  min-width: var(--width-partner);
+  font-size: var(--font-size-sm);
+}
+
+.site-footer-col h3 {
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-overline);
+  text-transform: uppercase;
+}
+
+.site-footer-col ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-secondary);
+}
+
+.site-copyright {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding-top: var(--space-2xl);
+  border-top: var(--border-width-xs) solid var(--color-border);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Mobile-first: everything above is the phone layout; this breakpoint (matching theme.css) adds room. */
+@media (min-width: 1024px) {
+  .site-footer {
+    padding-top: var(--space-7xl);
+  }
+}

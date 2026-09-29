@@ -19,7 +19,7 @@ describe("LandingPage", () => {
       expect(link).toHaveAttribute("href", "/register");
     }
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Running your association has never been this simple",
+      "Bookings, equipment and volunteers, without the chaos",
     );
   });
 });

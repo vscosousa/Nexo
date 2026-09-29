@@ -3,6 +3,7 @@ import { ActivateAccountPage } from "../auth/ActivateAccountPage";
 import { LoginCallbackPage } from "../auth/LoginCallbackPage";
 import { LoginPage } from "../auth/LoginPage";
 import { RegisterPage } from "../auth/RegisterPage";
+import { ChoosePlanPage } from "../plans/ChoosePlanPage";
 import { LandingPage } from "../landing/LandingPage";
 import { RequireAuth } from "../auth/RequireAuth";
 import { RequireSearchParam } from "../shared/routing/RequireSearchParam";
@@ -14,7 +15,15 @@ export function AppRouter() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<ChoosePlanPage />} />
+        <Route
+          path="/register/organization"
+          element={
+            <RequireSearchParam name="planId" redirectTo="/register">
+              <RegisterPage />
+            </RequireSearchParam>
+          }
+        />
         <Route
           path="/activate"
           element={

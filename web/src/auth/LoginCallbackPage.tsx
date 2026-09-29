@@ -1,24 +1,12 @@
-import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
 /**
- * Landing page for Google sign-in: takes the session token the API put in the URL
- * fragment, stores it, and removes it from the address bar and history straight away.
+ * Landing page for Google sign-in: the API has already set the session cookie, so this only waits
+ * for the session check and opens the app, or goes back to sign-in when there is none.
  */
 export function LoginCallbackPage() {
-  const { token, login } = useAuth();
-  const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get(
-    "token",
-  );
-
-  useEffect(() => {
-    if (fragmentToken) {
-      window.history.replaceState(null, "", window.location.pathname);
-      login(fragmentToken);
-    }
-    // eslint-disable-next-line -- runs once for the token present on arrival
-  }, []);
-
-  return <Navigate to={fragmentToken || token ? "/app" : "/login"} replace />;
+  const { status } = useAuth();
+  if (status === "loading") return null;
+  return <Navigate to={status === "signedIn" ? "/app" : "/login"} replace />;
 }
