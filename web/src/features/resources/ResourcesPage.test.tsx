@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +11,7 @@ vi.mock("../../auth/AuthContext");
 
 const UTENSIL = { id: "utensil-id", name: "Utensil" };
 const KAYAK = { id: "kayak-id", name: "Kayak" };
+const OTHER = { id: "other-id", name: "Other" };
 
 function renderAs(role: string, entry = "/app/resources") {
   vi.mocked(useAuth).mockReturnValue({
@@ -39,8 +40,21 @@ async function openDialog() {
   const dialog = await screen.findByRole("dialog", {
     name: "Register resource",
   });
-  await within(dialog).findByRole("option", { name: "Utensil" });
+  await waitFor(() =>
+    expect(
+      within(dialog).getByRole("button", { name: "Register" }),
+    ).toBeEnabled(),
+  );
   return { user, dialog };
+}
+
+async function pickType(
+  user: ReturnType<typeof userEvent.setup>,
+  dialog: HTMLElement,
+  type: string,
+) {
+  await user.click(within(dialog).getByRole("combobox", { name: "Type" }));
+  await user.click(within(dialog).getByRole("option", { name: type }));
 }
 
 async function fillAndSubmit(
@@ -49,14 +63,18 @@ async function fillAndSubmit(
   type = "Utensil",
 ) {
   await user.type(within(dialog).getByLabelText("Name"), "Van");
-  await user.selectOptions(within(dialog).getByLabelText("Type"), type);
+  await pickType(user, dialog, type);
   await user.click(within(dialog).getByRole("button", { name: "Register" }));
 }
 
 describe("ResourcesPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    vi.mocked(resourcesService.listTypes).mockResolvedValue([KAYAK, UTENSIL]);
+    vi.mocked(resourcesService.listTypes).mockResolvedValue([
+      OTHER,
+      KAYAK,
+      UTENSIL,
+    ]);
   });
 
   it("given a staff account and valid details, when registering, then it sends them, closes the dialog and confirms", async () => {
@@ -73,7 +91,7 @@ describe("ResourcesPage", () => {
     const { user, dialog } = await openDialog();
 
     await user.type(within(dialog).getByLabelText("Name"), " Paella pan ");
-    await user.selectOptions(within(dialog).getByLabelText("Type"), "Utensil");
+    await pickType(user, dialog, "Utensil");
     await user.type(
       within(dialog).getByLabelText("Description (optional)"),
       "90 cm",
@@ -91,16 +109,19 @@ describe("ResourcesPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("given the organization's types, when the dialog opens, then system types are translated and custom ones kept as named", async () => {
+  it("given the organization's types, when the type list opens, then they are sorted by name with Other last", async () => {
     renderAs("Admin");
-    const { dialog } = await openDialog();
+    const { user, dialog } = await openDialog();
 
-    const select = within(dialog).getByLabelText("Type");
+    const combobox = within(dialog).getByRole("combobox", { name: "Type" });
+    expect(combobox).toHaveTextContent("Choose a type");
+    await user.click(combobox);
+
     expect(
-      within(select)
+      within(dialog)
         .getAllByRole("option")
         .map((o) => o.textContent),
-    ).toEqual(["Choose a type", "Kayak", "Utensil"]);
+    ).toEqual(["Kayak", "Utensil", "Other"]);
   });
 
   it("given a member account, when opening the page, then there is no way to register and it says who can", () => {

@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Field } from "../../auth/Field";
 import { describeApiError } from "../../shared/http/apiError";
 import { Notice } from "../../shared/Notice";
+import { Select } from "../../shared/Select";
 import { usePreferences } from "../../shared/preferences/Preferences";
 import {
   resourcesService,
@@ -12,7 +13,7 @@ import {
 
 /**
  * The register-resource form, in a modal dialog opened on mount: name, a type from the organization's types
- * (system types shown in the current language), and an optional description.
+ * (system types shown in the current language, sorted by name with `Other` last), and an optional description.
  *
  * @param onClose Called once the dialog has closed (cancel, the close button, or Escape).
  * @param onRegistered Called with the created resource; the caller then closes the dialog.
@@ -40,8 +41,9 @@ export function RegisterResourceForm({
 
   const typeName = (type: ResourceType) =>
     m.resources.typeNames[type.name] ?? type.name;
-  const sortedTypes = [...(types ?? [])].sort((a, b) =>
-    typeName(a).localeCompare(typeName(b)),
+  const isOther = (type: ResourceType) => Number(type.name === "Other");
+  const sortedTypes = [...(types ?? [])].sort(
+    (a, b) => isOther(a) - isOther(b) || typeName(a).localeCompare(typeName(b)),
   );
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -102,32 +104,16 @@ export function RegisterResourceForm({
             name="name"
             error={fieldErrors.name}
           />
-          <div className="field">
-            <label htmlFor={`${id}-type`}>{m.resources.type}</label>
-            <select
-              id={`${id}-type`}
-              name="typeId"
-              defaultValue=""
-              aria-invalid={fieldErrors.typeId ? true : undefined}
-              aria-describedby={
-                fieldErrors.typeId ? `${id}-type-error` : undefined
-              }
-            >
-              <option value="" disabled>
-                {m.resources.typePlaceholder}
-              </option>
-              {sortedTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {typeName(type)}
-                </option>
-              ))}
-            </select>
-            {fieldErrors.typeId && (
-              <p id={`${id}-type-error`} className="field-error">
-                {fieldErrors.typeId}
-              </p>
-            )}
-          </div>
+          <Select
+            label={m.resources.type}
+            name="typeId"
+            placeholder={m.resources.typePlaceholder}
+            options={sortedTypes.map((type) => ({
+              value: type.id,
+              label: typeName(type),
+            }))}
+            error={fieldErrors.typeId}
+          />
           <div className="field">
             <label htmlFor={`${id}-description`}>
               {m.resources.description}

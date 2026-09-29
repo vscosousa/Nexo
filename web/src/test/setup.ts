@@ -4,7 +4,6 @@ import { afterEach } from "vitest";
 
 afterEach(cleanup);
 
-// jsdom has no modal <dialog>; opening and closing is all the tests need.
 HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
   this.open = true;
 };

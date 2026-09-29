@@ -334,3 +334,97 @@ a {
     animation: none !important;
   }
 }
+
+/* App-drawn select (shared/Select): the box matches the text inputs, the list is the app's own popover. */
+.select-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--size-touch);
+  padding: var(--space-md);
+  border: var(--border-width-xs) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-body);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.select-box:focus-visible,
+.select-box[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--color-border-brand);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--color-border-brand) 25%, transparent);
+}
+
+.select-box[aria-invalid="true"] {
+  border-color: var(--error-ink);
+}
+
+.select-box svg {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-text-tertiary);
+  transition: transform 0.15s;
+}
+
+.select-box[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.select-placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.select-list {
+  position: fixed;
+  z-index: 10;
+  max-height: 16rem;
+  margin: 0;
+  padding: var(--space-xs);
+  overflow-y: auto;
+  list-style: none;
+  border: var(--border-width-xs) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.select-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: var(--size-touch);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-regular);
+  cursor: pointer;
+}
+
+.select-list li.is-active {
+  background: var(--color-fill);
+}
+
+.select-list li[aria-selected="true"] {
+  color: var(--color-text-brand);
+  font-weight: var(--font-weight-semibold);
+}
+
+.select-list li svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
