@@ -20,6 +20,8 @@ Keep one record per significant technical decision. Name records `ADR-001-short-
 | [ADR-008](ADR-008-fake-smtp-server.md) | Fake SMTP server for local email | Proposed; implemented for review | 2026-09-28 |
 | [ADR-009](ADR-009-session-cookie.md) | Session in an httpOnly cookie with an anti-forgery token | Proposed; implemented for review | 2026-09-29 |
 | [ADR-010](ADR-010-account-security-hardening.md) | Account security hardening | Proposed; implemented for review | 2026-09-29 |
+| [ADR-011](ADR-011-multi-tenancy.md) | Multi-tenancy: shared schema with organization query filters | Proposed; implemented for review | 2026-09-29 |
+| [ADR-012](ADR-012-resource-types.md) | Resource types: system types plus per-organization custom types | Proposed; implemented for review | 2026-09-29 |
 
 ## Record template
 
