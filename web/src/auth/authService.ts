@@ -21,6 +21,9 @@ export interface CurrentAccount {
   id: string;
   organizationId: string;
   role: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
 }
 
 export interface RegisterOrganization {

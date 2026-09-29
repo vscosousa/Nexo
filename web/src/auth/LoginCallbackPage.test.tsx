@@ -29,6 +29,9 @@ describe("LoginCallbackPage", () => {
       id: "a-1",
       organizationId: "o-1",
       role: "Admin",
+      email: "ana@example.com",
+      firstName: "Ana",
+      lastName: "Ribeiro",
     });
 
     renderCallback();

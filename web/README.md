@@ -30,13 +30,13 @@ Open the URL Vite prints. A browser without a stored token redirects to `/login`
 
 ## Source layout
 
-| Directory                        | Responsibility                                       |
-| -------------------------------- | ---------------------------------------------------- |
-| `src/app/`                       | App shell and router                                 |
-| `src/auth/`                      | Token context, route guard, sign-in, Google callback |
-| `src/shared/http/`               | Shared Axios client                                  |
-| `src/test/`                      | Vitest setup                                         |
-| `src/features/<name>/` (planned) | Business screens, feature API calls, and types       |
+| Directory              | Responsibility                                                        |
+| ---------------------- | --------------------------------------------------------------------- |
+| `src/app/`             | Router, signed-in app shell (sidebar) and dashboard                   |
+| `src/auth/`            | Token context, route guard, sign-in, Google callback                  |
+| `src/shared/http/`     | Shared Axios client                                                   |
+| `src/test/`            | Vitest setup                                                          |
+| `src/features/<name>/` | Business screens, feature API calls, and types (`resources/`: US-004) |
 
 The Axios base URL is `/api`, which the Vite dev server proxies to the API (`VITE_API_URL`). A token's presence controls navigation only; the guard does not validate expiry or permissions.
 

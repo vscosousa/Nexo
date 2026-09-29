@@ -9,7 +9,9 @@ import { LandingPage } from "../landing/LandingPage";
 import { RequireAuth } from "../auth/RequireAuth";
 import { RequireSearchParam } from "../shared/routing/RequireSearchParam";
 import { ScrollToTop } from "../shared/routing/ScrollToTop";
-import App from "./App";
+import { ResourcesPage } from "../features/resources/ResourcesPage";
+import { AppLayout } from "./AppLayout";
+import { DashboardPage } from "./DashboardPage";
 
 export function AppRouter() {
   return (
@@ -62,10 +64,13 @@ export function AppRouter() {
           path="/app"
           element={
             <RequireAuth>
-              <App />
+              <AppLayout />
             </RequireAuth>
           }
-        />
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="resources" element={<ResourcesPage />} />
+        </Route>
         {/* Unknown paths and forbidden ones (RequireAuth/RequireSearchParam) both land here. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

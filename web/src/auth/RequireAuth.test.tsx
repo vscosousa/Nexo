@@ -10,7 +10,14 @@ import { authService } from "./authService";
 vi.mock("./authService");
 
 const originalAdapter = apiClient.defaults.adapter;
-const account = { id: "a-1", organizationId: "o-1", role: "Admin" };
+const account = {
+  id: "a-1",
+  organizationId: "o-1",
+  role: "Admin",
+  email: "ana@example.com",
+  firstName: "Ana",
+  lastName: "Ribeiro",
+};
 
 function renderProtectedRoute() {
   return render(

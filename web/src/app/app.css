@@ -1,0 +1,399 @@
+/* Signed-in app, after the Figma `nexo-dashboard` frame (1440px): a 220px dark sidebar, an 80px top bar on the
+   page background, and 40px-padded content in flat bordered cards. Colors and type come from theme.css.
+   Mobile-first: the sidebar is a top bar on phones. */
+
+.app-shell {
+  --app-sidebar-bg: var(--gray-900);
+  --app-sidebar-width: 13.75rem;
+  --app-sidebar-line: rgb(255 255 255 / 8%);
+  min-height: 100dvh;
+  background: var(--color-canvas);
+  color: var(--color-text);
+}
+
+/* In the dark theme the page is already near-black, so the sidebar goes darker still. */
+:root[data-theme="dark"] .app-shell {
+  --app-sidebar-bg: #06070f;
+}
+
+/* The sidebar stays dark in both themes; overriding the semantic tokens here lets the shared controls inside
+   it (wordmark, icon button) adapt without their own variants. */
+.app-sidebar {
+  --color-text: #f3f4fc;
+  --color-text-secondary: #a9aec8;
+  --color-text-tertiary: #7d82a1;
+  --color-fill: rgb(255 255 255 / 6%);
+  --color-fill-hover: rgb(255 255 255 / 12%);
+  --color-border-brand: var(--indigo-300);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--gutter);
+  border-bottom: var(--border-width-xs) solid var(--app-sidebar-line);
+  background: var(--app-sidebar-bg);
+  color: var(--color-text);
+}
+
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: var(--size-touch);
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-brand .brand-mark {
+  height: 1.625rem;
+}
+
+.app-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xxs);
+}
+
+.app-brand .brand-word {
+  height: 1.125rem;
+}
+
+.app-tagline {
+  display: none;
+  color: var(--color-text-tertiary);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-overline);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.app-nav {
+  order: 3;
+  flex-basis: 100%;
+  display: flex;
+  gap: var(--space-xxs);
+  overflow-x: auto;
+}
+
+.app-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--size-touch);
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.app-nav a:hover {
+  background: var(--color-fill);
+  color: var(--color-text);
+}
+
+.app-nav a[aria-current="page"] {
+  background: var(--indigo-600);
+  color: #fff;
+}
+
+.app-nav svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.app-account {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+/* Phones only have room for sign-out; the person returns at 640px. */
+.app-person {
+  display: none;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.app-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-xs);
+  height: var(--size-xs);
+  border-radius: 50%;
+  background: var(--indigo-600);
+  color: #fff;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.app-person-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: var(--line-height-tight);
+}
+
+.app-person-name {
+  overflow: hidden;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-person-role {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+}
+
+.app-sign-out {
+  flex: none;
+  background: transparent;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.app-main .btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* The page's top bar: title on the left, the page's main action on the right. */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md) var(--space-lg);
+  padding: var(--space-lg) var(--gutter);
+  border-bottom: var(--border-width-xs) solid var(--color-border);
+}
+
+.page-header h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  padding: var(--space-2xl) var(--gutter) var(--space-5xl);
+}
+
+.page-note {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.app-card {
+  padding: var(--space-2xl);
+  border: var(--border-width-xs) solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface);
+}
+
+.app-card h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-subheading);
+}
+
+.app-card p {
+  max-width: var(--width-text);
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+}
+
+.app-card-icon,
+.empty-state > svg {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-sm);
+  height: var(--size-sm);
+  border-radius: var(--radius-xs);
+  background: var(--color-primary-soft);
+  color: var(--color-text-brand);
+}
+
+.app-card-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.app-welcome {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-lg);
+}
+
+.app-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: var(--size-touch);
+  margin-top: var(--space-xs);
+  color: var(--color-text-brand);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.app-link:hover {
+  text-decoration: underline;
+}
+
+.app-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  padding: var(--space-5xl) var(--space-2xl);
+  text-align: center;
+}
+
+.empty-state > svg {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-sm);
+}
+
+.app-dialog {
+  width: min(100% - 2 * var(--space-lg), 32rem);
+  max-height: calc(100dvh - 2 * var(--space-lg));
+  padding: 0;
+  border: var(--border-width-xs) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+}
+
+.app-dialog::backdrop {
+  background: rgb(6 7 15 / 60%);
+}
+
+.app-dialog form {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.app-dialog-header,
+.app-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-2xl);
+}
+
+.app-dialog-header {
+  justify-content: space-between;
+  border-bottom: var(--border-width-xs) solid var(--color-border);
+}
+
+.app-dialog-header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--font-size-xl);
+}
+
+.app-dialog-header .icon-btn {
+  background: transparent;
+}
+
+.app-dialog-header .icon-btn:hover {
+  background: var(--color-fill);
+}
+
+.app-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  padding: var(--space-2xl);
+  overflow-y: auto;
+}
+
+.app-dialog-footer {
+  justify-content: flex-end;
+  border-top: var(--border-width-xs) solid var(--color-border);
+  background: var(--color-canvas);
+}
+
+@media (min-width: 640px) {
+  .app-person {
+    display: flex;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    display: grid;
+    grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);
+  }
+
+  .app-sidebar {
+    position: sticky;
+    top: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--space-3xl);
+    height: 100dvh;
+    padding: var(--space-xl) var(--space-lg);
+    border-right: var(--border-width-xs) solid var(--app-sidebar-line);
+    border-bottom: 0;
+  }
+
+  .app-tagline {
+    display: block;
+  }
+
+  .app-nav {
+    order: 0;
+    flex-direction: column;
+    flex-basis: auto;
+    overflow: visible;
+  }
+
+  .app-account {
+    margin: auto 0 0;
+    padding-top: var(--space-lg);
+    border-top: var(--border-width-xs) solid var(--app-sidebar-line);
+  }
+
+  .page-header {
+    min-height: 5rem;
+    padding: var(--space-md) var(--space-4xl);
+  }
+
+  .page-body {
+    padding: var(--space-3xl) var(--space-4xl) var(--space-5xl);
+  }
+}

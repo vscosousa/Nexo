@@ -205,6 +205,53 @@ const pt = {
     included: "Incluído",
     notIncluded: "Não incluído",
   },
+  app: {
+    navLabel: "Navegação da aplicação",
+    tagline: "Sistema comunitário",
+    dashboard: "Painel",
+    resources: "Recursos",
+    signOut: "Terminar sessão",
+    roles: {
+      Admin: "Administração",
+      Staff: "Equipa",
+      Member: "Membro",
+    } as Record<string, string>,
+    welcomeTitle: "Bem-vindo ao Nexo",
+    welcomeText:
+      "Comece por registar o equipamento, os utensílios e os veículos que a sua organização empresta.",
+    welcomeMemberText:
+      "Os recursos da sua organização são geridos pela administração e pela equipa.",
+    goToResources: "Ver recursos",
+  },
+  resources: {
+    title: "Recursos",
+    register: "Registar recurso",
+    dialogTitle: "Registar recurso",
+    close: "Fechar",
+    cancel: "Cancelar",
+    submit: "Registar",
+    name: "Nome",
+    type: "Tipo",
+    typePlaceholder: "Escolha um tipo",
+    description: "Descrição (opcional)",
+    nameRequired: "Indique o nome do recurso.",
+    typeRequired: "Escolha um tipo.",
+    typesError: "Não foi possível carregar os tipos. Feche e tente novamente.",
+    forbidden: "A sua conta não pode registar recursos.",
+    limitReached:
+      "A sua organização atingiu o limite de recursos do plano. Mude de plano para registar mais.",
+    registered: (name: string) => `«${name}» foi registado e está disponível.`,
+    emptyTitle: "A lista de recursos chega em breve",
+    emptyText:
+      "Os recursos que registar ficam guardados. Poderá consultá-los aqui numa próxima versão.",
+    memberNote: "Só a administração e a equipa podem registar recursos.",
+    typeNames: {
+      Equipment: "Equipamento",
+      Utensil: "Utensílio",
+      Vehicle: "Veículo",
+      Other: "Outro",
+    } as Record<string, string>,
+  },
 };
 
 const en: typeof pt = {
@@ -412,6 +459,53 @@ const en: typeof pt = {
     tableFeatureHeader: "Feature",
     included: "Included",
     notIncluded: "Not included",
+  },
+  app: {
+    navLabel: "App navigation",
+    tagline: "Community system",
+    dashboard: "Dashboard",
+    resources: "Resources",
+    signOut: "Sign out",
+    roles: {
+      Admin: "Admin",
+      Staff: "Staff",
+      Member: "Member",
+    } as Record<string, string>,
+    welcomeTitle: "Welcome to Nexo",
+    welcomeText:
+      "Start by registering the equipment, utensils, and vehicles your organization lends.",
+    welcomeMemberText:
+      "Your organization's resources are managed by its admin and staff.",
+    goToResources: "View resources",
+  },
+  resources: {
+    title: "Resources",
+    register: "Register resource",
+    dialogTitle: "Register resource",
+    close: "Close",
+    cancel: "Cancel",
+    submit: "Register",
+    name: "Name",
+    type: "Type",
+    typePlaceholder: "Choose a type",
+    description: "Description (optional)",
+    nameRequired: "Enter the resource's name.",
+    typeRequired: "Choose a type.",
+    typesError: "Couldn't load the types. Close and try again.",
+    forbidden: "Your account can't register resources.",
+    limitReached:
+      "Your organization has reached its plan's resource limit. Change plan to register more.",
+    registered: (name: string) => `"${name}" was registered and is available.`,
+    emptyTitle: "The resource list is coming soon",
+    emptyText:
+      "The resources you register are saved. You'll be able to browse them here in a later version.",
+    memberNote: "Only the admin and staff can register resources.",
+    typeNames: {
+      Equipment: "Equipment",
+      Utensil: "Utensil",
+      Vehicle: "Vehicle",
+      Other: "Other",
+    } as Record<string, string>,
   },
 };
 
