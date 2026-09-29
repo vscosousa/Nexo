@@ -1,0 +1,34 @@
+@startuml
+title US-006 - Choose plan before registering - SD level 2
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
+actor "Prospective Admin" as Admin
+participant "Web UI" as UI
+participant "Nexo API" as API
+
+note over UI, API
+  Submitting the organization/admin form itself (POST /organizations) is
+  documented in US-001; this diagram stops at the hand-off between the two.
+end note
+
+Admin -> UI: Open the register-org link
+activate UI
+UI -> API: GET /plans
+activate API
+API --> UI: 200 OK (PlanDto[])
+deactivate API
+UI --> Admin: Render plan options
+deactivate UI
+
+Admin -> UI: Pick a plan and continue
+activate UI
+UI --> Admin: Show the organization/admin form, planId carried in the URL
+deactivate UI
+@enduml

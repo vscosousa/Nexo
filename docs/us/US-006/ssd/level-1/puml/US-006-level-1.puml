@@ -1,0 +1,29 @@
+@startuml
+title US-006 - Choose plan before registering - SSD level 1
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
+actor "Prospective Admin" as Admin
+participant "Nexo" as System
+
+note over Admin, System
+  No plan available, and reaching the organization/admin form without a plan
+  chosen first, are not yet defined (see US-006 exceptions).
+end note
+
+Admin -> System: Open the register-org link
+activate System
+System --> Admin: Show available plans (name, member limit)
+deactivate System
+
+Admin -> System: Pick a plan and continue
+activate System
+System --> Admin: Continue to the organization/admin form with the plan carried through
+deactivate System
+@enduml

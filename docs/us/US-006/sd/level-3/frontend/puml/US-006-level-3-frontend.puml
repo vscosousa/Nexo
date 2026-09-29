@@ -1,0 +1,53 @@
+@startuml
+title US-006 - Choose plan before registering - SD level 3 - Frontend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
+actor "Prospective Admin" as Admin
+participant "ChoosePlanPage" as View
+participant "PlanPicker" as Component
+participant "authService" as Service
+participant "HttpClient" as Http
+participant "Nexo API" as API
+
+note over View, API
+  authService already holds the US-001/US-003 registration calls; listPlans
+  is proposed as one more method on it, not a new feature module.
+end note
+
+Admin -> View: Open the register-org link
+activate View
+View -> Service: listPlans()
+activate Service
+Service -> Http: GET /plans
+activate Http
+Http -> API: HTTP request
+activate API
+API --> Http: 200 OK (PlanDto[])
+deactivate API
+Http --> Service: Response data
+deactivate Http
+Service --> View: PlanOption[]
+deactivate Service
+View -> Component: renderOptions(plans)
+activate Component
+Component --> View: Rendered, waiting for a pick
+deactivate Component
+View --> Admin: Show plan options
+deactivate View
+
+Admin -> View: Pick a plan and continue
+activate View
+View -> Component: handleContinue()
+activate Component
+Component --> View: Selected planId
+deactivate Component
+View --> Admin: Navigate to the organization/admin form (planId in the URL)
+deactivate View
+@enduml

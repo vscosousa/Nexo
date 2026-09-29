@@ -1,0 +1,51 @@
+@startuml
+title US-006 - Choose plan before registering - SD level 3 - Backend
+hide footbox
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 75
+skinparam ParticipantBackgroundColor #EAF2F8
+skinparam ActorBackgroundColor #FEF9E7
+skinparam NoteBackgroundColor #FFF8DC
+autonumber
+
+participant "Web App" as FE
+participant "PlansController" as Controller
+participant "PlanService" as Service
+participant "IPlanRepository" as PlanRepo
+participant "PlanMapper" as Mapper
+participant "NexoDbContext" as DbContext
+participant "Database" as DB
+
+note over Controller, DB
+  Read-only; there is no validation or authorization branch. The
+  planId change to POST /organizations is shown in US-001's diagrams.
+end note
+
+activate FE
+FE -> Controller: GET /plans
+activate Controller
+Controller -> Service: GetAll()
+activate Service
+Service -> PlanRepo: GetAllAsync()
+activate PlanRepo
+PlanRepo -> DbContext: Query all Plans
+activate DbContext
+DbContext -> DB: SELECT * FROM Plans
+activate DB
+DB --> DbContext: Query result (possibly empty)
+deactivate DB
+DbContext --> PlanRepo: Materialized result
+deactivate DbContext
+PlanRepo --> Service: Plans
+deactivate PlanRepo
+Service -> Mapper: Map each Plan to PlanDto
+activate Mapper
+Mapper --> Service: PlanDto[]
+deactivate Mapper
+Service --> Controller: PlanDto[]
+deactivate Service
+Controller --> FE: 200 OK (PlanDto[])
+deactivate Controller
+deactivate FE
+@enduml
