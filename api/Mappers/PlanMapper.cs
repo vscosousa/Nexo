@@ -16,6 +16,7 @@ public static class PlanMapper
         HasExpenseTracking = plan.HasExpenseTracking,
         HasDecisionHistory = plan.HasDecisionHistory,
         HasAiInsights = plan.HasAiInsights,
-        HasPrioritySupport = plan.HasPrioritySupport
+        HasPrioritySupport = plan.HasPrioritySupport,
+        HasCustomResourceTypes = plan.HasCustomResourceTypes,
     };
 }

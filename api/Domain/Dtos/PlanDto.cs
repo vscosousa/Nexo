@@ -21,4 +21,6 @@ public class PlanDto
     public bool HasAiInsights { get; set; }
 
     public bool HasPrioritySupport { get; set; }
+
+    public bool HasCustomResourceTypes { get; set; }
 }

@@ -46,6 +46,8 @@ public class PostgresApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
         await db.Database.MigrateAsync();
+        await db.Resources.IgnoreQueryFilters().ExecuteDeleteAsync();
+        await db.ResourceTypes.IgnoreQueryFilters().Where(t => t.OrganizationId != null).ExecuteDeleteAsync();
         await db.ExternalLogins.ExecuteDeleteAsync();
         await db.Accounts.ExecuteDeleteAsync();
         await db.Organizations.ExecuteDeleteAsync();

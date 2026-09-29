@@ -37,4 +37,7 @@ public class Plan
 
     /// <summary>Whether the plan includes priority support.</summary>
     public bool HasPrioritySupport { get; set; }
+
+    /// <summary>Whether the organization may define its own resource types beyond the system ones (ADR-012).</summary>
+    public bool HasCustomResourceTypes { get; set; }
 }

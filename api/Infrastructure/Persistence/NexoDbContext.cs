@@ -3,11 +3,23 @@ using Nexo.Api.Domain.Models;
 
 namespace Nexo.Api.Infrastructure.Persistence;
 
-public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(options)
+/// <summary>
+/// The application's EF Core context. Org-owned sets are filtered to the signed-in caller's organization (the
+/// session token's <c>orgId</c> claim, per ADR-011); with no signed-in caller they return no org-owned rows.
+/// </summary>
+public class NexoDbContext(DbContextOptions<NexoDbContext> options, IHttpContextAccessor? http = null) : DbContext(options)
 {
     public static readonly Guid FreePlanId = new("6f1c2b1e-7a52-4d0a-9a53-1f3e5c0b8d01");
     public static readonly Guid TeamPlanId = new("8b2d4f3a-9c61-4e2b-8a64-2f4e6c0b9d02");
     public static readonly Guid EnterprisePlanId = new("a1e5c7d4-1b83-4f0c-9b75-3a5f7d1c0e03");
+
+    public static readonly Guid EquipmentTypeId = new("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f02");
+    public static readonly Guid VehicleTypeId = new("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f03");
+    public static readonly Guid OtherTypeId = new("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f04");
+    public static readonly Guid UtensilTypeId = new("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f05");
+
+    private Guid? CurrentOrganizationId =>
+        Guid.TryParse(http?.HttpContext?.User.FindFirst("orgId")?.Value, out var id) ? id : null;
 
     public DbSet<Plan> Plans => Set<Plan>();
 
@@ -16,6 +28,10 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
     public DbSet<Account> Accounts => Set<Account>();
 
     public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+
+    public DbSet<ResourceType> ResourceTypes => Set<ResourceType>();
+
+    public DbSet<Resource> Resources => Set<Resource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -43,6 +59,7 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
                     HasIncidentTracking = true,
                     HasExpenseTracking = true,
                     HasDecisionHistory = true,
+                    HasCustomResourceTypes = true,
                 },
                 new Plan
                 {
@@ -56,6 +73,7 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
                     HasDecisionHistory = true,
                     HasAiInsights = true,
                     HasPrioritySupport = true,
+                    HasCustomResourceTypes = true,
                 });
         });
 
@@ -89,6 +107,30 @@ public class NexoDbContext(DbContextOptions<NexoDbContext> options) : DbContext(
             login.Property(l => l.ProviderKey).HasMaxLength(ExternalLogin.ProviderKeyMaxLength);
             login.HasIndex(l => new { l.Provider, l.ProviderKey }).IsUnique();
             login.HasOne<Account>().WithMany().HasForeignKey(l => l.AccountId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ResourceType>(type =>
+        {
+            type.Property(t => t.Name).HasMaxLength(ResourceType.NameMaxLength);
+            type.HasIndex(t => t.Name).IsUnique().HasFilter("\"OrganizationId\" IS NULL");
+            type.HasIndex(t => new { t.OrganizationId, t.Name }).IsUnique().HasFilter("\"OrganizationId\" IS NOT NULL");
+            type.HasOne<Organization>().WithMany().HasForeignKey(t => t.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+            type.HasQueryFilter(t => t.OrganizationId == null || t.OrganizationId == CurrentOrganizationId);
+            type.HasData(
+                new ResourceType { Id = EquipmentTypeId, Name = "Equipment" },
+                new ResourceType { Id = VehicleTypeId, Name = "Vehicle" },
+                new ResourceType { Id = UtensilTypeId, Name = "Utensil" },
+                new ResourceType { Id = OtherTypeId, Name = "Other" });
+        });
+
+        modelBuilder.Entity<Resource>(resource =>
+        {
+            resource.Property(r => r.Name).HasMaxLength(Resource.NameMaxLength);
+            resource.Property(r => r.Description).HasMaxLength(Resource.DescriptionMaxLength);
+            resource.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+            resource.HasOne<ResourceType>().WithMany().HasForeignKey(r => r.TypeId).OnDelete(DeleteBehavior.Restrict);
+            resource.HasOne<Organization>().WithMany().HasForeignKey(r => r.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+            resource.HasQueryFilter(r => r.OrganizationId == CurrentOrganizationId);
         });
     }
 }

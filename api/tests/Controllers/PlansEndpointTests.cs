@@ -33,6 +33,7 @@ public class PlansEndpointTests(PostgresApiFactory factory) : IClassFixture<Post
         Assert.False(free.HasDecisionHistory);
         Assert.False(free.HasAiInsights);
         Assert.False(free.HasPrioritySupport);
+        Assert.False(free.HasCustomResourceTypes);
 
         var team = Assert.Single(plans, p => p.Name == Plan.Team);
         Assert.Equal(100, team.MemberLimit);
@@ -43,6 +44,7 @@ public class PlansEndpointTests(PostgresApiFactory factory) : IClassFixture<Post
         Assert.True(team.HasDecisionHistory);
         Assert.False(team.HasAiInsights);
         Assert.False(team.HasPrioritySupport);
+        Assert.True(team.HasCustomResourceTypes);
 
         var enterprise = Assert.Single(plans, p => p.Name == Plan.Enterprise);
         Assert.Equal(Plan.Unlimited, enterprise.MemberLimit);
@@ -53,5 +55,6 @@ public class PlansEndpointTests(PostgresApiFactory factory) : IClassFixture<Post
         Assert.True(enterprise.HasDecisionHistory);
         Assert.True(enterprise.HasAiInsights);
         Assert.True(enterprise.HasPrioritySupport);
+        Assert.True(enterprise.HasCustomResourceTypes);
     }
 }

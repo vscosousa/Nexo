@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nexo.Api.Infrastructure.Persistence;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Nexo.Api.Migrations
 {
     [DbContext(typeof(NexoDbContext))]
-    partial class NexoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929184507_AddResourcesAndResourceTypes")]
+    partial class AddResourcesAndResourceTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -305,6 +308,11 @@ namespace Nexo.Api.Migrations
                     b.HasData(
                         new
                         {
+                            Id = new Guid("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f01"),
+                            Name = "Room"
+                        },
+                        new
+                        {
                             Id = new Guid("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f02"),
                             Name = "Equipment"
                         },
@@ -312,11 +320,6 @@ namespace Nexo.Api.Migrations
                         {
                             Id = new Guid("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f03"),
                             Name = "Vehicle"
-                        },
-                        new
-                        {
-                            Id = new Guid("3c7e1a52-0d4b-4c6e-8f19-6a2b5d8e1f05"),
-                            Name = "Utensil"
                         },
                         new
                         {

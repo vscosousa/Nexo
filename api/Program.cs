@@ -38,6 +38,9 @@ builder.Services.AddScoped<IAccountActivationService, AccountActivationService>(
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<IResourceService, ResourceService>();
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])

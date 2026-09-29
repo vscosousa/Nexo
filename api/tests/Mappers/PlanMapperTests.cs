@@ -18,6 +18,7 @@ public class PlanMapperTests
             HasIncidentTracking = true,
             HasExpenseTracking = true,
             HasDecisionHistory = true,
+            HasCustomResourceTypes = true,
         };
 
         var dto = PlanMapper.ToDto(plan);
@@ -32,6 +33,7 @@ public class PlanMapperTests
         Assert.True(dto.HasDecisionHistory);
         Assert.False(dto.HasAiInsights);
         Assert.False(dto.HasPrioritySupport);
+        Assert.True(dto.HasCustomResourceTypes);
     }
 
     [Fact]
