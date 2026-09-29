@@ -3,7 +3,7 @@ using Nexo.Api.Infrastructure.Email;
 
 namespace Nexo.Api.Services;
 
-/// <summary>Builds the emails about a person's own account: confirming its address, a repeated registration, and unlocking it.</summary>
+/// <summary>Builds the emails about a person's own account: confirming its address, a welcome after a Google registration, a repeated registration, and unlocking it.</summary>
 public static class AccountEmails
 {
     /// <summary>Asks a newly registered admin to confirm the email address before the account can sign in.</summary>
@@ -19,6 +19,19 @@ public static class AccountEmails
             link,
             "The link works for 24 hours. If you did not register, you can ignore this email and nothing will be created.");
     }
+
+    /// <summary>
+    /// Welcomes an admin who registered with Google. Google already verified the address, so there is nothing to
+    /// confirm and no link token; the email records the registration and says how to sign in again.
+    /// </summary>
+    public static EmailMessage Welcome(string to, string organizationName, string webBaseUrl) => Build(
+        to,
+        $"Welcome to Nexo: {organizationName} is ready",
+        "Your organization is ready",
+        $"You registered {organizationName} on Nexo with your Google account. You are its admin, and you sign in with Google.",
+        "Sign in",
+        $"{webBaseUrl.TrimEnd('/')}/login",
+        "If you did not register this organization, someone may have access to your Google account; secure it.");
 
     /// <summary>
     /// Sent instead of creating anything when someone registers an email that already has an account, so the

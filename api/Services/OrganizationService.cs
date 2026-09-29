@@ -88,6 +88,14 @@ public class OrganizationService(
         externalLogins.Add(new ExternalLogin { AccountId = admin.Id, Provider = identity.Provider, ProviderKey = identity.ProviderKey });
         await db.SaveChangesOrConflictAsync(ExternalInUse);
 
+        try
+        {
+            await email.SendAsync(AccountEmails.Welcome(admin.Email, organization.Name, emailOptions.Value.WebBaseUrl));
+        }
+        catch
+        {
+        }
+
         return (OrganizationMapper.ToDto(organization), tokens.GenerateToken(admin));
     }
 

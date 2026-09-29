@@ -15,7 +15,8 @@ public interface IOrganizationService
 
     /// <summary>
     /// Creates an organization whose admin has no password and signs in with the given social login, which is linked
-    /// to the new account; the admin's email is the provider's verified email. Returns the admin's session.
+    /// to the new account; the admin's email is the provider's verified email. Emails the admin a welcome, best-effort
+    /// (a delivery failure does not undo the registration). Returns the admin's session.
     /// </summary>
     /// <exception cref="Domain.Exceptions.ValidationException">A required field is missing or the plan does not exist.</exception>
     /// <exception cref="Domain.Exceptions.ForbiddenException">The provider did not attest a verified email.</exception>

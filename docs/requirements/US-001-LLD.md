@@ -65,7 +65,8 @@ The web form sends the admin to `GET /auth/external/google?intent=register&planI
 3. Resolve the plan by `PlanId` (→ 400 if unknown).
 4. If the normalized provider email already has an account, fail with a conflict error (→ 409), unless it is `Unverified`: then mark it and its organization for deletion, since the verified provider email proves the ownership that the unconfirmed registration never did.
 5. Create the `Organization`, an `Active` admin `Account` with the provider email, the confirmed names and no `PasswordHash`, and an `ExternalLogin` for the provider identity; save. A unique violation on the email or the provider identity is a conflict (→ 409).
-6. Issue a session token; `AuthController` clears the `External` cookie, sets the session cookie, and answers 201 with `OrganizationDto`.
+6. Email the admin a welcome (`AccountEmails.Welcome`: the organization name and a sign-in link, no token), best-effort: a delivery failure is ignored, since the organization is already saved and the admin is signed in. There is nothing to confirm, because the provider verified the email.
+7. Issue a session token; `AuthController` clears the `External` cookie, sets the session cookie, and answers 201 with `OrganizationDto`.
 
 ## Error handling
 

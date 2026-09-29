@@ -58,4 +58,41 @@ public class OrganizationServiceTests(PostgresApiFactory factory)
             PlanId = NexoDbContext.FreePlanId,
         }));
     }
+
+    [Fact]
+    public async Task GivenTheWelcomeEmailCannotBeSent_WhenRegisteringWithGoogle_ThenTheOrganizationIsStillCreated()
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<NexoDbContext>();
+        var service = new OrganizationService(
+            new AccountRepository(db),
+            new OrganizationRepository(db),
+            new PlanRepository(db),
+            new ExternalLoginRepository(db),
+            new Microsoft.AspNetCore.Identity.PasswordHasher<Account>(),
+            factory.Services.GetRequiredService<ITokenService>(),
+            new FailingEmailSender(),
+            factory.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<Nexo.Api.Infrastructure.Email.EmailOptions>>(),
+            db);
+
+        var (organization, _) = await service.RegisterExternal(
+            new RegisterOrganizationExternalDto
+            {
+                OrganizationName = "Local Club",
+                AdminFirstName = "Ana",
+                AdminLastName = "Silva",
+                PlanId = NexoDbContext.FreePlanId,
+            },
+            new ExternalIdentity("google", "g-1", "ana@example.com", EmailVerified: true));
+
+        db.ChangeTracker.Clear();
+        Assert.True(await db.Organizations.AnyAsync(o => o.Id == organization.Id));
+        Assert.True(await db.Accounts.AnyAsync(a => a.Email == "ana@example.com"));
+    }
+
+    private sealed class FailingEmailSender : Nexo.Api.Infrastructure.Email.IEmailSender
+    {
+        public Task SendAsync(Nexo.Api.Infrastructure.Email.EmailMessage message) =>
+            throw new InvalidOperationException("SMTP is down.");
+    }
 }

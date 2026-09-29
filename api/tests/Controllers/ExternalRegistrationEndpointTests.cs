@@ -120,6 +120,19 @@ public class ExternalRegistrationEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenPendingGoogleDetails_WhenRegistering_ThenTheAdminIsEmailedAWelcomeWithoutAnyLinkToken()
+    {
+        await PostAsync("/auth/external/register", ValidRegistration(), RegisterCookie());
+
+        var email = Assert.Single(factory.Emails.Sent);
+        Assert.Equal("ana@example.com", email.To);
+        Assert.Contains("Welcome", email.Subject);
+        Assert.Contains("Local Club", email.Subject);
+        Assert.Contains("/login", email.Text);
+        Assert.DoesNotContain("token=", email.Text);
+    }
+
+    [Fact]
     public async Task GivenTheGoogleEmailAlreadyHasAnAccount_WhenRegistering_ThenItRejectsWithConflictAndCreatesNothingMore()
     {
         await AddInvitedAccountAsync("ana@example.com");
