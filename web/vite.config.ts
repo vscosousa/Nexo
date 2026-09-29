@@ -5,6 +5,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Lets a tunnel (localtunnel/ngrok/cloudflared) reach the dev server under its own hostname;
+    // Vite otherwise rejects requests whose Host header isn't localhost. Dev-only, unused in the
+    // Docker/production build.
+    allowedHosts: true,
     proxy: {
       // The API has no /api prefix, so strip it. Compose points VITE_API_URL at the api service.
       "/api": {

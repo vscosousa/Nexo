@@ -19,7 +19,6 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only an expired session redirects; a 401 without one (e.g. a failed sign-in) is the caller's to show.
     if (error.response?.status === 401 && localStorage.getItem("token")) {
       localStorage.removeItem("token");
       window.location.href = "/login";

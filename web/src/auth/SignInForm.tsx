@@ -6,8 +6,6 @@ import { authService } from "./authService";
 import { Field } from "./Field";
 import { GoogleIcon } from "./GoogleIcon";
 
-// Google sign-in is a full-page navigation, and the redirect URI registered with Google is built from the
-// API's own address, so it goes straight to the API rather than through the dev proxy.
 const API_ORIGIN = import.meta.env.VITE_API_ORIGIN ?? "http://localhost:5122";
 
 /** Email/password sign-in, plus the entry point for Google sign-in. */
@@ -34,7 +32,6 @@ export function SignInForm({ initialError }: { initialError?: string }) {
       login(session.token);
       navigate("/app", { replace: true });
     } catch (e) {
-      // One message for every credential failure, so it never reveals whether the email exists.
       const status = (e as { response?: { status?: number } }).response?.status;
       setError(
         status === 401 || status === 400

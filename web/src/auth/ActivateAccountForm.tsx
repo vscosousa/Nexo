@@ -6,7 +6,6 @@ import { authService } from "./authService";
 import { CodeInput } from "./CodeInput";
 import { Field } from "./Field";
 
-// Matches InvitationTokens.CodeLength on the API.
 const CODE_LENGTH = 6;
 
 /** First message from an ASP.NET validation problem, if the body has one. */
@@ -85,8 +84,6 @@ export function ActivateAccountForm() {
         response?.status === 400
           ? firstValidationError(response.data)
           : undefined;
-      // A 403/409 here means the code stopped being valid between verifying and submitting
-      // (e.g. it expired or was consumed elsewhere); send the person back to re-enter it.
       if (response?.status === 403 || response?.status === 409) retry();
       setError(
         response?.status === 403

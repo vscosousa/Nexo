@@ -36,9 +36,6 @@ const featureIcons = [
 ];
 const stepImages = [step1Image, step2Image, step3Image];
 
-// Fictional partners with placeholder marks (see partners/CREDITS.md); swap for real ones when they exist.
-// `wordmark` is the invented text set beside the mark, `style` picks its type treatment and `color`
-// is the mark's own color, which the whole lockup takes on hover.
 const partners = [
   {
     logo: horizonte,

@@ -1,4 +1,5 @@
-/* Mobile-first: the form alone on phones; the brand panel joins from 1024px. */
+/* The form alone on phones; the brand panel joins beside it from 1024px. The form column itself
+   (.auth-main) never changes shape between the two: same logo, card, and footer either way. */
 .auth-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -10,91 +11,70 @@
   display: none;
 }
 
+/* Two rows: the form content (flexible height) and the site footer, which this grid keeps
+   pinned to the bottom of the page regardless of how the content above it is aligned. Padding
+   accounts for the device's safe area (notch, home indicator, rounded corners) via env(), falling
+   back to the plain spacing token where a device reports no inset (env() then resolves to 0). */
 .auth-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
   gap: var(--space-2xl);
-  padding: var(--space-lg);
+  padding-top: max(
+    var(--space-5xl),
+    calc(env(safe-area-inset-top) + var(--space-3xl))
+  );
+  padding-right: max(var(--space-lg), env(safe-area-inset-right));
+  padding-bottom: max(
+    var(--space-3xl),
+    calc(env(safe-area-inset-bottom) + var(--space-lg))
+  );
+  padding-left: max(var(--space-lg), env(safe-area-inset-left));
 }
 
-/* Back button on the left; on phones the logo (no panel there) sits opposite it. */
-.auth-topbar {
+/* Not vertically centered on phones: these screens are often short (one field, a code entry),
+   and centering a short block leaves distractingly large empty space above and below it. */
+.auth-main-content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  align-self: stretch;
-}
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
-  height: var(--size-touch);
-  padding: 0 var(--space-md) 0 var(--space-sm);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    color 0.15s;
-}
-
-.back-btn:hover {
-  background: var(--color-fill);
-  color: var(--color-text);
-}
-
-.back-btn svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.auth-content {
-  display: flex;
-  flex: 1;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--space-xl);
+  align-items: center;
+  align-self: start;
+  gap: var(--space-2xl);
   width: 100%;
-  max-width: 26rem;
-  padding-bottom: var(--space-2xl);
 }
 
-.auth-heading {
+.auth-logo {
+  display: inline-flex;
+}
+
+.auth-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-lg);
+  width: 100%;
+  max-width: 24rem;
 }
 
-.auth-heading h1 {
+.auth-card h1 {
   font-family: var(--font-display);
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-heading);
   letter-spacing: var(--letter-spacing-display);
+  text-align: center;
 }
 
-.auth-heading p {
-  color: var(--color-text-secondary);
-}
-
-.auth-content form {
+.auth-card form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
-.auth-content form .btn {
+.auth-card form .btn {
   margin-top: var(--space-xs);
 }
 
-.auth-content .btn {
+.auth-card .btn {
   width: 100%;
 }
 
@@ -117,9 +97,20 @@
   background: var(--color-border);
 }
 
+/* Centered rather than left-aligned like the other fields: a code is a single unit to key in,
+   not a line of text, and centering it under the (also centered) heading reads as one column. */
+.field-code {
+  align-items: center;
+  text-align: center;
+  /* Its label reads as a subtitle under the h1, so give it the same gap the card uses
+     between the title and the form, instead of the tighter label-to-input gap. */
+  gap: var(--space-lg);
+}
+
 .code-input {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-sm);
 }
 
@@ -186,6 +177,45 @@
   text-decoration: underline;
 }
 
+.wizard-step-fields:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.wizard-progress {
+  display: flex;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-progress li {
+  flex: 1;
+  height: 0.3125rem;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.wizard-progress li.wizard-progress-step-done {
+  background: var(--color-accent);
+  transition: background 0.25s ease;
+}
+
+.wizard-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.wizard-actions .btn {
+  width: auto;
+}
+
+.wizard-actions .btn-primary {
+  flex: 1;
+}
+
 .auth-footer {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
@@ -201,10 +231,22 @@
   text-decoration: underline;
 }
 
-@media (min-width: 640px) {
-  .auth-main {
-    padding: var(--space-2xl);
-  }
+/* The grid row below .auth-main-content (see .auth-main), so it's pinned to the bottom of the
+   page however the content above it is aligned. */
+.auth-site-footer {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.auth-site-footer ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-md) var(--space-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
 }
 
 @media (min-width: 1024px) {
@@ -217,7 +259,7 @@
     top: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     gap: var(--space-4xl);
     height: 100svh;
     padding: var(--space-4xl);
@@ -225,19 +267,6 @@
       linear-gradient(rgb(30 27 75 / 90%), rgb(30 27 75 / 94%)),
       url("../landing/images/hero.jpg") center / cover;
     color: #fff;
-  }
-
-  /* On the dark panel the wordmark is white and the mark sits on a white tile so it stays visible. */
-  .auth-panel .brand-word {
-    background: #fff;
-  }
-
-  .auth-panel .brand-mark {
-    box-sizing: content-box;
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-md);
-    background-color: #fff;
-    background-origin: content-box;
   }
 
   .auth-panel-body {
@@ -279,7 +308,8 @@
     width: var(--size-xxs);
     height: var(--size-xxs);
     border-radius: 50%;
-    background: rgb(255 255 255 / 16%);
+    background: color-mix(in srgb, var(--amber-400) 22%, transparent);
+    color: var(--amber-300);
   }
 
   .auth-check svg {
@@ -293,32 +323,13 @@
   }
 
   .auth-main {
-    justify-content: center;
     padding: var(--space-3xl);
   }
 
-  .auth-topbar-logo {
-    display: none;
-  }
-
-  /* Pinned to the top-left corner of the form side, out of the form's way. */
-  .auth-main {
-    position: relative;
-  }
-
-  .auth-topbar {
-    position: absolute;
-    top: var(--space-2xl);
-    left: var(--space-3xl);
-    align-self: auto;
-  }
-
-  .auth-content {
-    flex: none;
-    padding-bottom: 0;
-  }
-
-  .auth-heading h1 {
-    font-size: var(--font-size-5xl);
+  /* Centered rather than top-anchored: with the panel beside it the column reads as a deliberate
+     block, not a short screen with empty space to worry about. The footer stays pinned to the
+     bottom row regardless (see .auth-main's grid). */
+  .auth-main-content {
+    align-self: center;
   }
 }

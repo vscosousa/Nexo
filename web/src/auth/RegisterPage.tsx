@@ -7,11 +7,15 @@ import { RegisterForm } from "./RegisterForm";
 export function RegisterPage() {
   const { m } = usePreferences();
   return (
-    <AuthLayout title={m.auth.registerTitle} subtitle={m.auth.registerSubtitle}>
+    <AuthLayout
+      title={m.auth.registerTitle}
+      footer={
+        <>
+          {m.auth.haveAccount} <Link to="/login">{m.auth.signInLink}</Link>
+        </>
+      }
+    >
       <RegisterForm />
-      <p className="auth-footer">
-        {m.auth.haveAccount} <Link to="/login">{m.auth.signInLink}</Link>
-      </p>
     </AuthLayout>
   );
 }

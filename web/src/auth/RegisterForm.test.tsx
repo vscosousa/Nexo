@@ -22,7 +22,18 @@ function renderRegister() {
   );
 }
 
-async function fill(values: Record<string, string>) {
+async function fillStep1(organizationName: string) {
+  const user = userEvent.setup();
+  if (organizationName) {
+    await user.type(
+      screen.getByLabelText("Organization name"),
+      organizationName,
+    );
+  }
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+}
+
+async function fillStep2(values: Record<string, string>) {
   const user = userEvent.setup();
   for (const [label, value] of Object.entries(values)) {
     if (value) await user.type(screen.getByLabelText(label), value);
@@ -33,7 +44,6 @@ async function fill(values: Record<string, string>) {
 }
 
 const valid = {
-  "Organization name": "Associação Horizonte",
   "First name": "Ana",
   "Last name": "Admin",
   Email: "ana@example.com",
@@ -43,11 +53,12 @@ const valid = {
 describe("RegisterForm", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("given valid details, when submitting, then it registers and sends the admin to sign in", async () => {
+  it("given valid details across both steps, when submitting, then it registers and sends the admin to sign in", async () => {
     vi.mocked(authService.register).mockResolvedValue(undefined);
     renderRegister();
 
-    await fill(valid);
+    await fillStep1("Associação Horizonte");
+    await fillStep2(valid);
 
     expect(authService.register).toHaveBeenCalledWith({
       organizationName: "Associação Horizonte",
@@ -61,10 +72,38 @@ describe("RegisterForm", () => {
     );
   });
 
-  it("given an empty field, when submitting, then it asks for it without calling the API", async () => {
+  it("given an empty organization name, when continuing, then it asks for it and stays on step one", async () => {
     renderRegister();
 
-    await fill({ ...valid, Password: "" });
+    await fillStep1("");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Fill in every field.",
+    );
+    expect(
+      screen.getByRole("button", { name: "Continue" }),
+    ).toBeInTheDocument();
+  });
+
+  it("given step two, when going back, then step one keeps the organization name", async () => {
+    const user = userEvent.setup();
+    renderRegister();
+
+    await fillStep1("Associação Horizonte");
+    await user.click(
+      screen.getByRole("button", { name: "Back: Organization" }),
+    );
+
+    expect(screen.getByLabelText("Organization name")).toHaveValue(
+      "Associação Horizonte",
+    );
+  });
+
+  it("given an empty field on step two, when submitting, then it asks for it without calling the API", async () => {
+    renderRegister();
+
+    await fillStep1("Associação Horizonte");
+    await fillStep2({ ...valid, Password: "" });
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Fill in every field.",
@@ -78,7 +117,8 @@ describe("RegisterForm", () => {
     });
     renderRegister();
 
-    await fill(valid);
+    await fillStep1("Associação Horizonte");
+    await fillStep2(valid);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "already registered",
@@ -94,7 +134,8 @@ describe("RegisterForm", () => {
     });
     renderRegister();
 
-    await fill(valid);
+    await fillStep1("Associação Horizonte");
+    await fillStep2(valid);
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Password is too short.",

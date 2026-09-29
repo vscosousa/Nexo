@@ -17,7 +17,6 @@ interface Preferences {
   toggleTheme: () => void;
 }
 
-// Without a provider (isolated component tests) the app falls back to English and the light theme.
 const Ctx = createContext<Preferences>({
   lang: "en",
   setLang: () => {},
@@ -42,7 +41,7 @@ const save = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
   } catch {
-    // storage unavailable: the choice just lasts for this visit
+    /* empty */
   }
 };
 

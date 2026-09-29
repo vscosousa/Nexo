@@ -6,7 +6,7 @@ import { ActivateAccountForm } from "./ActivateAccountForm";
 export function ActivateAccountPage() {
   const { m } = usePreferences();
   return (
-    <AuthLayout title={m.auth.activateTitle} subtitle={m.auth.activateSubtitle}>
+    <AuthLayout title={m.auth.activateTitle}>
       <ActivateAccountForm />
     </AuthLayout>
   );

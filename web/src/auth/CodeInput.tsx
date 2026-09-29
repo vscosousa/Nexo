@@ -64,7 +64,7 @@ export function CodeInput({
     };
 
   return (
-    <div className="field">
+    <div className="field field-code">
       <label htmlFor={`${name}-0`}>{label}</label>
       <input type="hidden" name={name} value={chars.join("")} />
       <div className="code-input" aria-disabled={disabled}>

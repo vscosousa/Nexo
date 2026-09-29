@@ -8,7 +8,15 @@ export function LoginPage() {
   const { m } = usePreferences();
   const [params] = useSearchParams();
   return (
-    <AuthLayout title={m.auth.signInTitle} subtitle={m.auth.signInSubtitle}>
+    <AuthLayout
+      title={m.auth.signInTitle}
+      footer={
+        <>
+          {m.auth.newToNexo}{" "}
+          <Link to="/register">{m.auth.createAnAccount}</Link>
+        </>
+      }
+    >
       {(params.get("registered") || params.get("activated")) && (
         <p role="status" className="alert alert-success">
           {params.get("activated") ? m.auth.activated : m.auth.registered}
@@ -17,9 +25,6 @@ export function LoginPage() {
       <SignInForm
         initialError={params.get("error") ? m.auth.googleFailed : undefined}
       />
-      <p className="auth-footer">
-        {m.auth.newToNexo} <Link to="/register">{m.auth.createAnAccount}</Link>
-      </p>
     </AuthLayout>
   );
 }

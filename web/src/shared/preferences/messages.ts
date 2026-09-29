@@ -7,6 +7,7 @@ const pt = {
     theme: "Alternar tema claro/escuro",
     language: "Idioma",
     genericError: "Algo correu mal. Tente novamente.",
+    legalLinks: ["Termos de uso", "Privacidade", "RGPD", "Licenciamento"],
   },
   landing: {
     navLabel: "Principal",
@@ -16,8 +17,8 @@ const pt = {
       partners: "Parceiros",
       about: "Sobre",
     },
-    eyebrow: "Software para associações",
-    title: "Gerir a sua associação nunca foi tão simples",
+    eyebrow: "Software para organizações",
+    title: "Reservas, equipamento e voluntários, sem confusão",
     lead: "Reservas de espaços, empréstimos de equipamento, voluntários, workshops e despesas num só lugar.",
     seeHow: "Ver como funciona",
     heroAlt: "Participantes num workshop comunitário",
@@ -55,9 +56,9 @@ const pt = {
     stepsTitle: "Como funciona o Nexo",
     steps: [
       {
-        alt: "Pessoa a preencher o registo da associação num portátil",
-        title: "Registe a sua associação",
-        text: "Crie a ficha da associação, convide a comissão administrativa e defina as permissões de cada pessoa.",
+        alt: "Pessoa a preencher o registo da organização num portátil",
+        title: "Registe a sua organização",
+        text: "Crie a ficha da organização, convide a comissão administrativa e defina as permissões de cada pessoa.",
       },
       {
         alt: "Pavilhão desportivo com bancadas",
@@ -76,7 +77,7 @@ const pt = {
     createAccount: "Criar conta",
     contactUs: "Falar connosco",
     footerAbout:
-      "Software de gestão para associações locais e comissões comunitárias.",
+      "Software de gestão para organizações locais e comissões comunitárias.",
     footerColumns: [
       {
         title: "Produto",
@@ -95,7 +96,7 @@ const pt = {
     registered:
       "Organização registada. Inicie sessão com a conta de administrador.",
     googleFailed: "O início de sessão com Google falhou.",
-    newToNexo: "A sua associação ainda não usa o Nexo?",
+    newToNexo: "A sua organização ainda não usa o Nexo?",
     createAnAccount: "Registar a organização",
     email: "Email",
     password: "Palavra-passe",
@@ -104,20 +105,18 @@ const pt = {
     enterCredentials: "Indique o email e a palavra-passe.",
     badCredentials: "O email ou a palavra-passe não estão corretos.",
     registerTitle: "Registe a sua organização",
+    stepOrg: "Organização",
+    stepAdmin: "Conta de administrador",
     organizationName: "Nome da organização",
     firstName: "Nome próprio",
     lastName: "Apelido",
+    continueButton: "Continuar",
     createButton: "Registar organização",
     fillEvery: "Preencha todos os campos.",
     emailTaken: "Este email já está registado.",
     haveAccount: "Já é membro de uma organização?",
     signInLink: "Iniciar sessão",
-    signInSubtitle: "Entre na conta de membro da sua organização.",
-    registerSubtitle:
-      "Crie a organização e a conta de administrador. Os restantes membros são convidados por si.",
     activateTitle: "Crie a sua conta de membro",
-    activateSubtitle:
-      "Introduza o código do convite recebido por email para continuar.",
     invitationCode: "Código do convite",
     activateButton: "Criar conta",
     activated: "Conta ativada. Inicie sessão para continuar.",
@@ -132,13 +131,13 @@ const pt = {
     showPassword: "Mostrar palavra-passe",
     hidePassword: "Ocultar palavra-passe",
     or: "ou",
-    panelTitle: "Tudo o que a sua associação precisa, num só lugar.",
+    panelTitle: "Tudo o que a sua organização precisa, num só lugar.",
     panelPoints: [
       "Reservas de espaços sem conflitos de horário",
       "Equipamento e voluntários sempre organizados",
       "Despesas e decisões à vista de todos",
     ],
-    panelNote: "Software para associações e comissões comunitárias.",
+    panelNote: "Software para organizações e comissões comunitárias.",
   },
 };
 
@@ -150,6 +149,7 @@ const en: typeof pt = {
     theme: "Toggle light/dark theme",
     language: "Language",
     genericError: "Something went wrong. Try again.",
+    legalLinks: ["Terms of use", "Privacy", "GDPR", "Licensing"],
   },
   landing: {
     navLabel: "Main",
@@ -159,8 +159,8 @@ const en: typeof pt = {
       partners: "Partners",
       about: "About",
     },
-    eyebrow: "Software for associations",
-    title: "Running your association has never been this simple",
+    eyebrow: "Software for organizations",
+    title: "Bookings, equipment and volunteers, without the chaos",
     lead: "Space bookings, equipment loans, volunteers, workshops and expenses in one place.",
     seeHow: "See how it works",
     heroAlt: "Participants at a community workshop",
@@ -198,9 +198,9 @@ const en: typeof pt = {
     stepsTitle: "How Nexo works",
     steps: [
       {
-        alt: "Person filling in the association registration on a laptop",
-        title: "Register your association",
-        text: "Create the association profile, invite the administrative committee and set each person's permissions.",
+        alt: "Person filling in the organization registration on a laptop",
+        title: "Register your organization",
+        text: "Create the organization profile, invite the administrative committee and set each person's permissions.",
       },
       {
         alt: "Sports hall with bleachers",
@@ -219,7 +219,7 @@ const en: typeof pt = {
     createAccount: "Create account",
     contactUs: "Contact us",
     footerAbout:
-      "Management software for local associations and community committees.",
+      "Management software for local organizations and community committees.",
     footerColumns: [
       {
         title: "Product",
@@ -237,28 +237,27 @@ const en: typeof pt = {
     signInTitle: "Sign in",
     registered: "Organization registered. Sign in with the admin account.",
     googleFailed: "Google sign-in failed.",
-    newToNexo: "Is your association not on Nexo yet?",
+    newToNexo: "Is your organization not on Nexo yet?",
     createAnAccount: "Register your organization",
     email: "Email",
     password: "Password",
     signInButton: "Sign in",
     google: "Continue with Google",
     enterCredentials: "Enter your email and password.",
-    badCredentials: "The email or password is not correct.",
+    badCredentials: "The email or password is incorrect.",
     registerTitle: "Register your organization",
+    stepOrg: "Organization",
+    stepAdmin: "Admin account",
     organizationName: "Organization name",
     firstName: "First name",
     lastName: "Last name",
+    continueButton: "Continue",
     createButton: "Register organization",
     fillEvery: "Fill in every field.",
     emailTaken: "This email is already registered.",
     haveAccount: "Already a member of an organization?",
     signInLink: "Sign in",
-    signInSubtitle: "Sign in to your member account.",
-    registerSubtitle:
-      "Create the organization and its admin account. You invite the other members.",
     activateTitle: "Create your member account",
-    activateSubtitle: "Enter the invitation code from your email to continue.",
     invitationCode: "Invitation code",
     activateButton: "Create account",
     activated: "Account activated. Sign in to continue.",
@@ -274,13 +273,13 @@ const en: typeof pt = {
     showPassword: "Show password",
     hidePassword: "Hide password",
     or: "or",
-    panelTitle: "Everything your association needs, in one place.",
+    panelTitle: "Everything your organization needs, in one place.",
     panelPoints: [
       "Space bookings without scheduling conflicts",
       "Equipment and volunteers always organized",
       "Expenses and decisions visible to everyone",
     ],
-    panelNote: "Software for associations and community committees.",
+    panelNote: "Software for organizations and community committees.",
   },
 };
 
