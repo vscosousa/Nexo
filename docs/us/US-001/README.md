@@ -20,7 +20,7 @@
 
 Implementation must not assume answers to these; stop at the `OrganizationDto` contract the diagrams show.
 
-**Status:** backend implemented up to the `OrganizationDto` contract (password path only; SSO and session delivery are still open); frontend not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** backend implemented up to the `OrganizationDto` contract (password path only; SSO and session delivery are still open); frontend implemented (`RegisterForm` two-step wizard at `/register`, redirects to `/login` since there is no session to store). Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
@@ -64,15 +64,15 @@ See the [LLD service logic](../../requirements/US-001-LLD.md#service-logic-organ
 
 ## Level 3 - Frontend
 
-**Participants:** `RegisterOrganizationPage`, `RegisterOrganizationForm`, `organizationsService`, `HttpClient`, `Nexo API` (the backend, as a whole).
+**Participants:** `RegisterPage`, `RegisterForm`, `authService`, `HttpClient`, `Nexo API` (the backend, as a whole).
 **Diagram:** [![SD level 3 frontend](sd/level-3/frontend/svg/US-001-level-3-frontend.svg)](sd/level-3/frontend/puml/US-001-level-3-frontend.puml)
 
 | Step | Sender → receiver | Operation | Outcome |
 | --- | --- | --- | --- |
-| 1 | Actor → View → Component | Submit organization and admin details | View forwards the actor's input to the form component |
-| 2 | Component → Service | `organizationsService.register(...)` | Feature module builds the request |
+| 1 | Actor → View → Component | Submit organization, admin details, and password (final step of the two-step wizard) | View forwards the actor's input to the form component |
+| 2 | Component → Service | `authService.register(dto)` | Feature module builds the request |
 | 3 | Service → HttpClient | `POST /organizations` | Shared Axios instance sends the request |
 | 4 | HttpClient → Nexo API | HTTP request | Reaches the backend (detailed in [Level 3 - Backend](#level-3---backend)) |
 
-**Failure handling:** A thrown error from the API call propagates back through the service to the component, which renders the validation or conflict message.
+**Failure handling:** A thrown error from the API call propagates back through the service to the component, which renders the validation or conflict message. On success, the component navigates to `/login?registered=1` instead of signing in, since the backend returns no session.
 **Related design:** [Architecture](../../architecture/README.md), [Domain model](../../domain-models/README.md#accounts-and-organizations), [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md).

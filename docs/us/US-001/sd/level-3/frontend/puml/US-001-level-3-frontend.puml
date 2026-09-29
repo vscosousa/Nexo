@@ -10,21 +10,23 @@ skinparam NoteBackgroundColor #FFF8DC
 autonumber
 
 actor "Prospective Admin" as Admin
-participant "RegisterOrganizationPage" as View
-participant "RegisterOrganizationForm" as Component
-participant "organizationsService" as Service
+participant "RegisterPage" as View
+participant "RegisterForm" as Component
+participant "authService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
 
 note over View, API
-  Credential input and session delivery are not yet specified.\nThis diagram shows the current draft contract only.
+  RegisterForm is a two-step wizard (organization name, then admin details and
+  password); only the final step submits. Credential/session delivery is not
+  yet specified: a 201 redirects to /login instead of signing the admin in.
 end note
 
-Admin -> View: Submit organization and admin details
+Admin -> View: Submit organization, admin details, and password
 activate View
-View -> Component: handleSubmit(organizationName, adminName, adminEmail)
+View -> Component: handleSubmit(organizationName, adminFirstName, adminLastName, adminEmail, password)
 activate Component
-Component -> Service: register(organizationName, adminName, adminEmail)
+Component -> Service: register(dto)
 activate Service
 Service -> Http: POST /organizations (RegisterOrganizationDto)
 activate Http
@@ -38,10 +40,10 @@ end
 deactivate API
 Http --> Service: Response data or rejected request
 deactivate Http
-Service --> Component: OrganizationDto, or thrown error
+Service --> Component: void, or thrown error
 deactivate Service
 alt Successful response
-    Component --> View: Organization and admin account created
+    Component --> View: Navigate to /login?registered=1
 else Failed response
     Component --> View: Error state (validation / operation failure)
 end

@@ -22,7 +22,7 @@
 
 Implementation must not assume answers to these; stop at `AccountDto` as the diagrams show.
 
-**Status:** password-path backend implemented; frontend and OAuth not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** password-path backend implemented; frontend implemented (`ActivateAccountForm` at `/activate`, redirects to `/login` since there is no session to store); OAuth activation not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 

@@ -36,7 +36,7 @@ us/
 
 ## Stories
 
-All five designs are proposed. Read the [design review gaps](../requirements/README.md#design-review-gaps) before treating a diagram as a complete implementation contract. Rendered diagrams show intended collaboration, not existing classes.
+All six designs are proposed. Read the [design review gaps](../requirements/README.md#design-review-gaps) before treating a diagram as a complete implementation contract. Rendered diagrams show intended collaboration, not existing classes.
 
 | Story | SSD (level 1) | SD (level 2) | SD (level 3) | HLD | LLD |
 | --- | --- | --- | --- | --- | --- |
@@ -45,3 +45,4 @@ All five designs are proposed. Read the [design review gaps](../requirements/REA
 | [US-003](US-003/README.md) | [level-1](US-003/ssd/level-1/puml/US-003-level-1.puml) | [level-2](US-003/sd/level-2/puml/US-003-level-2.puml) | [backend](US-003/sd/level-3/backend/puml/US-003-level-3-backend.puml), [frontend](US-003/sd/level-3/frontend/puml/US-003-level-3-frontend.puml) | [HLD](../requirements/US-003-HLD.md) | [LLD](../requirements/US-003-LLD.md) |
 | [US-004](US-004/README.md) | [level-1](US-004/ssd/level-1/puml/US-004-level-1.puml) | [level-2](US-004/sd/level-2/puml/US-004-level-2.puml) | [backend](US-004/sd/level-3/backend/puml/US-004-level-3-backend.puml), [frontend](US-004/sd/level-3/frontend/puml/US-004-level-3-frontend.puml) | [HLD](../requirements/US-004-HLD.md) | [LLD](../requirements/US-004-LLD.md) |
 | [US-005](US-005/README.md) | [level-1](US-005/ssd/level-1/puml/US-005-level-1.puml) | [level-2](US-005/sd/level-2/puml/US-005-level-2.puml) | [backend](US-005/sd/level-3/backend/puml/US-005-level-3-backend.puml), [frontend](US-005/sd/level-3/frontend/puml/US-005-level-3-frontend.puml) | [HLD](../requirements/US-005-HLD.md) | [LLD](../requirements/US-005-LLD.md) |
+| [US-006](US-006/README.md) | [level-1](US-006/ssd/level-1/puml/US-006-level-1.puml) | [level-2](US-006/sd/level-2/puml/US-006-level-2.puml) | [backend](US-006/sd/level-3/backend/puml/US-006-level-3-backend.puml), [frontend](US-006/sd/level-3/frontend/puml/US-006-level-3-frontend.puml) | [HLD](../requirements/US-006-HLD.md) | [LLD](../requirements/US-006-LLD.md) |
