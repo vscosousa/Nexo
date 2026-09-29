@@ -19,6 +19,9 @@ public static class InvitationTokens
 
     public const int CodeLength = 6;
 
+    /// <summary>Wrong codes tried with the right link token before the invitation stops working; a resend or re-invite resets the count.</summary>
+    public const int MaxCodeAttempts = 5;
+
     private const string CodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
     public static (string Token, string Hash) CreateLinkToken()

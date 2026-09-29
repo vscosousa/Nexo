@@ -11,11 +11,12 @@ public class HttpSecurityEndpointTests(PostgresApiFactory factory) : IClassFixtu
 {
     private const string AllowedOrigin = "http://localhost:5173";
 
-    private HttpClient CreateClient(int signInLimit = 1000) =>
+    private HttpClient CreateClient(int signInLimit = 1000, int publicLimit = 1000) =>
         factory.WithWebHostBuilder(b =>
         {
             b.UseSetting("Cors:AllowedOrigins:0", AllowedOrigin);
             b.UseSetting("RateLimit:SignInPermitLimit", signInLimit.ToString());
+            b.UseSetting("RateLimit:PublicPermitLimit", publicLimit.ToString());
         }).CreateClient();
 
     private static HttpRequestMessage Preflight(string origin)
@@ -55,4 +56,21 @@ public class HttpSecurityEndpointTests(PostgresApiFactory factory) : IClassFixtu
         Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync("/auth/sign-in", attempt)).StatusCode);
     }
 
+    [Theory]
+    [InlineData("/organizations")]
+    [InlineData("/accounts/activation")]
+    [InlineData("/accounts/activation/verify")]
+    [InlineData("/accounts/activation/resend")]
+    [InlineData("/accounts/activation/confirm-email")]
+    [InlineData("/auth/external/register")]
+    [InlineData("/auth/external/activate")]
+    public async Task GivenTooManyRequestsToAPublicEndpoint_WhenTheLimitIsExceeded_ThenItRespondsTooManyRequests(string path)
+    {
+        var client = CreateClient(publicLimit: 3);
+
+        for (var i = 0; i < 3; i++)
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync(path, new { })).StatusCode);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await client.PostAsJsonAsync(path, new { })).StatusCode);
+    }
 }

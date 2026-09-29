@@ -279,6 +279,45 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
+    [Fact]
+    public async Task GivenTooManyWrongCodesWithTheLink_WhenTheRightCodeIsTried_ThenTheInvitationStaysLocked()
+    {
+        var organizationId = await SeedOrganizationAsync();
+        await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Invited);
+        for (var i = 0; i < InvitationTokens.MaxCodeAttempts; i++)
+            await VerifyAsync("bob@example.com", code: "ZZZZZZ");
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await VerifyAsync("bob@example.com")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await ActivateAsync("bob@example.com", "Bob", "Builder", TestData.StrongPassword)).StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenWrongLinkTokens_WhenTheRightOnesAreTried_ThenTheyStillWork()
+    {
+        var organizationId = await SeedOrganizationAsync();
+        await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Invited);
+        for (var i = 0; i < InvitationTokens.MaxCodeAttempts; i++)
+            await VerifyAsync("bob@example.com", token: "wrong-token", code: "ZZZZZZ");
+
+        Assert.Equal(HttpStatusCode.OK, (await VerifyAsync("bob@example.com")).StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenALockedInvitation_WhenAFreshCodeIsResent_ThenTheNewCodeWorks()
+    {
+        var organizationId = await SeedOrganizationAsync();
+        await AddAccountAsync(organizationId, "bob@example.com", AccountStatus.Invited);
+        for (var i = 0; i < InvitationTokens.MaxCodeAttempts; i++)
+            await VerifyAsync("bob@example.com", code: "ZZZZZZ");
+
+        await factory.CreateClient().PostAsJsonAsync("/accounts/activation/resend", new ResendInvitationDto { Email = "bob@example.com" });
+        var code = CapturingEmailSender.CodeIn(factory.Emails.Sent[^1]);
+
+        Assert.Equal(HttpStatusCode.OK, (await VerifyAsync("bob@example.com", code: code)).StatusCode);
+    }
+
     private Task<HttpResponseMessage> VerifyAsync(
         string email, string token = TestData.InvitationLinkToken, string code = TestData.InvitationCode) =>
         factory.CreateClient().PostAsJsonAsync(
@@ -293,6 +332,7 @@ public class AccountActivationsEndpointTests(PostgresApiFactory factory)
             AdminLastName = "Admin",
             AdminEmail = "ana@example.com",
             Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
         });
         return (await response.Content.ReadFromJsonAsync<OrganizationDto>())!.Id;
     }

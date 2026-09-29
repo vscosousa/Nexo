@@ -96,6 +96,16 @@ public class ExternalSignInEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenAnAccountWhoseEmailIsUnconfirmed_WhenTheCallbackRuns_ThenItRejectsAndLinksNothing()
+    {
+        await AddAccountAsync("bob@example.com", AccountStatus.Unverified);
+
+        var response = await CallbackAsync("google", "g-2", "bob@example.com", verified: true);
+
+        await AssertRejectedAsync(response);
+    }
+
+    [Fact]
     public async Task GivenNoExternalCookie_WhenTheCallbackRuns_ThenItRejects()
     {
         var response = await _configured.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false })

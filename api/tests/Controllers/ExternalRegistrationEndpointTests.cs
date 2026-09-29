@@ -133,6 +133,28 @@ public class ExternalRegistrationEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenTheGoogleEmailHasAnUnconfirmedRegistration_WhenRegistering_ThenGoogleProvesOwnershipAndItIsReplaced()
+    {
+        await factory.CreateClient().PostAsJsonAsync("/organizations", new RegisterOrganizationDto
+        {
+            OrganizationName = "Squatted Club",
+            AdminFirstName = "Eve",
+            AdminLastName = "Squatter",
+            AdminEmail = "ana@example.com",
+            Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
+        });
+
+        var response = await PostAsync("/auth/external/register", ValidRegistration(), RegisterCookie());
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await using var db = NewDbContext();
+        Assert.Equal("Local Club", (await db.Organizations.SingleAsync()).Name);
+        var admin = await db.Accounts.SingleAsync();
+        Assert.Equal((AccountStatus.Active, (string?)null), (admin.Status, admin.PasswordHash));
+    }
+
+    [Fact]
     public async Task GivenAMissingName_WhenRegistering_ThenItRejectsWithValidationErrors()
     {
         var dto = ValidRegistration();

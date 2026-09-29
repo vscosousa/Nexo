@@ -49,11 +49,90 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         var account = await db.Accounts.SingleAsync();
         Assert.Equal("ana@example.com", account.Email);
         Assert.Equal(Role.Admin, account.Role);
-        Assert.Equal(AccountStatus.Active, account.Status);
+        Assert.Equal(AccountStatus.Unverified, account.Status);
         Assert.Equal(organization.Id, account.OrganizationId);
         Assert.Equal(
             PasswordVerificationResult.Success,
             new PasswordHasher<Account>().VerifyHashedPassword(account, account.PasswordHash!, TestData.StrongPassword));
+        var email = Assert.Single(factory.Emails.Sent);
+        Assert.Equal("ana@example.com", email.To);
+        Assert.Contains("/confirm-email?email=ana%40example.com&token=", email.Text);
+    }
+
+    [Fact]
+    public async Task GivenAnUnconfirmedAdmin_WhenSigningIn_ThenItIsRejected()
+    {
+        await factory.CreateClient().PostAsJsonAsync("/organizations", Valid);
+
+        var response = await SignInAsync();
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenTheEmailedLink_WhenConfirming_ThenTheAdminIsActiveAndCanSignIn()
+    {
+        await factory.CreateClient().PostAsJsonAsync("/organizations", Valid);
+        var token = CapturingEmailSender.TokenIn(Assert.Single(factory.Emails.Sent));
+
+        var response = await ConfirmAsync(" Ana@Example.com ", token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        await using var db = NewDbContext();
+        var account = await db.Accounts.SingleAsync();
+        Assert.Equal(AccountStatus.Active, account.Status);
+        Assert.Null(account.InvitationTokenHash);
+        Assert.Equal(HttpStatusCode.NoContent, (await SignInAsync()).StatusCode);
+    }
+
+    [Theory]
+    [InlineData("ana@example.com", "wrong-token")]
+    [InlineData("other@example.com", null)]
+    public async Task GivenAWrongEmailOrToken_WhenConfirming_ThenItRejectsAndTheAdminStaysUnconfirmed(string email, string? token)
+    {
+        await factory.CreateClient().PostAsJsonAsync("/organizations", Valid);
+        token ??= CapturingEmailSender.TokenIn(Assert.Single(factory.Emails.Sent));
+
+        var response = await ConfirmAsync(email, token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        await using var db = NewDbContext();
+        Assert.Equal(AccountStatus.Unverified, (await db.Accounts.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task GivenAnExpiredLink_WhenConfirming_ThenItRejects()
+    {
+        await factory.CreateClient().PostAsJsonAsync("/organizations", Valid);
+        var token = CapturingEmailSender.TokenIn(Assert.Single(factory.Emails.Sent));
+        await ExpireRegistrationAsync();
+
+        var response = await ConfirmAsync("ana@example.com", token);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GivenAnExpiredUnconfirmedRegistration_WhenRegisteringTheEmailAgain_ThenItReplacesIt()
+    {
+        var client = factory.CreateClient();
+        await client.PostAsJsonAsync("/organizations", Valid);
+        await ExpireRegistrationAsync();
+
+        var response = await client.PostAsJsonAsync("/organizations", new RegisterOrganizationDto
+        {
+            OrganizationName = "Other Club",
+            AdminFirstName = "Ana",
+            AdminLastName = "Again",
+            AdminEmail = Valid.AdminEmail,
+            Password = TestData.StrongPassword,
+            PlanId = NexoDbContext.FreePlanId,
+        });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await using var db = NewDbContext();
+        Assert.Equal("Other Club", (await db.Organizations.SingleAsync()).Name);
+        Assert.Equal("Again", (await db.Accounts.SingleAsync()).LastName);
     }
 
     [Fact]
@@ -197,6 +276,20 @@ public class OrganizationsEndpointTests(PostgresApiFactory factory)
         var response = await client.PostAsJsonAsync("/organizations", second);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    private Task<HttpResponseMessage> SignInAsync() =>
+        factory.CreateClient().PostAsJsonAsync(
+            "/auth/sign-in", new SignInDto { Email = Valid.AdminEmail, Password = TestData.StrongPassword });
+
+    private Task<HttpResponseMessage> ConfirmAsync(string email, string token) =>
+        factory.CreateClient().PostAsJsonAsync(
+            "/accounts/activation/confirm-email", new ConfirmEmailDto { Email = email, Token = token });
+
+    private async Task ExpireRegistrationAsync()
+    {
+        await using var db = NewDbContext();
+        await db.Accounts.ExecuteUpdateAsync(s => s.SetProperty(a => a.InvitationExpiresAt, DateTime.UtcNow.AddMinutes(-1)));
     }
 
     private async Task AssertNothingCreatedAsync()

@@ -10,6 +10,9 @@ public enum AccountStatus
 {
     Invited,
     Active,
+
+    /// <summary>A self-registered admin whose email is not confirmed yet; cannot sign in or be linked to a social login.</summary>
+    Unverified,
 }
 
 public class Account
