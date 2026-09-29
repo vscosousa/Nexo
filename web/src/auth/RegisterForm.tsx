@@ -1,4 +1,5 @@
 import { usePreferences } from "../shared/preferences/Preferences";
+import { Notice } from "../shared/Notice";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "./AuthContext";
@@ -6,16 +7,12 @@ import { authService, type PendingExternal } from "./authService";
 import { Field } from "./Field";
 import { GoogleIcon } from "./GoogleIcon";
 import { googleSignInUrl } from "./googleSignInUrl";
-import { PasswordRequirements } from "./PasswordRequirements";
-import { isEmailValid, isPasswordValid } from "./validation";
+import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
+import { measurePassword } from "./passwordStrength";
+import { isEmailValid } from "./validation";
+import { describeApiError } from "../shared/http/apiError";
 
 const STEPS = ["stepOrg", "stepAdmin"] as const;
-
-/** First message from an ASP.NET validation problem, if the body has one. */
-function firstValidationError(data: unknown): string | undefined {
-  const errors = (data as { errors?: Record<string, string[]> })?.errors;
-  return errors ? Object.values(errors).flat()[0] : undefined;
-}
 
 /**
  * Registers an organization and its admin as a two-step wizard: organization details, then the
@@ -38,8 +35,11 @@ export function RegisterForm() {
   const [error, setError] = useState(
     params.get("error") ? m.auth.googleFailed : "",
   );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [organizationName, setOrganizationName] = useState("");
   const [pending, setPending] = useState<PendingExternal | null>(null);
 
@@ -64,20 +64,14 @@ export function RegisterForm() {
   }, [external, m]);
 
   const fail = (e: unknown) => {
-    const response = (e as { response?: { status?: number; data?: unknown } })
-      .response;
-    const apiMessage =
-      response?.status === 400
-        ? firstValidationError(response.data)
-        : undefined;
-    if (response?.status === 401) setPending(null);
-    setError(
-      response?.status === 409
-        ? m.auth.emailTaken
-        : response?.status === 401
-          ? m.auth.googleExpired
-          : (apiMessage ?? m.common.genericError),
-    );
+    const failure = describeApiError(e, m, {
+      409: m.auth.emailTaken,
+      401: m.auth.googleExpired,
+    });
+    if (failure.status === 401) setPending(null);
+    if (failure.fieldErrors.organizationName) setStep(1);
+    setFieldErrors(failure.fieldErrors);
+    setError(failure.message);
     setSubmitting(false);
   };
 
@@ -85,6 +79,7 @@ export function RegisterForm() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const get = (name: string) => String(form.get(name) ?? "").trim();
+    setFieldErrors({});
 
     if (step === 1) {
       if (!get("organizationName")) {
@@ -135,7 +130,14 @@ export function RegisterForm() {
       setError(m.auth.invalidEmail);
       return;
     }
-    if (!isPasswordValid(dto.password)) {
+    if (
+      measurePassword(
+        dto.password,
+        dto.organizationName,
+        dto.adminFirstName,
+        dto.adminLastName,
+      ).strength === "weak"
+    ) {
       setError(m.auth.weakPassword);
       return;
     }
@@ -176,6 +178,7 @@ export function RegisterForm() {
               key={pending ? "google" : "form"}
               label={m.auth.organizationName}
               name="organizationName"
+              error={fieldErrors.organizationName}
               autoComplete="organization"
               defaultValue={pending?.organizationName ?? undefined}
             />
@@ -191,6 +194,7 @@ export function RegisterForm() {
                   key="google-first"
                   label={m.auth.firstName}
                   name="adminFirstName"
+                  error={fieldErrors.adminFirstName}
                   autoComplete="given-name"
                   defaultValue={pending.firstName ?? ""}
                 />
@@ -198,6 +202,7 @@ export function RegisterForm() {
                   key="google-last"
                   label={m.auth.lastName}
                   name="adminLastName"
+                  error={fieldErrors.adminLastName}
                   autoComplete="family-name"
                   defaultValue={pending.lastName ?? ""}
                 />
@@ -207,37 +212,42 @@ export function RegisterForm() {
                 <Field
                   label={m.auth.firstName}
                   name="adminFirstName"
+                  error={fieldErrors.adminFirstName}
                   autoComplete="given-name"
+                  onValueChange={setFirstName}
                 />
                 <Field
                   label={m.auth.lastName}
                   name="adminLastName"
+                  error={fieldErrors.adminLastName}
                   autoComplete="family-name"
+                  onValueChange={setLastName}
                 />
                 <Field
                   label={m.auth.email}
                   name="adminEmail"
+                  error={fieldErrors.adminEmail}
                   type="email"
                   autoComplete="username"
                 />
                 <Field
                   label={m.auth.password}
                   name="password"
+                  error={fieldErrors.password}
                   type="password"
                   autoComplete="new-password"
                   onValueChange={setPassword}
                 />
-                <PasswordRequirements password={password} />
+                <PasswordStrengthMeter
+                  password={password}
+                  names={[organizationName, firstName, lastName]}
+                />
               </>
             )}
           </div>
         </div>
 
-        {error && (
-          <p role="alert" className="alert alert-error">
-            {error}
-          </p>
-        )}
+        {error && <Notice tone="error">{error}</Notice>}
 
         <div className="wizard-actions">
           {step === 2 && (

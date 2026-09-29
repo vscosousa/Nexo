@@ -80,6 +80,10 @@
   --color-overlay: color-mix(in srgb, var(--color-canvas) 82%, transparent);
   --error-ink: #991b1b;
   --success-ink: #065f46;
+  --strength-weak: #b91c1c;
+  --strength-reasonable: #b45309;
+  --strength-strong: #4d7c0f;
+  --strength-very-strong: #047857;
   --photo-filter: none;
   --logo-filter: grayscale(1);
   --shadow-sm: 0 1px 2px rgb(18 19 42 / 10%), 0 1px 3px rgb(18 19 42 / 6%);
@@ -208,6 +212,10 @@
   --success-ink: #6ee7b7;
   --error-bg: #301616;
   --error-ink: #fca5a5;
+  --strength-weak: #fca5a5;
+  --strength-reasonable: #fcd34d;
+  --strength-strong: #bef264;
+  --strength-very-strong: #6ee7b7;
   --photo-filter: brightness(0.85);
   --logo-filter: grayscale(1) invert(1);
   --color-fill: color-mix(in srgb, var(--color-text) 7%, var(--color-surface));

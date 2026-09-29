@@ -70,7 +70,7 @@ describe("RegisterForm", () => {
       planId: "team-id",
     });
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "Organization registered",
+      "We emailed you a link to confirm your address.",
     );
   });
 
@@ -113,17 +113,64 @@ describe("RegisterForm", () => {
     expect(authService.register).not.toHaveBeenCalled();
   });
 
-  it("given step two, when typing the password, then the requirements checklist updates live", async () => {
+  it("given step two, when typing the password, then the strength bar rates it live and says how to improve a weak one", async () => {
     const user = userEvent.setup();
     renderRegister();
-
     await fillStep1("Associação Horizonte");
-    const requirement = () => screen.getByText("At least 8 characters");
-    expect(requirement().closest("li")).not.toHaveAttribute("data-met");
+    const password = screen.getByLabelText("Password");
+    const meter = () =>
+      screen.getByRole("meter", { name: "Password strength" });
 
-    await user.type(screen.getByLabelText("Password"), "Secret-1");
+    await user.type(password, "secret");
+    expect(meter()).toHaveAttribute("aria-valuetext", "Weak");
+    expect(screen.getByText("At least 8 characters.")).toBeInTheDocument();
 
-    expect(requirement().closest("li")).toHaveAttribute("data-met");
+    await user.type(password, "12");
+    expect(meter()).toHaveAttribute("aria-valuetext", "Weak");
+    expect(
+      screen.getByText(
+        "Mix upper and lower case, digits and symbols, or use 16+ characters.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.clear(password);
+    await user.type(password, "Secret-1");
+    expect(meter()).toHaveAttribute("aria-valuetext", "Reasonable");
+    expect(
+      screen.getByText("Use 12+ characters to make it stronger."),
+    ).toBeInTheDocument();
+
+    await user.type(password, "-longer");
+    expect(meter()).toHaveAttribute("aria-valuetext", "Strong");
+    expect(
+      screen.getByText("Use 16+ characters to make it stronger."),
+    ).toBeInTheDocument();
+
+    await user.type(password, "-still");
+    expect(meter()).toHaveAttribute("aria-valuetext", "Very strong");
+    expect(screen.queryByText(/stronger/)).not.toBeInTheDocument();
+
+    await user.clear(password);
+    await user.type(password, "Secret12");
+    expect(meter()).toHaveAttribute("aria-valuetext", "Reasonable");
+    expect(
+      screen.getByText("Add a symbol (like ! or #) to make it stronger."),
+    ).toBeInTheDocument();
+  });
+
+  it("given step two, when the password contains the organization name, then the bar says it is weak and why", async () => {
+    const user = userEvent.setup();
+    renderRegister();
+    await fillStep1("Associação Horizonte");
+
+    await user.type(screen.getByLabelText("Password"), "Horizonte#2026!");
+
+    expect(
+      screen.getByRole("meter", { name: "Password strength" }),
+    ).toHaveAttribute("aria-valuetext", "Weak");
+    expect(
+      screen.getByText("Don't use your name or the organization's."),
+    ).toBeInTheDocument();
   });
 
   it("given a malformed email on step two, when submitting, then it asks for a valid one without calling the API", async () => {
@@ -138,14 +185,14 @@ describe("RegisterForm", () => {
     expect(authService.register).not.toHaveBeenCalled();
   });
 
-  it("given a password missing a symbol on step two, when submitting, then it asks for a stronger one without calling the API", async () => {
+  it("given a weak password on step two, when submitting, then it asks for a stronger one without calling the API", async () => {
     renderRegister();
 
     await fillStep1("Associação Horizonte");
-    await fillStep2({ ...valid, Password: "Secret123" });
+    await fillStep2({ ...valid, Password: "secret123" });
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "at least 8 characters",
+      "Password too weak",
     );
     expect(authService.register).not.toHaveBeenCalled();
   });
@@ -164,7 +211,7 @@ describe("RegisterForm", () => {
     );
   });
 
-  it("given the API rejects a field, when submitting, then it shows the API's message", async () => {
+  it("given the API rejects a field, when submitting, then its message appears under that field", async () => {
     vi.mocked(authService.register).mockRejectedValue({
       response: {
         status: 400,
@@ -176,8 +223,14 @@ describe("RegisterForm", () => {
     await fillStep1("Associação Horizonte");
     await fillStep2(valid);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Password is too short.",
+    const password = screen.getByLabelText("Password");
+    expect(await screen.findByText("Password is too short.")).toHaveAttribute(
+      "id",
+      password.getAttribute("aria-describedby"),
+    );
+    expect(password).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Fix the highlighted fields.",
     );
   });
 

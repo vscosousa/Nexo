@@ -1,4 +1,5 @@
 import { usePreferences } from "../shared/preferences/Preferences";
+import { Notice } from "../shared/Notice";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
@@ -7,9 +8,20 @@ import { googleSignInUrl } from "./googleSignInUrl";
 import { Field } from "./Field";
 import { GoogleIcon } from "./GoogleIcon";
 import { isEmailValid } from "./validation";
+import { describeApiError } from "../shared/http/apiError";
 
-/** Email/password sign-in, plus the entry point for Google sign-in. */
-export function SignInForm({ initialError }: { initialError?: string }) {
+/**
+ * Email/password sign-in, plus the entry point for Google sign-in.
+ *
+ * @param onAttempt Called on every submit, before validation, so the page can clear notices from earlier steps.
+ */
+export function SignInForm({
+  initialError,
+  onAttempt,
+}: {
+  initialError?: string;
+  onAttempt?: () => void;
+}) {
   const { m } = usePreferences();
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -18,6 +30,7 @@ export function SignInForm({ initialError }: { initialError?: string }) {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    onAttempt?.();
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
@@ -35,11 +48,11 @@ export function SignInForm({ initialError }: { initialError?: string }) {
       login();
       navigate("/app", { replace: true });
     } catch (e) {
-      const status = (e as { response?: { status?: number } }).response?.status;
       setError(
-        status === 401 || status === 400
-          ? m.auth.badCredentials
-          : m.common.genericError,
+        describeApiError(e, m, {
+          400: m.auth.badCredentials,
+          401: m.auth.badCredentials,
+        }).message,
       );
       setSubmitting(false);
     }
@@ -60,11 +73,7 @@ export function SignInForm({ initialError }: { initialError?: string }) {
           type="password"
           autoComplete="current-password"
         />
-        {error && (
-          <p role="alert" className="alert alert-error">
-            {error}
-          </p>
-        )}
+        {error && <Notice tone="error">{error}</Notice>}
         <button
           type="submit"
           className="btn btn-primary btn-lg"

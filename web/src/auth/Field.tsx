@@ -4,7 +4,9 @@ import { usePreferences } from "../shared/preferences/Preferences";
 
 /**
  * Labelled text input shared by the sign-in and register forms. A `password` field gets a
- * show/hide button so people can check what they typed, which matters most on phones.
+ * show/hide button so people can check what they typed, which matters most on phones. An `error`
+ * is shown under the input and linked to it (`aria-invalid`, `aria-describedby`) so screen readers
+ * announce it with the field.
  */
 export function Field({
   label,
@@ -13,6 +15,7 @@ export function Field({
   autoComplete,
   defaultValue,
   onValueChange,
+  error,
 }: {
   label: string;
   name: string;
@@ -21,8 +24,10 @@ export function Field({
   defaultValue?: string;
   /** Reports each keystroke's value without making the input controlled, for live feedback (e.g. a password checklist). */
   onValueChange?: (value: string) => void;
+  error?: string;
 }) {
   const id = useId();
+  const errorId = `${id}-error`;
   const { m } = usePreferences();
   const [shown, setShown] = useState(false);
   const isPassword = type === "password";
@@ -36,6 +41,8 @@ export function Field({
           type={isPassword && shown ? "text" : type}
           autoComplete={autoComplete}
           defaultValue={defaultValue}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           onChange={
             onValueChange && ((event) => onValueChange(event.target.value))
           }
@@ -52,6 +59,11 @@ export function Field({
           </button>
         )}
       </div>
+      {error && (
+        <p id={errorId} className="field-error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

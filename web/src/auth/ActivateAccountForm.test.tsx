@@ -51,6 +51,19 @@ describe("ActivateAccountForm", () => {
     expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
   });
 
+  it("given too many code checks, when a code is entered, then it says to wait rather than that the invitation is invalid", async () => {
+    vi.mocked(authService.verifyInvitation).mockRejectedValue({
+      response: { status: 429, headers: { "retry-after": "20" } },
+    });
+    renderActivate("/activate?email=rui%40example.com&token=abc123");
+
+    await enterCode("ABC123");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Too many attempts. Wait up to 20 s.",
+    );
+  });
+
   it("given a valid code, when fully entered, then it is verified with the API and gives way to the account fields", async () => {
     vi.mocked(authService.verifyInvitation).mockResolvedValue(undefined);
     renderActivate("/activate?email=rui%40example.com&token=abc123");
@@ -79,7 +92,7 @@ describe("ActivateAccountForm", () => {
     await enterCode("WRONG1");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "invitation is not valid",
+      "Invalid invitation",
     );
     expect(screen.queryByLabelText("First name")).not.toBeInTheDocument();
   });
@@ -119,7 +132,7 @@ describe("ActivateAccountForm", () => {
     await user.click(screen.getByRole("button", { name: "Create account" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "at least 8 characters",
+      "Password too weak",
     );
     expect(authService.activate).not.toHaveBeenCalled();
   });
@@ -136,9 +149,7 @@ describe("ActivateAccountForm", () => {
     expect(authService.resendInvitation).toHaveBeenCalledWith(
       "rui@example.com",
     );
-    expect(
-      await screen.findByText(/new code was just sent/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/we sent a new code/)).toBeInTheDocument();
   });
 
   it("given the resend request fails, when clicked, then it shows an error instead of a confirmation", async () => {
@@ -152,7 +163,7 @@ describe("ActivateAccountForm", () => {
     );
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
-    expect(screen.queryByText(/new code was just sent/)).toBeNull();
+    expect(screen.queryByText(/we sent a new code/)).toBeNull();
   });
 
   it("given a verified code, when offering Google, then its link carries the invitation", async () => {

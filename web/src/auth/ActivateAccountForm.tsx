@@ -1,4 +1,5 @@
 import { usePreferences } from "../shared/preferences/Preferences";
+import { Notice } from "../shared/Notice";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check } from "lucide-react";
@@ -8,15 +9,11 @@ import { CodeInput } from "./CodeInput";
 import { Field } from "./Field";
 import { GoogleIcon } from "./GoogleIcon";
 import { googleSignInUrl } from "./googleSignInUrl";
-import { isPasswordValid } from "./validation";
+import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
+import { measurePassword } from "./passwordStrength";
+import { describeApiError } from "../shared/http/apiError";
 
 const CODE_LENGTH = 6;
-
-/** First message from an ASP.NET validation problem, if the body has one. */
-function firstValidationError(data: unknown): string | undefined {
-  const errors = (data as { errors?: Record<string, string[]> })?.errors;
-  return errors ? Object.values(errors).flat()[0] : undefined;
-}
 
 /**
  * Activates an invited account. The email comes from the link (the route requires it), so it is never
@@ -40,9 +37,13 @@ export function ActivateAccountForm() {
   const [verifying, setVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [error, setError] = useState(
     params.get("error") ? m.auth.googleFailed : "",
   );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<PendingExternal | null>(null);
   const [resent, setResent] = useState(false);
   const [resending, setResending] = useState(false);
@@ -75,8 +76,10 @@ export function ActivateAccountForm() {
       await authService.verifyInvitation(email, linkToken, value);
       setVerified(true);
       setError("");
-    } catch {
-      setError(m.auth.invitationInvalid);
+    } catch (e) {
+      setError(
+        describeApiError(e, m, { 403: m.auth.invitationInvalid }).message,
+      );
     } finally {
       setVerifying(false);
     }
@@ -93,6 +96,7 @@ export function ActivateAccountForm() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const get = (name: string) => String(form.get(name) ?? "").trim();
+    setFieldErrors({});
     if (pending) {
       const names = {
         firstName: get("firstName"),
@@ -108,18 +112,14 @@ export function ActivateAccountForm() {
         login();
         navigate("/app", { replace: true });
       } catch (e) {
-        const status = (e as { response?: { status?: number } }).response
-          ?.status;
-        if (status === 401) setPending(null);
-        setError(
-          status === 403
-            ? m.auth.googleWrongAccount
-            : status === 409
-              ? m.auth.activateConflict
-              : status === 401
-                ? m.auth.googleExpired
-                : m.common.genericError,
-        );
+        const failure = describeApiError(e, m, {
+          403: m.auth.googleWrongAccount,
+          409: m.auth.activateConflict,
+          401: m.auth.googleExpired,
+        });
+        if (failure.status === 401) setPending(null);
+        setFieldErrors(failure.fieldErrors);
+        setError(failure.message);
         setSubmitting(false);
       }
       return;
@@ -136,7 +136,10 @@ export function ActivateAccountForm() {
       setError(m.auth.fillEvery);
       return;
     }
-    if (!isPasswordValid(dto.password)) {
+    if (
+      measurePassword(dto.password, dto.firstName, dto.lastName).strength ===
+      "weak"
+    ) {
       setError(m.auth.weakPassword);
       return;
     }
@@ -145,20 +148,13 @@ export function ActivateAccountForm() {
       await authService.activate(dto);
       navigate("/login?activated=1", { replace: true });
     } catch (e) {
-      const response = (e as { response?: { status?: number; data?: unknown } })
-        .response;
-      const apiMessage =
-        response?.status === 400
-          ? firstValidationError(response.data)
-          : undefined;
-      if (response?.status === 403 || response?.status === 409) retry();
-      setError(
-        response?.status === 403
-          ? m.auth.invitationInvalid
-          : response?.status === 409
-            ? m.auth.activateConflict
-            : (apiMessage ?? m.common.genericError),
-      );
+      const failure = describeApiError(e, m, {
+        403: m.auth.invitationInvalid,
+        409: m.auth.activateConflict,
+      });
+      if (failure.status === 403 || failure.status === 409) retry();
+      setFieldErrors(failure.fieldErrors);
+      setError(failure.message);
       setSubmitting(false);
     }
   };
@@ -169,9 +165,9 @@ export function ActivateAccountForm() {
     try {
       await authService.resendInvitation(email);
       setResent(true);
-    } catch {
+    } catch (e) {
       setResent(false);
-      setError(m.common.genericError);
+      setError(describeApiError(e, m).message);
     } finally {
       setResending(false);
     }
@@ -207,11 +203,7 @@ export function ActivateAccountForm() {
               {m.auth.resendButton}
             </button>
           </p>
-          {resent && (
-            <p role="status" className="alert alert-success">
-              {m.auth.resendSent}
-            </p>
-          )}
+          {resent && <Notice tone="success">{m.auth.resendSent}</Notice>}
         </>
       )}
       {verified && (
@@ -220,31 +212,39 @@ export function ActivateAccountForm() {
             key={pending ? "google-first" : "first"}
             label={m.auth.firstName}
             name="firstName"
+            error={fieldErrors.firstName}
             autoComplete="given-name"
             defaultValue={pending?.firstName ?? undefined}
+            onValueChange={setFirstName}
           />
           <Field
             key={pending ? "google-last" : "last"}
             label={m.auth.lastName}
             name="lastName"
+            error={fieldErrors.lastName}
             autoComplete="family-name"
             defaultValue={pending?.lastName ?? undefined}
+            onValueChange={setLastName}
           />
           {!pending && (
-            <Field
-              label={m.auth.password}
-              name="password"
-              type="password"
-              autoComplete="new-password"
-            />
+            <>
+              <Field
+                label={m.auth.password}
+                name="password"
+                error={fieldErrors.password}
+                type="password"
+                autoComplete="new-password"
+                onValueChange={setPassword}
+              />
+              <PasswordStrengthMeter
+                password={password}
+                names={[firstName, lastName]}
+              />
+            </>
           )}
         </>
       )}
-      {error && (
-        <p role="alert" className="alert alert-error">
-          {error}
-        </p>
-      )}
+      {error && <Notice tone="error">{error}</Notice>}
       {verified && (
         <button
           type="submit"

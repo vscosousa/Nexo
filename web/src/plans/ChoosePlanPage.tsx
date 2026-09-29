@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Notice } from "../shared/Notice";
 import { Link, useNavigate } from "react-router-dom";
 import { usePreferences } from "../shared/preferences/Preferences";
 import { authService, type PlanDto } from "../auth/authService";
@@ -56,11 +57,7 @@ export function ChoosePlanPage() {
           <p className="cp-lead">{m.plans.lead}</p>
         </div>
 
-        {error && (
-          <p role="alert" className="alert alert-error">
-            {m.plans.loadError}
-          </p>
-        )}
+        {error && <Notice tone="error">{m.plans.loadError}</Notice>}
         {plans && plans.length === 0 && <p>{m.plans.empty}</p>}
         {plans && plans.length > 0 && (
           <>

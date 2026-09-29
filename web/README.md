@@ -38,6 +38,6 @@ Open the URL Vite prints. A browser without a stored token redirects to `/login`
 | `src/test/`                      | Vitest setup                                         |
 | `src/features/<name>/` (planned) | Business screens, feature API calls, and types       |
 
-The Axios base URL is `/api`; Vite has no API proxy yet. The API's sample route is `/WeatherForecast`, so the scaffold does not provide a connected frontend/API workflow. A token's presence controls navigation only; the guard does not validate expiry or permissions.
+The Axios base URL is `/api`, which the Vite dev server proxies to the API (`VITE_API_URL`). A token's presence controls navigation only; the guard does not validate expiry or permissions.
 
 Follow [ADR-004](../docs/decisions/ADR-004-frontend-architecture.md) for structure and [testing](../docs/testing/README.md) for TDD. The [pre-commit hook](../docs/guides/pre-commit-hook.md) can format staged frontend files and run lint/build checks.

@@ -56,10 +56,33 @@ describe("SignInForm", () => {
 
     await submit("ana@example.com", "wrong");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The email or password is incorrect.",
-    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Wrong email or password.");
     expect(screen.queryByText("Home")).not.toBeInTheDocument();
+  });
+
+  it("given too many attempts, when submitting, then it says how long to wait instead of asking to try again", async () => {
+    vi.mocked(authService.signIn).mockRejectedValue({
+      response: { status: 429, headers: { "retry-after": "37" } },
+    });
+    renderLogin();
+
+    await submit("ana@example.com", "secret");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Too many attempts. Wait up to 37 s.",
+    );
+  });
+
+  it("given the server cannot be reached, when submitting, then it says so", async () => {
+    vi.mocked(authService.signIn).mockRejectedValue(new Error("Network Error"));
+    renderLogin();
+
+    await submit("ana@example.com", "secret");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Can't reach Nexo. Check your connection.",
+    );
   });
 
   it("given an empty field, when submitting, then it asks for it without calling the API", async () => {
@@ -84,15 +107,17 @@ describe("SignInForm", () => {
     expect(authService.signIn).not.toHaveBeenCalled();
   });
 
-  it("given the API is unreachable, when submitting, then it shows a retry message", async () => {
-    vi.mocked(authService.signIn).mockRejectedValue(new Error("Network Error"));
-    renderLogin();
+  it("given the page opened with a success notice, when a sign-in fails, then only the error remains", async () => {
+    vi.mocked(authService.signIn).mockRejectedValue({
+      response: { status: 401 },
+    });
+    renderLogin("/login?registered=1");
+    expect(screen.getByRole("status")).toBeInTheDocument();
 
-    await submit("ana@example.com", "secret");
+    await submit("ana@example.com", "wrong");
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Something went wrong. Try again.",
-    );
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("given a failed Google sign-in redirect, when the page opens, then it shows the generic error", () => {

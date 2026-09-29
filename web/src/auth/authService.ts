@@ -63,9 +63,10 @@ export interface ActivateAccount {
 
 export const authService = {
   /**
-   * Registers an organization together with its admin account.
+   * Registers an organization together with its admin account, which must confirm its email (the API emails a link)
+   * before signing in. Resolves the same way when the email already has an account, so the form cannot reveal that.
    *
-   * @throws The Axios error; 400 carries per-field messages, 409 means the email has an account.
+   * @throws The Axios error; 400 carries per-field messages, 409 means the same email was registered at the same moment.
    */
   async register(dto: RegisterOrganization): Promise<void> {
     await apiClient.post("/organizations", dto);
@@ -134,6 +135,27 @@ export const authService = {
    */
   async resendInvitation(email: string): Promise<void> {
     await apiClient.post("/accounts/activation/resend", { email });
+  },
+
+  /**
+   * Confirms a newly registered admin's email with the token from the emailed link, so the admin can sign in.
+   *
+   * @throws The Axios error; 403 means the link is not valid or has expired.
+   */
+  async confirmEmail(email: string, token: string): Promise<void> {
+    await apiClient.post("/accounts/activation/confirm-email", {
+      email,
+      token,
+    });
+  },
+
+  /**
+   * Unlocks an account locked by too many wrong passwords, with the token from the emailed unlock link.
+   *
+   * @throws The Axios error; 403 means the link is not valid (for example, an older email's link).
+   */
+  async unlockAccount(email: string, token: string): Promise<void> {
+    await apiClient.post("/auth/unlock", { email, token });
   },
 
   /**
