@@ -6,7 +6,7 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, and `ExternalLogins` (US-005) in `AddExternalLogins`; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, `ExternalLogins` (US-005) in `AddExternalLogins`, `Plans.ResourceLimit` plus the `Team`/`Enterprise` seed rows (US-006) in `AddPlanResourceLimitAndTiers`, and `Plans.MonthlyPrice` and its five feature flags (US-006) in `AddPlanPricingAndFeatures`; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
 
 Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
 
@@ -14,7 +14,14 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | --- | --- | --- | --- |
 | `Plans` | `Id` | uuid | Primary key |
 | | `Name` | varchar(50) | Not null, unique |
-| | `MemberLimit` | integer | Not null; maximum active member accounts |
+| | `MemberLimit` | integer | Not null; maximum active member accounts (`int.MaxValue` means unlimited) |
+| | `ResourceLimit` | integer | Not null; maximum resources the organization can register (`int.MaxValue` means unlimited) |
+| | `MonthlyPrice` | numeric(8,2) | Nullable; display-only euros/month, null means a custom/"contact us" plan (plans are simulated, no real billing) |
+| | `HasIncidentTracking` | boolean | Not null |
+| | `HasExpenseTracking` | boolean | Not null |
+| | `HasDecisionHistory` | boolean | Not null |
+| | `HasAiInsights` | boolean | Not null |
+| | `HasPrioritySupport` | boolean | Not null |
 | `Organizations` | `Id` | uuid | Primary key |
 | | `Name` | varchar(200) | Not null |
 | | `PlanId` | uuid | Not null, foreign key to `Plans`, on delete restrict, indexed |
@@ -33,7 +40,7 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | | `Provider` | varchar(20) | Not null; lowercase provider name (`google`, `microsoft`) |
 | | `ProviderKey` | varchar(200) | Not null; the account's stable id at the provider; unique together with `Provider` |
 
-Plan rules live in `Plans` rather than on each organization. The migration seeds the `Free` plan (limit 20) with a fixed id; further tiers would be additional rows.
+Plan rules live in `Plans` rather than on each organization. Migrations seed three tiers with fixed ids: `Free` (member limit 20, resource limit 10, €0, no feature flags), `Team` (member limit 100, resource limit 100, €29/month, incident tracking + expense tracking + decision history), `Enterprise` (both limits unlimited, no fixed price, every feature flag). The five feature flags mark functionality areas the app does not implement yet (see [domain model](../domain-models/README.md#accounts-and-organizations)); they are pricing-page data, not an enforced entitlement check.
 
 ## Schema template
 

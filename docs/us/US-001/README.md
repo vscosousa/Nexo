@@ -16,11 +16,11 @@
 
 **Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
 
-- SSO registration and session delivery are required by the acceptance criteria but not designed; only the password path exists.
+- Password registration still delivers no session (the admin signs in afterwards); Google registration signs in.
 
 Implementation must not assume answers to these; stop at the `OrganizationDto` contract the diagrams show.
 
-**Status:** backend implemented up to the `OrganizationDto` contract (password path only; SSO and session delivery are still open); frontend implemented (`RegisterForm` two-step wizard at `/register`, redirects to `/login` since there is no session to store). Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** implemented. Password registration redirects to `/login`; Google registration ([LLD](../../requirements/US-001-LLD.md#service-logic-organizationserviceregisterexternal)) signs in and opens the app. The diagrams cover the password path; the Google path is not diagrammed yet. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 

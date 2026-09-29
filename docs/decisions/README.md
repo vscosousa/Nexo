@@ -18,6 +18,7 @@ Keep one record per significant technical decision. Name records `ADR-001-short-
 | [ADR-006](ADR-006-authentication.md) | Authentication: password and social login | Accepted | 2026-09-17 |
 | [ADR-007](ADR-007-local-docker-compose.md) | Docker Compose for local startup | Proposed; implemented for review | 2026-09-17 |
 | [ADR-008](ADR-008-fake-smtp-server.md) | Fake SMTP server for local email | Proposed; implemented for review | 2026-09-28 |
+| [ADR-009](ADR-009-session-cookie.md) | Session in an httpOnly cookie with an anti-forgery token | Proposed; implemented for review | 2026-09-29 |
 
 ## Record template
 

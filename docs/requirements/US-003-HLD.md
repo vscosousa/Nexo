@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-003](US-003-create-member-account.md) · [LLD](US-003-LLD.md)
 
-**Status:** backend implemented for the password path; the response stops at `AccountDto` (no sign-in or session yet) and OAuth activation is not implemented; frontend password page implemented at `/activate` (redirects to sign-in, no session). See [design review gaps](README.md#design-review-gaps).
+**Status:** backend and frontend (`/activate`) implemented. Google activation is implemented (see the [LLD](US-003-LLD.md#service-logic-accountactivationserviceactivateexternal)) and signs the member in with the session cookie; password activation still stops at `AccountDto` and redirects to sign-in. See [design review gaps](README.md#design-review-gaps).
 
 ## Requirements recap
 

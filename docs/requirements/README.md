@@ -62,13 +62,13 @@ These are inconsistencies or missing details in the current proposals, not new d
 
 | Area | Gap to resolve |
 | --- | --- |
-| US-001 registration | Acceptance criteria require password/SSO registration and automatic sign-in. The password is now part of the request, but SSO registration is not designed and the response is `OrganizationDto`, so session delivery is missing. |
-| US-003 activation | The story requires sign-in after activation, but the HLD returns only `AccountDto`; the session response is unspecified. |
-| US-002/US-003 plan limits | Text alternates between active members and all active accounts. Both invitation and activation now check the Active count, but without locking, so concurrent requests can overshoot the limit; the intended semantics are unspecified. |
+| US-001 registration | Acceptance criteria require automatic sign-in. Google registration signs in; password registration returns only `OrganizationDto`, so it still delivers no session. |
+| US-003 activation | The story requires sign-in after activation. Google activation signs in; password activation returns only `AccountDto`. |
+| US-002/US-003 plan limits | Text alternates between active members and all active accounts. Both invitation and activation check the Active count; only activation adds to it, and it locks the organization's row while counting and saving, so concurrent activations cannot overshoot. Invitations are not capped (pending accounts do not count); whether they should be is unspecified. |
 | US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
 | US-005 sign-in | Microsoft sign-in is coded but every Microsoft login is rejected: Microsoft does not attest that an email is verified, and the account-linking rule needs a verified email. The Google flow has no sequence diagrams yet. |
 | Shared contracts | API prefix, error bodies (US-001 currently uses ASP.NET `ProblemDetails`), OAuth endpoints, and database uniqueness/concurrency handling (email normalization is decided: trimmed and lowercased) need consistent specifications. |
-| US-006 plan hand-off | Requires adding a required `planId` to US-001's already-implemented `RegisterOrganizationDto` and replacing its hardcoded "Free" plan lookup. No plans seeded, or the organization/admin form reached directly without a plan chosen, are undefined. |
+| US-006 plan hand-off | `RegisterOrganizationDto` now takes a required `planId` (400 if missing or unknown), and the organization/admin form reached without one redirects to the plans page. What to show with no plans seeded is still undefined (the page shows an empty message). |
 
 The [database page](../database/README.md) tracks persistence status. [ADR-006](../decisions/ADR-006-authentication.md) records the accepted authentication direction, while the concrete contracts remain incomplete.
 

@@ -18,7 +18,7 @@ Adds `ExternalLogin` (`Id`, `AccountId`, `Provider`, `ProviderKey`): `Provider` 
 2. Call `IAccountRepository.FindByEmailAsync` with the trimmed, lowercased email. If no account is found, the account is not `Active`, or its `PasswordHash` is null (SSO-only), fail with a generic authorization error (→ 401); do not reveal which condition applied.
 3. Verify the password via `PasswordHasher<Account>.VerifyHashedPassword(account, account.PasswordHash, dto.Password)`. If it does not match, fail with the same generic authorization error (→ 401).
 4. Call `ITokenService.GenerateToken(account)` to issue a JWT (HS256, 8 hours, `sub`/`orgId`/`role` claims, key from `Jwt:Key`), per [ADR-006](../decisions/ADR-006-authentication.md).
-5. Return a `SessionDto` with the token (→ 200).
+5. Return a `SessionDto` with the token; `AuthController` sets it as the `nexo_session` cookie and answers 204 without a body.
 
 ## Service logic (`AuthService.SignInExternal`)
 

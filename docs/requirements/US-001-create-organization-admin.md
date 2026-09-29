@@ -3,7 +3,7 @@
 [Requirements](README.md)
 
 **ID and title:** US-001 - Create an organization and its admin account.
-**Status:** backend implemented for the password path (no SSO, session, or frontend yet).
+**Status:** implemented for email/password (no automatic sign-in) and Google (signs in); Microsoft is coded but rejected until its emails can be verified.
 **Story:** As a prospective admin, I want to register my organization and create my admin account in one step, using either email/password or Google/Microsoft, so that I can start inviting members and managing resources.
 
 **Preconditions:** None. This is the entry point; no account or organization exists yet for this admin.

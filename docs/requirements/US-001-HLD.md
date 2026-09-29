@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-001](US-001-create-organization-admin.md) · [LLD](US-001-LLD.md)
 
-**Status:** backend endpoint implemented; credentials and session delivery remain open ([design review gaps](README.md#design-review-gaps)); frontend implemented (`RegisterForm` two-step wizard at `/register`), but redirects to `/login` instead of signing in automatically, since the backend returns no session.
+**Status:** backend and frontend implemented (`RegisterForm` two-step wizard at `/register/organization`). Google registration is implemented (see the [LLD](US-001-LLD.md#service-logic-organizationserviceregisterexternal)): it signs the admin in with the session cookie. Password registration still redirects to `/login`, since `POST /organizations` returns no session. See [design review gaps](README.md#design-review-gaps).
 
 ## Requirements recap
 

@@ -32,21 +32,21 @@ activate Http
 Http -> API: HTTP request
 activate API
 alt Request accepted
-    API --> Http: 200 OK (SessionDto)
+    API --> Http: 204 No Content (httpOnly session cookie set)
 else Request rejected
     API --> Http: 400/401
 end
 deactivate API
 Http --> Service: Response data or rejected request
 deactivate Http
-Service --> Component: SessionDto, or thrown error
+Service --> Component: Resolved, or thrown error
 deactivate Service
 alt Successful response
-    Component -> Auth: login(session.token)
+    Component -> Auth: login()
     activate Auth
-    Auth --> Component: Token stored; auth state updated
+    Auth --> Component: Marked signed in; anti-forgery token reset
     deactivate Auth
-    Component --> View: Session issued (token, expiresAt)
+    Component --> View: Session started
 else Failed response
     Component --> View: Error state (validation / operation failure)
 end

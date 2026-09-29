@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-002](US-002-register-member-email.md) · [LLD](US-002-LLD.md)
 
-**Status:** backend implemented; the caller is read from a temporary `X-Account-Id` header until JWT authentication (US-005) exists; frontend not implemented. See [design review gaps](README.md#design-review-gaps).
+**Status:** backend implemented; the caller is the account in the bearer token's `sub` claim ([ADR-006](../decisions/ADR-006-authentication.md)); frontend not implemented. See [design review gaps](README.md#design-review-gaps).
 
 ## Requirements recap
 
@@ -50,6 +50,7 @@ Responses:
 | --- | --- | --- |
 | 201 Created | `AccountDto` (id, email, firstName: null, lastName: null, role: Member, status: Invited, organizationId); the link token and code are only emailed, never returned | Pending account created (or, for an email still pending in this organization, re-invited in place with a fresh link token and code) and invitation email sent |
 | 400 Bad Request | Validation errors | Missing or invalid email, or longer than 320 characters |
+| 401 Unauthorized | none | The bearer token is missing, invalid, or expired |
 | 403 Forbidden | Error detail | Caller is not the admin of `organizationId` |
 | 409 Conflict | Error detail | Organization's `MemberLimit` reached (counting `Active` accounts only), or the email already has an `Active` account, or an `Invited` one in a *different* organization |
 | 500 Internal Server Error | `ProblemDetails` | The invitation email could not be sent; a new pending account is removed again so the invitation can be retried, a re-invited one is left as is |

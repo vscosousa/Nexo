@@ -60,7 +60,7 @@ else Valid input
             TokenService --> Service: JWT
             deactivate TokenService
             Service --> Controller: SessionDto
-            Controller --> FE: 200 OK (SessionDto)
+            Controller --> FE: 204 No Content (Set-Cookie: nexo_session)
         end
     end
 end

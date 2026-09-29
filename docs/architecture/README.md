@@ -38,7 +38,7 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 
 ## Cross-cutting concerns
 
-- **Authentication:** email/password and Google/Microsoft sign-in with an API-issued JWT are planned in [ADR-006](../decisions/ADR-006-authentication.md). The API issues the JWT at `POST /auth/sign-in` and after Google sign-in (US-005); the web app stores it in `localStorage`, and `auth/RequireAuth.tsx` checks its presence to control navigation. This is not server-side authorization or token validation: the API does not yet validate the token on any endpoint.
+- **Authentication:** email/password and Google/Microsoft sign-in with an API-issued JWT are planned in [ADR-006](../decisions/ADR-006-authentication.md). The API issues the JWT at `POST /auth/sign-in` and after Google sign-in (US-005), and validates it via JWT bearer middleware; `AccountInvitationsController` is the first protected endpoint (`[Authorize]`, caller read from the `sub` claim). The token travels in the httpOnly `nexo_session` cookie (bearer headers still work for non-browser clients), and cookie-authenticated changes must carry the anti-forgery token from `GET /auth/csrf`, per [ADR-009](../decisions/ADR-009-session-cookie.md). The web app keeps no token: `AuthProvider` asks `GET /auth/me` on load, and `auth/RequireAuth.tsx` redirects to `/login` when there is no session.
 - **Development HTTP routing:** the shared Axios client uses the relative `/api` base URL. A Vite API proxy is not configured yet, so API integration still needs routing configuration.
 - **Configuration:** manual execution uses `dotnet user-secrets`; Compose supplies a connection string with disposable development credentials through the environment. See [technical reference](../reference/README.md#configuration).
 - **Email:** the API sends through SMTP using the `Email` settings; Compose points them at the fake `mail` service, and configuration alone repoints them at a real provider. See [ADR-008](../decisions/ADR-008-fake-smtp-server.md).
@@ -46,10 +46,9 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 
 ## Risks and trade-offs
 
-- The presence-only route guard is UI scaffolding. JWT validation on the API, authorization, and organization isolation still need implementation; the first protected endpoint (US-004) adds the JWT bearer middleware.
+- The presence-only route guard is UI scaffolding; the frontend does not yet attach the stored JWT to its own authorization decisions beyond navigation.
 - The frontend `/api` base URL has no matching development proxy; the sample API route is `/WeatherForecast`.
 - `NexoDbContext` holds `Plans`, `Organizations`, and `Accounts`; resource tables do not exist. The weather repository generates data without database access.
-- Endpoints for US-002 identify the caller by a temporary `X-Account-Id` header, which is not authentication, until the API validates the JWT that US-005 now issues.
 - Story contracts have unresolved details, including registration sessions and plan-limit enforcement. See [design review gaps](../requirements/README.md#design-review-gaps) before implementation.
 - Deployment, backup/recovery, and measurable performance targets are not defined for this local prototype.
 

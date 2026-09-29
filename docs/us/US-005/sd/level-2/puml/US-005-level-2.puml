@@ -21,7 +21,7 @@ activate UI
 UI -> API: POST /auth/sign-in (SignInDto)
 activate API
 alt Request accepted
-    API --> UI: 200 OK (SessionDto)
+    API --> UI: 204 No Content (httpOnly session cookie set)
 else Missing required credentials
     API --> UI: 400 Bad Request
 else Unknown email, no password, or incorrect password

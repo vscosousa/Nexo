@@ -17,12 +17,11 @@
 
 **Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
 
-- Sign-in after activation is required, but the HLD returns only `AccountDto`; the session response is unspecified.
-- Plan-limit concurrency (shared with US-002): activation re-checks the Active count without locking.
+- Sign-in after password activation is required, but it returns only `AccountDto`; Google activation signs in.
 
 Implementation must not assume answers to these; stop at `AccountDto` as the diagrams show.
 
-**Status:** password-path backend implemented; frontend implemented (`ActivateAccountForm` at `/activate`, redirects to `/login` since there is no session to store); OAuth activation not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** implemented. Password activation redirects to `/login`; Google activation ([LLD](../../requirements/US-003-LLD.md#service-logic-accountactivationserviceactivateexternal)) signs in and opens the app. The diagrams cover the password path; the Google path is not diagrammed yet. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 

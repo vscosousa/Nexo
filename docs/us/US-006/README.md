@@ -17,12 +17,11 @@
 
 **Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
 
-- What happens when no plans are seeded, or the organization/admin form is reached directly without a plan chosen first.
-- This story requires a required `planId` on US-001's already-implemented `RegisterOrganizationDto`, replacing its hardcoded "Free" plan lookup.
+- What happens when no plans are seeded.
 
 Implementation must not assume answers to these.
 
-**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** `GET /plans` (backend) and the plans page (frontend) are implemented. `ChoosePlanPage` is now the register-org entry point at `/register`; the organization/admin form moved to `/register/organization?planId=<id>`. Plans carry a display-only monthly price and five feature flags (incident tracking, expense tracking, decision history, AI-powered insights, priority support) alongside the member/resource limits, shown per card and in a full comparison table below the cards. `RegisterForm` submits the `planId` from its URL, `POST /organizations` requires it (400 if missing or unknown), and `/register/organization` without a `planId` redirects to `/register`. Still open: what happens with zero seeded plans (the page shows an empty message; no policy decision was made). Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
 
 ## Diagram scope
 
@@ -61,11 +60,12 @@ All diagrams are numbered and use explicit outcome branches where one exists. Ba
 | 2 | Service → PlanRepository | `GetAllAsync` |
 | 3 | Service → Mapper | Map each `Plan` to `PlanDto` |
 
-See the [LLD service logic](../../requirements/US-006-LLD.md#service-logic-planservicegetall) for what each step does. This diagram covers `GET /plans` only; the `planId` change to `POST /organizations` is [US-001's](../US-001/README.md#level-3---backend) diagram to update once accepted.
+See the [LLD service logic](../../requirements/US-006-LLD.md#service-logic-planservicegetall) for what each step does. This diagram covers `GET /plans` only; the `planId` handling in `POST /organizations` is described in the [US-001 LLD](../../requirements/US-001-LLD.md).
 
 ## Level 3 - Frontend
 
-**Participants:** `ChoosePlanPage`, `PlanPicker`, `authService`, `HttpClient`, `Nexo API` (the backend, as a whole).
+**Participants:** `ChoosePlanPage`, `PlanPicker`, `PlanComparisonTable`, `authService`, `HttpClient`, `Nexo API` (the backend, as a whole). `PlanPicker` renders the cards (price, limits, included features, the middle tier by member limit as recommended); `PlanComparisonTable`, rendered below it, lists every plan's limits and feature flags side by side.
+**Routes:** `ChoosePlanPage` is now `/register` (the register-org link); the organization/admin form (US-001's `RegisterPage`) moved to `/register/organization`, with `planId` carried in its query string. `RegisterForm` reads that `planId` and submits it with the registration; the route redirects to `/register` when it is missing.
 **Diagram:** [![SD level 3 frontend](sd/level-3/frontend/svg/US-006-level-3-frontend.svg)](sd/level-3/frontend/puml/US-006-level-3-frontend.puml)
 
 | Step | Sender → receiver | Operation | Outcome |

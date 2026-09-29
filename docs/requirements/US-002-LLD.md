@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-002](US-002-register-member-email.md) · [HLD](US-002-HLD.md)
 
-**Status:** backend implemented; the caller is read from a temporary `X-Account-Id` header until JWT authentication (US-005) exists; frontend not implemented. See [design review gaps](README.md#design-review-gaps).
+**Status:** backend implemented; the caller is the account in the bearer token's `sub` claim ([ADR-006](../decisions/ADR-006-authentication.md)); frontend not implemented. See [design review gaps](README.md#design-review-gaps).
 
 Full technical detail, building on the [HLD](US-002-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-002/README.md#level-3---backend) for the call sequence.
 
@@ -13,7 +13,7 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 ## Service logic (`AccountInvitationService.Invite`)
 
 1. Validate `InviteMemberDto`: `Email` non-empty, a valid email format, and at most 320 characters. Fail with a validation error (→ 400) otherwise.
-2. Call `IAccountRepository.GetByIdAsync(callerAccountId)`; a missing or unknown caller id is also an authorization error. If the caller's `Role` is not `Admin` or their `OrganizationId` does not match the route's `organizationId`, fail with an authorization error (→ 403).
+2. `AccountInvitationsController` requires a valid bearer token (`[Authorize]`, → 401 otherwise) and reads the caller's account id from its `sub` claim. Call `IAccountRepository.GetByIdAsync(callerAccountId)`; a missing or unknown caller id is also an authorization error. If the caller's `Role` is not `Admin` or their `OrganizationId` does not match the route's `organizationId`, fail with an authorization error (→ 403).
 3. Call `IOrganizationRepository.GetByIdAsync(organizationId)` for `MemberLimit`, and `IAccountRepository.CountByOrganizationAndStatusAsync(organizationId, Status.Active)` for the current **active** account count. If the count has reached `MemberLimit`, fail with a conflict error (→ 409); do not proceed. `Invited` accounts do not count toward this limit.
 4. Call `IAccountRepository.FindByEmailAsync(dto.Email)`. If a match exists and either its `Status` is `Active`, or it is `Invited` in a *different* organization, fail with a conflict error (→ 409); do not proceed. If a match exists, is `Invited`, and belongs to the *same* organization (`organizationId`), this is a re-invite (step 5 mutates it in place instead of inserting).
 5. Create a fresh link token and code (`InvitationTokens.CreateLinkToken`, `InvitationTokens.CreateCode`) and an expiry (now + `InvitationTokens.Lifetime`). For a re-invite (step 4), overwrite `InvitationTokenHash`, `InvitationCodeHash`, and `InvitationExpiresAt` on the existing tracked `Account`. Otherwise map the DTO, `organizationId`, and both hashes to a new `Account` (`AccountMapper.ToInvitedAccount`), with `Role = Member` and `Status = Invited`, and add it via `IAccountRepository.Add`.
@@ -26,6 +26,7 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 | Case | Detection point | Response |
 | --- | --- | --- |
 | Missing/invalid email | Step 1 (service validation) | 400, field-level errors |
+| Missing/invalid/expired bearer token | Step 2 (controller `[Authorize]`) | 401, no write attempted |
 | Caller is not the organization's admin | Step 2 (authorization check) | 403, no write attempted |
 | Organization's active-member limit reached | Step 3 (repository count, `Active` only) | 409, no write attempted |
 | Email already `Active`, or `Invited` in another organization | Step 4 (repository lookup) | 409, no write attempted |

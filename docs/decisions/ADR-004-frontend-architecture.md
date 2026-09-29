@@ -33,8 +33,8 @@ Route guards and a single shared HTTP client are justified, not speculative: the
 - Folder layout: `app/` (shell, router), `auth/` (session, guard, login), `shared/` (cross-cutting: HTTP client, reusable UI), `features/<name>/` (created per module as it is built).
 - A single Axios instance (`shared/http/client.ts`) must be created once and reused. Creating it per render would re-register interceptors and duplicate side effects.
 - `react-router-dom` was added as a dependency to support the guard (`RequireAuth`), since there is no native browser primitive for SPA client-side routing.
-- `auth/LoginPage.tsx` holds the US-005 sign-in form (`SignInForm`, `authService`); `LoginCallbackPage` receives the Google session token.
-- The Axios client redirects to `/login` on a 401 only when a session token is stored (an expired session); a 401 without one, such as a failed sign-in, reaches the caller. The dev server proxies `/api` to the API (prefix stripped), so browser requests stay same-origin.
+- `auth/LoginPage.tsx` holds the US-005 sign-in form (`SignInForm`, `authService`); `LoginCallbackPage` opens the app once the Google sign-in cookie is in place.
+- The Axios client reports every 401 to `AuthProvider`, which marks the user signed out so `RequireAuth` shows `/login` without a page reload; the error still reaches the caller. It sends credentials and the anti-forgery token, per [ADR-009](ADR-009-session-cookie.md). The dev server proxies `/api` to the API (prefix stripped), so browser requests stay same-origin.
 
 ## Related artifacts
 

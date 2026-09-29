@@ -22,7 +22,7 @@ Follow [Run locally](../../README.md#run-locally) to install dependencies, confi
 
 | Symptom | Check | Next step |
 | --- | --- | --- |
-| Browser opens the sign-in page | No session token is stored | Expected; sign in with email and password, or configure [Google sign-in](../reference/README.md#google-sign-in) |
+| Browser opens the sign-in page | No valid session cookie (`GET /auth/me` answers 401) | Expected; sign in with email and password, or configure [Google sign-in](../reference/README.md#google-sign-in) |
 | Frontend requests to `/api` fail | `web/vite.config.ts` has no proxy | API integration requires routing work; verify the sample API directly |
 | EF cannot connect to PostgreSQL | Service, database, and local connection-string configuration | Follow [configuration](../reference/README.md#configuration); keep credentials outside the repo |
 | `dotnet ef` is unavailable | Local tools have not been restored | Run `dotnet tool restore` in `api/` |

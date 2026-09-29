@@ -53,15 +53,15 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 200 OK | `SessionDto` (token, expiresAt) | Credentials correct; session issued |
+| 204 No Content | none; sets the `nexo_session` cookie | Credentials correct; session issued |
 | 400 Bad Request | Validation errors | Missing email or password |
 | 401 Unauthorized | Generic error detail | No account for the email, account not `Active`, account has no password set, or password incorrect (same response in every case, so as not to reveal which) |
 
-`SessionDto.token` is an HS256 JWT valid for 8 hours with `sub` (account id), `orgId`, and `role` claims, signed with the `Jwt:Key` setting.
+The cookie holds an HS256 JWT valid for 8 hours with `sub` (account id), `orgId`, and `role` claims, signed with the `Jwt:Key` setting. It is `HttpOnly`, `Secure`, `SameSite=None`, and expires with the token, per [ADR-009](../decisions/ADR-009-session-cookie.md).
 
 **`GET /auth/external/{provider}`** (`google` or `microsoft`): redirects the browser to the provider (`302`) with `prompt=select_account`, so the provider always shows its account chooser; `404` if the provider is unknown or not configured.
 
-**`GET /auth/external/callback`**: the provider returns here (through the provider handler's `/signin-{provider}` endpoint). It always answers `302` to the web app: `{Email:WebBaseUrl}/login/callback#token=<jwt>` on success (a URL fragment is never sent to servers; the web app stores the token and removes the fragment at once), or `{Email:WebBaseUrl}/login?error=oauth` on any failure.
+**`GET /auth/external/callback`**: the provider returns here (through the provider handler's `/signin-{provider}` endpoint). It always answers `302` to the web app: `{Email:WebBaseUrl}/login/callback` on success, having set the same session cookie (the token never appears in a URL), or `{Email:WebBaseUrl}/login?error=oauth` on any failure.
 
 ## Related artifacts
 

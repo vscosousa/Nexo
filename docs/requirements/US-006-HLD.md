@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-006](US-006-choose-plan-before-registering.md) · [LLD](US-006-LLD.md)
 
-**Status:** proposed; not implemented. See [design review gaps](README.md#design-review-gaps) before implementing this contract.
+**Status:** implemented (`GET /plans` and the required `planId` on `POST /organizations`). See [design review gaps](README.md#design-review-gaps) for what is still open.
 
 ## Requirements recap
 
@@ -35,7 +35,7 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 200 OK | `PlanDto[]` (id, name, memberLimit) | Always; an empty array if no plans are seeded |
+| 200 OK | `PlanDto[]` (id, name, memberLimit, resourceLimit, monthlyPrice, hasIncidentTracking, hasExpenseTracking, hasDecisionHistory, hasAiInsights, hasPrioritySupport) | Always; an empty array if no plans are seeded |
 
 **`POST /organizations`** (existing, per [US-001](US-001-HLD.md); request body gains one field)
 

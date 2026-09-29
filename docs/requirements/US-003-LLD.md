@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-003](US-003-create-member-account.md) · [HLD](US-003-HLD.md)
 
-**Status:** backend implemented for the password path; the response stops at `AccountDto` (no sign-in or session yet) and OAuth activation is not implemented; frontend password page implemented at `/activate` (redirects to sign-in, no session). See [design review gaps](README.md#design-review-gaps).
+**Status:** backend and frontend (`/activate`) implemented. Google activation is implemented (below) and signs the member in with the session cookie; password activation still stops at `AccountDto` and redirects to sign-in. See [design review gaps](README.md#design-review-gaps).
 
 Full technical detail, building on the [HLD](US-003-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-003/README.md#level-3---backend) for the call sequence.
 
@@ -16,10 +16,21 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain), extended 
 2. Call `IAccountRepository.FindByEmailAsync` with the normalized (trimmed, lowercased) email. If no account is found, fail with an authorization error (→ 403); the email was never registered to any organization.
 3. If the found account's `Status` is already `Active`, fail with a conflict error (→ 409); do not proceed.
    Otherwise compare the SHA-256 of `LinkToken` with `Account.InvitationTokenHash`, and the SHA-256 of the upper-cased `Code` with `Account.InvitationCodeHash`, both in constant time, and check `InvitationExpiresAt` is in the future; on any mismatch or expiry fail with the same authorization error as step 2 (→ 403), so which one failed is not revealed. Both are required. The link token alone (it sits in a URL, which can leak through browser history or a forwarded link) is not enough. An admin re-invites the email ([US-002](US-002-register-member-email.md)) to issue a fresh link token, code, and expiry.
-   Call `IOrganizationRepository.GetByIdAsync(account.OrganizationId)` and `IAccountRepository.CountByOrganizationAndStatusAsync(organizationId, Active)`. If the count has reached `MemberLimit`, fail with a conflict error (→ 409). Then check the rest of the [password rules](#password-rules) with the organization name and `Name` as forbidden content; fail with a validation error (→ 400) if any is broken. The limit check counts without locking, so concurrent activations of different accounts can still overshoot it; that remains an open [design review gap](README.md#design-review-gaps).
+   Begin a transaction and lock the organization's row (`IOrganizationRepository.LockAsync`, `SELECT ... FOR UPDATE`), so concurrent activations in the same organization count and save one after another. Call `IOrganizationRepository.GetByIdAsync(account.OrganizationId)` and `IAccountRepository.CountByOrganizationAndStatusAsync(organizationId, Active)`. If the count has reached `MemberLimit`, fail with a conflict error (→ 409). Then check the rest of the [password rules](#password-rules) with the organization name and `Name` as forbidden content; fail with a validation error (→ 400) if any is broken.
 4. Apply the DTO to the existing `Account` (`AccountMapper.ApplyActivation`): set `Name` (trimmed), set `PasswordHash` via `PasswordHasher<Account>.HashPassword`, clear `InvitationTokenHash` and `InvitationCodeHash`, and set `Status = Active`. Since the account was loaded through `IAccountRepository` (tracked by `NexoDbContext`), no explicit `Update` call is needed.
-5. Call `NexoDbContext.SaveChangesAsync()` to persist the mutation. If another request changed the row in between (the `xmin` check fails), fail with a conflict error (→ 409).
+5. Call `NexoDbContext.SaveChangesAsync()` to persist the mutation, then commit, releasing the organization lock. If another request changed the row in between (the `xmin` check fails), fail with a conflict error (→ 409).
 6. Map the now-`Active` `Account` to `AccountDto` and return it (→ 200). Signing the account in per [ADR-006](../decisions/ADR-006-authentication.md) is not implemented; the session response is an open decision.
+
+## Service logic (`AccountActivationService.ActivateExternal`)
+
+Once the code is confirmed, the page offers Google: `GET /auth/external/google?intent=activate&email=…&token=…&code=…`. The provider handler carries the invitation through the handshake (inside its protected state and then the 5-minute `External` cookie, never in a web URL); the callback redirects to `/activate?email=…&token=…&external=google` (or `…&error=oauth` without a verified email). The page reads `GET /auth/external/pending`, skips the code, shows the names from Google for editing and no password, and posts `POST /auth/external/activate` with `{ firstName, lastName }` and the anti-forgery header.
+
+1. Validate both names (→ 400).
+2. Check the invitation carried in the `External` cookie exactly as steps 2-3 of `Activate` (→ 403 or 409).
+3. Require the provider's verified email to equal the invited email (→ 403 otherwise), so one person cannot activate another's invitation with their own Google account.
+4. In a transaction, lock the organization row and check the member limit, as in `Activate` (→ 409).
+5. Set the names and `Status = Active`, clear the invitation hashes, leave `PasswordHash` null, and add an `ExternalLogin` for the provider identity; save and commit. A concurrent change or an identity already linked elsewhere is a conflict (→ 409).
+6. Issue a session token; `AuthController` clears the `External` cookie, sets the session cookie, and answers 200 with `AccountDto`.
 
 ## Password rules
 
