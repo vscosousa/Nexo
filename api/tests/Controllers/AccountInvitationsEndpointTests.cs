@@ -114,6 +114,48 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
     }
 
     [Fact]
+    public async Task GivenTheStaffRole_WhenTheAdminInvites_ThenAPendingStaffAccountIsCreated()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+
+        var response = await InviteAsync(organizationId, adminId, "sam@example.com", Role.Staff);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var dto = await response.Content.ReadFromJsonAsync<AccountDto>();
+        Assert.Equal(Role.Staff, dto!.Role);
+        await using var db = NewDbContext();
+        Assert.Equal(Role.Staff, (await db.Accounts.SingleAsync(a => a.Id == dto.Id)).Role);
+    }
+
+    [Fact]
+    public async Task GivenAPendingMember_WhenTheAdminReinvitesItAsStaff_ThenItsRoleBecomesStaff()
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+        await InviteAsync(organizationId, adminId, "sam@example.com", Role.Member);
+
+        var response = await InviteAsync(organizationId, adminId, "sam@example.com", Role.Staff);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await using var db = NewDbContext();
+        Assert.Equal(Role.Staff, (await db.Accounts.SingleAsync(a => a.Email == "sam@example.com")).Role);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(Role.Admin)]
+    [InlineData((Role)99)]
+    public async Task GivenAMissingOrNonInvitableRole_WhenTheAdminInvites_ThenItRejectsAndCreatesNothing(Role? role)
+    {
+        var (organizationId, adminId) = await SeedOrganizationAsync();
+
+        var response = await InviteAsync(organizationId, adminId, "bob@example.com", role);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        await AssertAccountCountAsync(1);
+        Assert.Empty(factory.Emails.Sent);
+    }
+
+    [Fact]
     public async Task GivenAMemberCaller_WhenInviting_ThenItRejectsWithForbidden()
     {
         var (organizationId, _) = await SeedOrganizationAsync();
@@ -142,7 +184,7 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
     {
         var (organizationId, _) = await SeedOrganizationAsync();
         var response = await factory.CreateClient().PostAsJsonAsync(
-            $"/organizations/{organizationId}/invitations", new InviteMemberDto { Email = "bob@example.com" });
+            $"/organizations/{organizationId}/invitations", new InviteMemberDto { Email = "bob@example.com", Role = Role.Member });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         await AssertAccountCountAsync(1);
@@ -286,15 +328,15 @@ public class AccountInvitationsEndpointTests(PostgresApiFactory factory)
         return account.Id;
     }
 
-    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, Guid callerId, string email) =>
+    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, Guid callerId, string email, Role? role = Role.Member) =>
         InviteAsync(organizationId, factory.Services.GetRequiredService<ITokenService>()
-            .GenerateToken(new Account { Email = "caller@example.com", Id = callerId, OrganizationId = organizationId, Role = Role.Admin }).Token, email);
+            .GenerateToken(new Account { Email = "caller@example.com", Id = callerId, OrganizationId = organizationId, Role = Role.Admin }).Token, email, role);
 
-    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, string token, string email)
+    private Task<HttpResponseMessage> InviteAsync(Guid organizationId, string token, string email, Role? role = Role.Member)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, $"/organizations/{organizationId}/invitations")
         {
-            Content = JsonContent.Create(new InviteMemberDto { Email = email }),
+            Content = JsonContent.Create(new InviteMemberDto { Email = email, Role = role }),
         };
         request.Headers.Authorization = new("Bearer", token);
         return factory.CreateClient().SendAsync(request);

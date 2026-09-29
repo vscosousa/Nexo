@@ -22,6 +22,8 @@ public class AccountInvitationService(
     {
         var errors = new Dictionary<string, string[]>();
         FieldRules.Email(errors, nameof(dto.Email), dto.Email);
+        if (dto.Role is not (Role.Member or Role.Staff))
+            errors[nameof(dto.Role)] = ["The role must be Member or Staff."];
         if (errors.Count > 0)
             throw new Domain.Exceptions.ValidationException(errors);
 
@@ -49,6 +51,7 @@ public class AccountInvitationService(
         if (reinvite)
         {
             account = existing!;
+            account.Role = dto.Role!.Value;
             account.InvitationTokenHash = tokenHash;
             account.InvitationCodeHash = codeHash;
             account.InvitationExpiresAt = expiresAt;

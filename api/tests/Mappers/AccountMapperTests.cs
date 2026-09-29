@@ -13,17 +13,17 @@ public class AccountMapperTests
     private static readonly DateTime Expiry = new(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     [Fact]
-    public void GivenAnEmailAndOrganization_WhenMappedToInvitedAccount_ThenItIsAPendingMemberWithoutAName()
+    public void GivenAnEmailAndOrganization_WhenMappedToInvitedAccount_ThenItIsAPendingAccountWithTheRoleAndWithoutAName()
     {
         var account = AccountMapper.ToInvitedAccount(
-            new InviteMemberDto { Email = "  Bob@Example.COM " }, OrganizationId, "token-hash", "code-hash", Expiry);
+            new InviteMemberDto { Email = "  Bob@Example.COM ", Role = Role.Staff }, OrganizationId, "token-hash", "code-hash", Expiry);
         Assert.Equal(Expiry, account.InvitationExpiresAt);
 
         Assert.Equal("bob@example.com", account.Email);
         Assert.Null(account.FirstName);
         Assert.Null(account.LastName);
         Assert.Null(account.PasswordHash);
-        Assert.Equal(Role.Member, account.Role);
+        Assert.Equal(Role.Staff, account.Role);
         Assert.Equal(AccountStatus.Invited, account.Status);
         Assert.Equal(OrganizationId, account.OrganizationId);
         Assert.Equal("token-hash", account.InvitationTokenHash);

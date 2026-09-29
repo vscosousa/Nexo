@@ -11,14 +11,14 @@ namespace Nexo.Api.Controllers;
 [Route("organizations/{organizationId:guid}/invitations")]
 public class AccountInvitationsController(IAccountInvitationService service) : ControllerBase
 {
-    /// <summary>Registers a member's email as a pending account of the organization.</summary>
+    /// <summary>Registers a person's email as a pending member or staff account of the organization.</summary>
     /// <remarks>
     /// The one-time invitation token is only delivered by email. If the email cannot be sent, no account is created and the request fails with 500.
     /// The caller is the account in the session token's <c>sub</c> claim (session cookie, or a bearer token).
     /// With the session cookie, the request must also carry the <c>X-XSRF-TOKEN</c> header from <c>GET /auth/csrf</c>.
     /// </remarks>
     /// <response code="201">Created.</response>
-    /// <response code="400">The email is missing or invalid, or the anti-forgery token is missing or invalid.</response>
+    /// <response code="400">The email is missing or invalid, the role is missing or not Member/Staff, or the anti-forgery token is missing or invalid.</response>
     /// <response code="401">The session is missing, invalid, or expired.</response>
     /// <response code="403">The caller is not an admin of the organization.</response>
     /// <response code="409">The member limit is reached or the email already has an account.</response>

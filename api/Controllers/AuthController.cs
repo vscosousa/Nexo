@@ -63,12 +63,8 @@ public class AuthController(
     [Authorize]
     [ProducesResponseType<CurrentAccountDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult Me() => Ok(new CurrentAccountDto
-    {
-        Id = Guid.Parse(User.FindFirstValue("sub")!),
-        OrganizationId = Guid.Parse(User.FindFirstValue("orgId")!),
-        Role = User.FindFirstValue("role")!,
-    });
+    public async Task<IActionResult> Me() =>
+        await service.GetCurrent(Guid.Parse(User.FindFirstValue("sub")!)) is { } me ? Ok(me) : Unauthorized();
 
     /// <summary>
     /// Signs out: clears the session cookie and ends every session of the account, on every device, so a copied or

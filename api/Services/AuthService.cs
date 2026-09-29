@@ -101,6 +101,9 @@ public class AuthService(
         await db.SaveChangesOrConflictAsync("The account was just unlocked; sign in.");
     }
 
+    public async Task<CurrentAccountDto?> GetCurrent(Guid accountId) =>
+        await accounts.GetByIdAsync(accountId) is { } account ? Mappers.AccountMapper.ToCurrentDto(account) : null;
+
     public Task EndSessions(Guid accountId) =>
         db.Accounts.Where(a => a.Id == accountId)
             .ExecuteUpdateAsync(s => s.SetProperty(a => a.SessionVersion, a => a.SessionVersion + 1));

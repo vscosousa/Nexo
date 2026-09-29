@@ -21,6 +21,9 @@ public interface IAuthService
     /// <exception cref="Domain.Exceptions.ForbiddenException">No locked account matches the email and token.</exception>
     Task Unlock(string email, string token);
 
+    /// <summary>Reads the signed-in account's identity and current role, or null if the account no longer exists.</summary>
+    Task<CurrentAccountDto?> GetCurrent(Guid accountId);
+
     /// <summary>Ends every session of the account, on every device, by bumping the session version its tokens carry.</summary>
     Task EndSessions(Guid accountId);
 }

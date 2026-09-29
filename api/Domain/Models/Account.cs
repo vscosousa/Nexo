@@ -4,6 +4,9 @@ public enum Role
 {
     Admin,
     Member,
+
+    /// <summary>Manages the organization's resources (US-004); invited like a member.</summary>
+    Staff,
 }
 
 public enum AccountStatus

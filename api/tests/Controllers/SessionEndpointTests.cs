@@ -31,6 +31,7 @@ public class SessionEndpointTests(PostgresApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var me = await response.Content.ReadFromJsonAsync<CurrentAccountDto>();
         Assert.Equal((account.Id, account.OrganizationId, "Admin"), (me!.Id, me.OrganizationId, me.Role));
+        Assert.Equal(("ana@example.com", "Ana", "Ribeiro"), (me.Email, me.FirstName, me.LastName));
     }
 
     [Fact]
@@ -170,6 +171,8 @@ public class SessionEndpointTests(PostgresApiFactory factory)
         var account = new Account
         {
             Email = "ana@example.com",
+            FirstName = "Ana",
+            LastName = "Ribeiro",
             Role = Role.Admin,
             Status = AccountStatus.Active,
             OrganizationId = organization.Id,

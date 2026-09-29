@@ -48,7 +48,7 @@ public class AccountInvitationServiceTests(PostgresApiFactory factory)
         var service = NewService(new EmailLookupMissesRepository(new AccountRepository(db)), db, new CapturingEmailSender());
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            service.Invite(organization.Id, admin.Id, new InviteMemberDto { Email = "bob@example.com" }));
+            service.Invite(organization.Id, admin.Id, new InviteMemberDto { Email = "bob@example.com", Role = Role.Member }));
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class AccountInvitationServiceTests(PostgresApiFactory factory)
         var service = NewService(new AccountRepository(db), db, new FailingEmailSender());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.Invite(organization.Id, admin.Id, new InviteMemberDto { Email = "bob@example.com" }));
+            service.Invite(organization.Id, admin.Id, new InviteMemberDto { Email = "bob@example.com", Role = Role.Member }));
 
         await using var check = factory.Services.CreateAsyncScope();
         Assert.Equal(1, await check.ServiceProvider.GetRequiredService<NexoDbContext>().Accounts.CountAsync());

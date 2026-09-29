@@ -10,7 +10,7 @@ public static class AccountMapper
         InviteMemberDto dto, Guid organizationId, string invitationTokenHash, string invitationCodeHash, DateTime invitationExpiresAt) => new()
         {
             Email = Account.NormalizeEmail(dto.Email!),
-            Role = Role.Member,
+            Role = dto.Role!.Value,
             Status = AccountStatus.Invited,
             OrganizationId = organizationId,
             InvitationTokenHash = invitationTokenHash,
@@ -40,6 +40,16 @@ public static class AccountMapper
         account.InvitationCodeHash = null;
         account.InvitationExpiresAt = null;
     }
+
+    public static CurrentAccountDto ToCurrentDto(Account account) => new()
+    {
+        Id = account.Id,
+        OrganizationId = account.OrganizationId,
+        Role = account.Role.ToString(),
+        Email = account.Email,
+        FirstName = account.FirstName,
+        LastName = account.LastName,
+    };
 
     public static AccountDto ToDto(Account account) => new()
     {
