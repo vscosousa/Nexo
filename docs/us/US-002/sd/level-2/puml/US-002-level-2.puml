@@ -16,13 +16,13 @@ participant "Nexo API" as API
 note over UI, API
   Limit counting (members vs all active accounts) and concurrent\nactivation enforcement remain open.
 end note
-Admin -> UI: Register member email (email)
+Admin -> UI: Register member email (email, role: Member or Staff)
 activate UI
 UI -> API: POST /organizations/{organizationId}/invitations (InviteMemberDto)
 activate API
 alt Request accepted
     API --> UI: 201 Created (AccountDto)
-else Invalid email
+else Invalid email or role
     API --> UI: 400 Bad Request
 else Caller not authorized for organization
     API --> UI: 403 Forbidden

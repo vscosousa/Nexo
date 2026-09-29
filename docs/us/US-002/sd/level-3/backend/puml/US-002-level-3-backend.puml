@@ -99,7 +99,7 @@ else Valid input
                 deactivate Tokens
                 Service -> Mapper: ToInvitedAccount(dto, organizationId, tokenHash)
                 activate Mapper
-                Mapper --> Service: new Account(email, role: Member, status: Invited, InvitationTokenHash, organization)
+                Mapper --> Service: new Account(email, role from dto, status: Invited, InvitationTokenHash, organization)
                 deactivate Mapper
                 Service -> AccountRepo: Add(account)
                 activate AccountRepo

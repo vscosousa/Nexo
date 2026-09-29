@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path; US-001 (register) and US-003 (activate) also have a frontend (no SSO registration/activation yet, and neither flow signs the person in automatically - both redirect to `/login`), but US-002 (invite a member) has no UI, only the API. US-005 sign-in (password and Google) is implemented on the backend and frontend; US-004 and US-006 are not, and their HLD/LLD and diagrams describe proposed behavior.
+This page defines the intended scope and indexes draft stories. The backends of US-001 to US-003 are implemented for the password path; US-001 (register) and US-003 (activate) also have a frontend (no SSO registration/activation yet, and neither flow signs the person in automatically - both redirect to `/login`), but US-002 (invite a member) has no UI, only the API. US-005 sign-in (password and Google) is implemented on the backend and frontend; US-004 (register a resource) is implemented on the backend and frontend. US-006 is not, and its HLD/LLD and diagrams describe proposed behavior.
 
 ## Context and scope
 
@@ -36,9 +36,10 @@ This page defines the intended scope and indexes draft stories. The backends of 
 | [US-001](US-001-create-organization-admin.md) | Create an organization and its admin account | backend implemented | [HLD](US-001-HLD.md) | [LLD](US-001-LLD.md) |
 | [US-002](US-002-register-member-email.md) | Register a member's email to an organization | backend implemented | [HLD](US-002-HLD.md) | [LLD](US-002-LLD.md) |
 | [US-003](US-003-create-member-account.md) | Create a member account | backend implemented | [HLD](US-003-HLD.md) | [LLD](US-003-LLD.md) |
-| [US-004](US-004-register-resource.md) | Register a resource | draft | [HLD](US-004-HLD.md) | [LLD](US-004-LLD.md) |
+| [US-004](US-004-register-resource.md) | Register a resource | implemented | [HLD](US-004-HLD.md) | [LLD](US-004-LLD.md) |
 | [US-005](US-005-sign-in.md) | Sign in to an existing account | implemented (password, Google) | [HLD](US-005-HLD.md) | [LLD](US-005-LLD.md) |
 | [US-006](US-006-choose-plan-before-registering.md) | Choose a plan before registering an organization | draft | [HLD](US-006-HLD.md) | [LLD](US-006-LLD.md) |
+| [US-007](US-007-register-space.md) | Register a space | draft | none yet | none yet |
 
 ## User story template
 
@@ -65,7 +66,8 @@ These are inconsistencies or missing details in the current proposals, not new d
 | US-001 registration | Acceptance criteria require automatic sign-in. Google registration signs in; password registration returns only `OrganizationDto`, so it still delivers no session. |
 | US-003 activation | The story requires sign-in after activation. Google activation signs in; password activation returns only `AccountDto`. |
 | US-002/US-003 plan limits | Text alternates between active members and all active accounts. Activation checks the Active count and locks the organization's row while counting and saving, so concurrent activations cannot overshoot. A new invitation is refused once active plus pending accounts reach the limit ([ADR-010](../decisions/ADR-010-account-security-hardening.md)); concurrent invitations are not serialized, so they can overshoot the pending count slightly. |
-| US-004 resource permissions | The permitted role and recognized resource types are not defined. "Staff" is not a modeled role. |
+| Account roles | Staff is only assigned by invitation ([US-002](US-002-register-member-email.md)). An admin changing an existing account's role has no story yet; it must also end that account's sessions, since the session token carries the role. |
+| Resource types | Managing custom resource types ([ADR-012](../decisions/ADR-012-resource-types.md)) has no story yet, and `Plans.HasCustomResourceTypes` is not enforced until it does. `Accounts` is not yet covered by the organization query filters ([ADR-011](../decisions/ADR-011-multi-tenancy.md)). |
 | US-005 sign-in | Microsoft sign-in is coded but every Microsoft login is rejected: Microsoft does not attest that an email is verified, and the account-linking rule needs a verified email. The Google flow has no sequence diagrams yet. |
 | Shared contracts | API prefix, error bodies (US-001 currently uses ASP.NET `ProblemDetails`), OAuth endpoints, and database uniqueness/concurrency handling (email normalization is decided: trimmed and lowercased) need consistent specifications. |
 | US-006 plan hand-off | `RegisterOrganizationDto` now takes a required `planId` (400 if missing or unknown), and the organization/admin form reached without one redirects to the plans page. What to show with no plans seeded is still undefined (the page shows an empty message). |

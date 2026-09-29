@@ -8,7 +8,7 @@
 
 As an admin, I want to register a person's email against my organization, so that they become eligible to create their own account. Full acceptance criteria: [US-002](US-002-register-member-email.md).
 
-This registers the email as a pending `Account` (`Status = Invited`, `Role = Member`, no credentials yet), rather than a separate entity. See [Domain model](../domain-models/README.md#accounts-and-organizations). [US-003](US-003-create-member-account.md) later activates that same `Account` row; it does not insert a new one.
+This registers the email as a pending `Account` (`Status = Invited`, `Role` as requested: `Member` or `Staff`, no credentials yet), rather than a separate entity. See [Domain model](../domain-models/README.md#accounts-and-organizations). [US-003](US-003-create-member-account.md) later activates that same `Account` row; it does not insert a new one.
 
 ## Folder structure
 
@@ -40,7 +40,8 @@ Request body (`InviteMemberDto`):
 
 ```json
 {
-  "email": "string, required, valid email, at most 320 characters"
+  "email": "string, required, valid email, at most 320 characters",
+  "role": "Member or Staff, required (the Role enum: 1 = Member, 2 = Staff)"
 }
 ```
 
@@ -48,8 +49,8 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 201 Created | `AccountDto` (id, email, firstName: null, lastName: null, role: Member, status: Invited, organizationId); the link token and code are only emailed, never returned | Pending account created (or, for an email still pending in this organization, re-invited in place with a fresh link token and code) and invitation email sent |
-| 400 Bad Request | Validation errors | Missing or invalid email, or longer than 320 characters |
+| 201 Created | `AccountDto` (id, email, firstName: null, lastName: null, role, status: Invited, organizationId); the link token and code are only emailed, never returned | Pending account created (or, for an email still pending in this organization, re-invited in place with a fresh link token and code) and invitation email sent |
+| 400 Bad Request | Validation errors | Missing or invalid email, or longer than 320 characters, or a missing role or one other than `Member`/`Staff` |
 | 401 Unauthorized | none | The bearer token is missing, invalid, or expired |
 | 403 Forbidden | Error detail | Caller is not the admin of `organizationId` |
 | 409 Conflict | Error detail | Organization's `MemberLimit` reached (counting `Active` and pending `Invited` accounts, except when re-inviting a pending email), or the email already has an `Active` or `Unverified` account, or an `Invited` one in a *different* organization |

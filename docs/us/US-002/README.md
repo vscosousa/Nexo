@@ -38,7 +38,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 | Step | Actor input | System response |
 | --- | --- | --- |
-| 1 | Member email | Pending member account created, or validation/authorization/limit/conflict error |
+| 1 | Member email and role (`Member` or `Staff`) | Pending account with that role created, or validation/authorization/limit/conflict error |
 
 **Alternative and failure flows:** Invalid email, unauthorized caller, member limit reached (counting pending invitations), or email already registered elsewhere, reject with no change made.
 **Postconditions:** A pending (`Invited`) account exists for the email, scoped to the organization, without credentials.
@@ -72,8 +72,8 @@ See the [LLD service logic](../../requirements/US-002-LLD.md#service-logic-accou
 
 | Step | Sender → receiver | Operation | Outcome |
 | --- | --- | --- | --- |
-| 1 | Actor → View → Component | Submit member email | View forwards the actor's input to the form component |
-| 2 | Component → Service | `invitationsService.invite(organizationId, email)` | Feature module builds the request |
+| 1 | Actor → View → Component | Submit member email and role | View forwards the actor's input to the form component |
+| 2 | Component → Service | `invitationsService.invite(organizationId, email, role)` | Feature module builds the request |
 | 3 | Service → HttpClient | `POST /organizations/{organizationId}/invitations` | Shared Axios instance sends the request with the caller's token |
 | 4 | HttpClient → Nexo API | HTTP request | Reaches the backend (detailed in [Level 3 - Backend](#level-3---backend)) |
 

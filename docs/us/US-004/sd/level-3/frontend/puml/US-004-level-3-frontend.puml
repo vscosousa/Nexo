@@ -9,43 +9,70 @@ skinparam ActorBackgroundColor #FEF9E7
 skinparam NoteBackgroundColor #FFF8DC
 autonumber
 
-actor "Association Staff" as Staff
-participant "RegisterResourcePage" as View
+actor "Admin or Staff" as Staff
+participant "ResourcesPage" as View
 participant "RegisterResourceForm" as Component
 participant "resourcesService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
 
 note over View, API
-  Resource-management roles and the recognized type vocabulary\nremain open. Organization comes from the caller.
+  The organization comes from the caller's session.
+  RegisterResourceForm is a modal dialog opened by the
+  page's button or by the dashboard shortcut (?new=1).
 end note
+
+Staff -> View: Open the register dialog
+activate View
+View -> Component: Mount (dialog.showModal)
+activate Component
+Component -> Service: listTypes()
+activate Service
+Service -> Http: GET /resource-types
+activate Http
+Http -> API: HTTP request (session cookie)
+activate API
+API --> Http: 200 (system and organization types)
+deactivate API
+Http --> Service: ResourceType[]
+deactivate Http
+Service --> Component: ResourceType[]
+deactivate Service
+Component --> View: Dialog with name, type, description
+deactivate Component
+View --> Staff: Show the dialog
+deactivate View
 
 Staff -> View: Submit name, type, and description
 activate View
-View -> Component: handleSubmit(name, type, description)
+View -> Component: onSubmit(name, typeId, description)
 activate Component
-Component -> Service: register(name, type, description)
-activate Service
-Service -> Http: POST /resources (RegisterResourceDto)
-activate Http
-Http -> API: HTTP request (auth token attached)
-activate API
-alt Request accepted
-    API --> Http: 201 Created (ResourceDto)
-else Request rejected
-    API --> Http: 400/403/500
-end
-deactivate API
-Http --> Service: Response data or rejected request
-deactivate Http
-Service --> Component: ResourceDto, or thrown error
-deactivate Service
-alt Successful response
-    Component --> View: Resource created with status Available
-else Failed response
-    Component --> View: Error state (validation / operation failure)
+alt Name or type missing
+    Component --> View: Field errors (no request)
+else Details present
+    Component -> Service: register(name, typeId, description)
+    activate Service
+    Service -> Http: POST /resources (RegisterResourceDto)
+    activate Http
+    Http -> API: HTTP request (session cookie and anti-forgery header)
+    activate API
+    alt Request accepted
+        API --> Http: 201 Created (ResourceDto)
+    else Request rejected
+        API --> Http: 400/403/409/500
+    end
+    deactivate API
+    Http --> Service: Response data or rejected request
+    deactivate Http
+    Service --> Component: ResourceDto, or thrown error
+    deactivate Service
+    alt Successful response
+        Component --> View: onRegistered(resource); dialog closes
+    else Failed response
+        Component --> View: Field errors or message (validation / authorization / limit / operation)
+    end
 end
 deactivate Component
-View --> Staff: Render the resulting state
+View --> Staff: Render the success notice or the dialog's errors
 deactivate View
 @enduml

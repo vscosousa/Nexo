@@ -2,7 +2,7 @@
 
 [Documentation index](../README.md)
 
-These proposed models describe business concepts independently of database tables and implementation classes. Only `Organization`, `Account`, and `Plan` are implemented (US-001 to US-003 backend); the rest are proposed. Consult the [design review gaps](../requirements/README.md#design-review-gaps) for unresolved cross-story rules.
+These proposed models describe business concepts independently of database tables and implementation classes. Only `Organization`, `Account`, `Plan`, `ExternalLogin`, `Resource`, and `ResourceType` are implemented (US-001 to US-005 and US-004 backend); the rest are proposed. Consult the [design review gaps](../requirements/README.md#design-review-gaps) for unresolved cross-story rules.
 
 ## Rationale
 
@@ -31,10 +31,15 @@ Domain concepts and their associations are identified from the requirements' [go
 | ExternalLogin | has | ProviderKey |
 | Resource | belongs to | Organization |
 | Resource | has | Name |
-| Resource | has | Type |
+| Resource | is of | ResourceType |
+| Organization | defines | ResourceType |
+| ResourceType | has | Name |
 | Resource | has | Description |
 | Resource | has | Status |
-| Resource | is reserved via | Reservation |
+| Organization | has | Space |
+| Space | has | Name |
+| Space | is reserved via | Reservation |
+| Space | is affected by | Incident |
 | Resource | is loaned via | Loan |
 | Resource | is affected by | Incident |
 | Reservation | requested by | Account |
@@ -67,8 +72,8 @@ Domain concepts and their associations are identified from the requirements' [go
 | Concept | Meaning | Relationships | Business rules |
 | --- | --- | --- | --- |
 | Organization | A single association using the system (per [glossary](../glossary/README.md)) | Has one admin Account (the creator) and member Accounts (0..*, `Invited` or `Active`); has Resources (0..*); is on exactly one Plan | Starts on the "Free" plan on creation |
-| Plan | A subscription tier defining the limits and included functionality an Organization on it is subject to (per [glossary](../glossary/README.md)) | Has Organizations (0..*) | Has a unique name, a member limit (the maximum number of **active** member accounts), and a resource limit (the maximum number of Resources the organization can register); a limit of `Unlimited` means uncapped. Has a display-only monthly price (null means a custom/"contact us" plan; plans are simulated, no real billing). Has five feature flags marking which of the app's functionality areas it includes: incident tracking, expense tracking, decision history, AI-powered insights, priority support; space & equipment bookings is included on every tier, so it is not a flag. None of these five areas are implemented yet, so the flags are pricing-page data only, not an enforced entitlement check. Plan rules live on the Plan, not on the Organization |
-| Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials), a self-registered admin whose email is not confirmed yet (`Status = Unverified`), or activated (`Status = Active`, independently of any current session) | Belongs to exactly one Organization; has role "admin" or "member"; has 0..* ExternalLogins | Created `Unverified` with role "admin" via organization creation with a password, becoming `Active` once the emailed link confirms the email, or directly `Active` via Google (US-001); only an `Active` account can sign in or be linked to a social login, and an `Active` account can be locked after 5 wrong passwords until its owner uses the emailed unlock link ([ADR-010](../decisions/ADR-010-account-security-hardening.md)); created `Invited` with role "member" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; `Active` accounts count toward the organization's plan limit, and a new invitation also counts pending `Invited` ones; the email is trimmed and lowercased before storage and lookup (so it is compared case-insensitively) and is unique across accounts; dots and `+tags` are not altered |
+| Plan | A subscription tier defining the limits and included functionality an Organization on it is subject to (per [glossary](../glossary/README.md)) | Has Organizations (0..*) | Has a unique name, a member limit (the maximum number of **active** member accounts), and a resource limit (the maximum number of Resources the organization can register); a limit of `Unlimited` means uncapped. Has a display-only monthly price (null means a custom/"contact us" plan; plans are simulated, no real billing). Has five feature flags marking which of the app's functionality areas it includes: incident tracking, expense tracking, decision history, AI-powered insights, priority support, plus a sixth, custom resource types (Team and Enterprise, [ADR-012](../decisions/ADR-012-resource-types.md)); space & equipment bookings is included on every tier, so it is not a flag. None of these five areas are implemented yet, so the flags are pricing-page data only, not an enforced entitlement check. Plan rules live on the Plan, not on the Organization |
+| Account | A synthetic identity, either invited and pending (`Status = Invited`, no credentials), a self-registered admin whose email is not confirmed yet (`Status = Unverified`), or activated (`Status = Active`, independently of any current session) | Belongs to exactly one Organization; has role "admin", "member", or "staff"; has 0..* ExternalLogins | Created `Unverified` with role "admin" via organization creation with a password, becoming `Active` once the emailed link confirms the email, or directly `Active` via Google (US-001); only an `Active` account can sign in or be linked to a social login, and an `Active` account can be locked after 5 wrong passwords until its owner uses the emailed unlock link ([ADR-010](../decisions/ADR-010-account-security-hardening.md)); created `Invited` with role "member" or "staff" by an admin (US-002), then becomes `Active` once the person sets credentials (US-003); an `Active` account must have a password, at least one ExternalLogin, or both; `Active` accounts count toward the organization's plan limit, and a new invitation also counts pending `Invited` ones; the email is trimmed and lowercased before storage and lookup (so it is compared case-insensitively) and is unique across accounts; dots and `+tags` are not altered |
 | ExternalLogin | A link between an Account and a social provider identity (per [glossary](../glossary/README.md)) | Belongs to exactly one Account | Unique per (Provider, ProviderKey); linked on first social sign-in (US-005) to the `Active` account whose email equals the provider's verified email; later sign-ins match on the (Provider, ProviderKey) pair, not the email |
 
 **Assumptions and open questions:**
@@ -82,18 +87,34 @@ Domain concepts and their associations are identified from the requirements' [go
 ## Resources
 
 **Scope:** Resource registration and lifecycle ([US-004](../requirements/US-004-register-resource.md)).
+**Status:** `Resource` and `ResourceType` implemented (US-004 backend); the lifecycle beyond registration is proposed.
+**Diagram:** [Domain model diagrams](#domain-model-diagrams).
+
+| Concept | Meaning | Relationships | Business rules |
+| --- | --- | --- | --- |
+| Resource | An item the association lends: equipment, a utensil, a vehicle (per [glossary](../glossary/README.md)); not a space | Belongs to exactly one Organization; is of exactly one ResourceType; will be borrowed (0..*) via Loan and affected (0..*) by Incident, once those areas are modeled | Must have a name and a type the organization can use; starts in status "Available" on registration; only an admin or staff account registers it; an organization cannot hold more resources than its plan's resource limit |
+| ResourceType | A kind of resource ([ADR-012](../decisions/ADR-012-resource-types.md)) | A system type belongs to no Organization and is shared by all; a custom type belongs to exactly one Organization | System types are `Equipment`, `Utensil`, `Vehicle`, `Other`; names are unique among system types and per organization among custom types; custom types need a plan with custom resource types, and managing them is a later story |
+
+**Assumptions and open questions:**
+
+- Does a resource need a unique code/identifier, or is the name alone sufficient? Not yet decided.
+- Can two physically identical resources (e.g., two projectors) be registered as separate entries, or does one entry represent a quantity? Assumed separate entries for now, since loans target one specific item.
+
+## Spaces
+
+**Scope:** Space registration and reservations ([US-007](../requirements/US-007-register-space.md), draft).
 **Status:** proposed.
 **Diagram:** [Domain model diagrams](#domain-model-diagrams).
 
 | Concept | Meaning | Relationships | Business rules |
 | --- | --- | --- | --- |
-| Resource | A room, tool, or piece of equipment the association manages (per [glossary](../glossary/README.md)) | Belongs to exactly one Organization; will be reserved (0..*) via Reservation, borrowed (0..*) via Loan, and affected (0..*) by Incident, once those areas are modeled | Must have a name and a type; starts in status "Available" on registration |
+| Space | A room, hall, or field the association books out for periods (per [glossary](../glossary/README.md)); not a resource | Belongs to exactly one Organization; reserved (0..*) via Reservation; affected (0..*) by Incident | Must have a name; the other fields (capacity, location, opening hours) and whether spaces have types are open until US-007 is designed |
 
 **Assumptions and open questions:**
 
-- Does a resource need a unique code/identifier, or is the name alone sufficient? Not yet decided.
-- Which roles may manage resources, and which resource types are recognized? [US-004's LLD](../requirements/US-004-LLD.md) leaves the permission rule open; its requirement also needs a defined type vocabulary.
-- Can two physically identical resources (e.g., two projectors) be registered as separate entries, or does one entry represent a quantity? Assumed separate entries for now, since reservations and loans target one specific item.
+- Spaces were first modeled as a resource type (`Room`); they were split out because they are reserved for periods while resources are lent, and the Figma screens keep them in separate sections.
+- Whether a reservation can also ask for resources (the Figma reservation dialog lists "equipment needed") is open.
+- Whether spaces count toward the plan's resource limit, or get their own limit, is open.
 
 ## Reservations and loans
 
@@ -103,13 +124,13 @@ Domain concepts and their associations are identified from the requirements' [go
 
 | Concept | Meaning | Relationships | Business rules |
 | --- | --- | --- | --- |
-| Reservation | A commitment of a Resource for a period (per [glossary](../glossary/README.md)) | Belongs to exactly one Resource; requested by exactly one Account | Only valid when the resource is available and eligible for the requested period; the exact availability/conflict rule is not yet decided |
+| Reservation | A commitment of a Space for a period (per [glossary](../glossary/README.md)) | Belongs to exactly one Space; requested by exactly one Account | Only valid when the space is available and eligible for the requested period; the exact availability/conflict rule is not yet decided |
 | Loan | The request, delivery, and return cycle of a Resource to a member (per [glossary](../glossary/README.md)) | Belongs to exactly one Resource; requested by exactly one Account | Moves through a request, delivery, and return; the exact status set and cancellation rules are not yet decided |
 
 **Assumptions and open questions:**
 
 - No user story defines reservations or loans yet; the fields above are provisional pending those definitions.
-- Whether a Resource with quantity > 1 (see [Resources](#resources) open question) allows overlapping Reservations is open.
+- Whether a Resource with quantity > 1 (see [Resources](#resources) open question) allows overlapping Loans is open.
 - Cancellation rules for a Reservation (who can cancel, and by when) are not yet specified.
 
 ## Incidents
@@ -120,12 +141,12 @@ Domain concepts and their associations are identified from the requirements' [go
 
 | Concept | Meaning | Relationships | Business rules |
 | --- | --- | --- | --- |
-| Incident | A reported problem affecting a resource, room, safety, or stock (per [glossary](../glossary/README.md)) | Belongs to 0..1 Resource; reported by exactly one Account | Tracked from report to verified resolution, or reopened if unresolved; the exact status set is not yet decided |
+| Incident | A reported problem affecting a resource, a space, safety, or stock (per [glossary](../glossary/README.md)) | Belongs to 0..1 Resource or 0..1 Space; reported by exactly one Account | Tracked from report to verified resolution, or reopened if unresolved; the exact status set is not yet decided |
 
 **Assumptions and open questions:**
 
 - No user story defines incident reporting yet.
-- The glossary defines an Incident more broadly than "affecting a Resource" (it also names room, safety, and stock issues); whether every Incident must reference a specific Resource, or can stand alone, is open.
+- The glossary defines an Incident more broadly than "affecting a Resource" (it also names space, safety, and stock issues); whether every Incident must reference a specific Resource, or can stand alone, is open.
 
 ## History and notifications
 

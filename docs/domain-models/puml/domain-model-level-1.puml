@@ -19,6 +19,8 @@ entity Plan <<entity>> {}
 entity Account <<entity>> {}
 entity ExternalLogin <<entity>> {}
 entity Resource <<entity>> {}
+entity Space <<entity>> {}
+entity ResourceType <<entity>> {}
 entity Reservation <<entity>> {}
 entity Loan <<entity>> {}
 entity Incident <<entity>> {}
@@ -28,15 +30,19 @@ entity Notification <<entity>> {}
 Organization "0..*" --> "1" Plan : is on
 Organization "1" --> "1..*" Account : has
 Organization "1" --> "0..*" Resource : owns
+Organization "1" --> "0..*" Space : owns
+Organization "0..1" --> "0..*" ResourceType : defines
+Resource "0..*" --> "1" ResourceType : is of
 Account "1" --> "0..*" ExternalLogin : links
 Account "1" --> "0..*" Reservation : requests
 Account "1" --> "0..*" Loan : requests
 Account "1" --> "0..*" Incident : reports
 Account "0..1" --> "0..*" HistoryEntry : attributed changes
 Account "1" --> "0..*" Notification : receives
-Resource "1" --> "0..*" Reservation : is reserved via
+Space "1" --> "0..*" Reservation : is reserved via
 Resource "1" --> "0..*" Loan : is loaned via
 Resource "0..1" --> "0..*" Incident : is affected by
+Space "0..1" --> "0..*" Incident : is affected by
 
 note top of Account
   Invited: no name or credentials yet.
@@ -52,6 +58,17 @@ note top of Organization
   Free plan: Plan.MemberLimit = 20.
   Counting rule and activation enforcement
   still need review (US-002 / US-003).
+end note
+
+note bottom of Space
+  A room, hall, or field, reserved for a period.
+  Resources are items, which are lent (Loan).
+end note
+
+note bottom of ResourceType
+  System types (no Organization) are shared
+  by every organization; custom types belong
+  to one (ADR-012).
 end note
 
 note bottom of ExternalLogin

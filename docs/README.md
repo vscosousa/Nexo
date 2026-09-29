@@ -4,7 +4,7 @@
 
 This is the starting point for Nexo's project and technical documentation. Use the topic folders below to explore requirements, models, design decisions, and development guides.
 
-**Status:** six draft user stories have proposed designs; six architecture decisions are accepted. The backends of US-001 to US-003 are implemented for the password path; US-001 (register) and US-003 (activate) also have a frontend, and US-005 sign-in (password and Google) is implemented on the backend and frontend; US-002 (invite a member) has no UI. The API does not yet validate the tokens it issues, and US-004/US-006 have no frontend. Accepted decisions describe intended choices, not proof that they are implemented.
+**Status:** six draft user stories have proposed designs; six architecture decisions are accepted. The backends of US-001 to US-003 are implemented for the password path; US-001 (register) and US-003 (activate) also have a frontend, and US-005 sign-in (password and Google) is implemented on the backend and frontend; US-002 (invite a member) is implemented on the backend with no UI, US-004 (register a resource) on the backend and frontend, and US-006 has no frontend. Accepted decisions describe intended choices, not proof that they are implemented.
 
 Start with [local setup](../README.md#run-locally), the [current architecture](architecture/README.md), or the [story index](requirements/README.md#user-stories). Known inconsistencies that need a design decision are collected in [design review gaps](requirements/README.md#design-review-gaps).
 

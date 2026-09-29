@@ -34,7 +34,7 @@ Business rules (defaults, limits, status transitions) are defined once in the [d
 | `Email` | string | Required, valid format, stored trimmed and lowercased (`Account.NormalizeEmail`), unique across all accounts |
 | `Name` | string, nullable | Required for this feature (at most 200 characters, stored trimmed); nullability rule per domain model (`Invited` accounts) |
 | `PasswordHash` | string, nullable | `PasswordHasher<Account>` hash of the submitted password; null for invited accounts and for accounts registered or activated with Google |
-| `Role` | enum (`Admin`, `Member`) | `Admin` when created via this feature |
+| `Role` | enum (`Admin`, `Member`, `Staff`) | `Admin` when created via this feature |
 | `Status` | enum (`Invited`, `Active`, `Unverified`) | `Unverified` for an admin registered with a password until the emailed link confirms the address, then `Active`; `Active` immediately for an admin registered with Google. See the domain model for the member lifecycle and limit counting |
 | `InvitationTokenHash`, `InvitationExpiresAt` | string / timestamp, nullable | For an `Unverified` admin: SHA-256 of the email confirmation link's token and its expiry (24 hours); cleared on confirmation |
 | `OrganizationId` | Guid | Foreign key to `Organization` |

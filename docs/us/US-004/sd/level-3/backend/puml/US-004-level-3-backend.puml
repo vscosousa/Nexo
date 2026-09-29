@@ -13,13 +13,15 @@ participant "Web App" as FE
 participant "ResourcesController" as Controller
 participant "ResourceService" as Service
 participant "IAccountRepository" as AccountRepo
-participant "ResourceMapper" as Mapper
 participant "IResourceRepository" as ResourceRepo
+participant "IOrganizationRepository" as OrgRepo
+participant "ResourceMapper" as Mapper
 participant "NexoDbContext" as DbContext
 participant "Database" as DB
 
-note over Controller, DB
-  Resource-management roles and the recognized type vocabulary\nremain open. Organization comes from the caller.
+note over DbContext, DB
+  Resources and ResourceTypes are filtered to the caller's
+  organization (ADR-011); system types are visible to all.
 end note
 
 activate FE
@@ -27,56 +29,113 @@ FE -> Controller: POST /resources (dto)
 activate Controller
 Controller -> Service: Register(callerAccountId, dto)
 activate Service
-alt Missing or invalid required fields
-    Service --> Controller: Validation failure
-    Controller --> FE: 400 Bad Request
-else Valid input
-    Service -> AccountRepo: GetByIdAsync(callerAccountId)
-    activate AccountRepo
-    AccountRepo -> DbContext: Query by Id (callerAccountId)
+Service -> AccountRepo: GetByIdAsync(callerAccountId)
+activate AccountRepo
+AccountRepo -> DbContext: Query by Id (callerAccountId)
+activate DbContext
+DbContext -> DB: SELECT Account by Id
+activate DB
+DB --> DbContext: Query result
+deactivate DB
+DbContext --> AccountRepo: Materialized result
+deactivate DbContext
+AccountRepo --> Service: caller Account, or null
+deactivate AccountRepo
+alt Caller missing, not Active, or role not Admin/Staff
+    Service --> Controller: throw ForbiddenException
+    Controller --> FE: 403 Forbidden
+else Caller authorized
+    Service -> ResourceRepo: FindTypeAsync(dto.TypeId)
+    activate ResourceRepo
+    ResourceRepo -> DbContext: Query type by Id (filtered)
     activate DbContext
-    DbContext -> DB: SELECT Account by Id
+    DbContext -> DB: SELECT ResourceType (system or caller's org)
     activate DB
     DB --> DbContext: Query result
     deactivate DB
-    DbContext --> AccountRepo: Materialized result
+    DbContext --> ResourceRepo: Materialized result
     deactivate DbContext
-    AccountRepo --> Service: caller Account
-    deactivate AccountRepo
-    alt Caller not permitted to manage resources
-        Service --> Controller: throw ForbiddenException
-        Controller --> FE: 403 Forbidden
-    else Caller authorized
-        Service -> Mapper: ToResource(dto, caller.OrganizationId)
-        activate Mapper
-        Mapper --> Service: new Resource(name, type, description, status: Available)
-        deactivate Mapper
-        Service -> ResourceRepo: Add(resource)
-        activate ResourceRepo
-        ResourceRepo -> DbContext: Track resource as Added
+    ResourceRepo --> Service: ResourceType, or null
+    deactivate ResourceRepo
+    alt Invalid name/description, or type not found
+        Service --> Controller: throw ValidationException
+        Controller --> FE: 400 Bad Request
+    else Valid input
+        Service -> DbContext: BeginTransactionAsync()
         activate DbContext
-        DbContext --> ResourceRepo: Tracked (no INSERT yet)
+        DbContext --> Service: Transaction
         deactivate DbContext
-        ResourceRepo --> Service: Added to unit of work
-        deactivate ResourceRepo
-        Service -> DbContext: SaveChangesAsync()
+        Service -> OrgRepo: LockAsync(caller.OrganizationId)
+        activate OrgRepo
+        OrgRepo -> DbContext: Lock organization row
         activate DbContext
-        DbContext -> DB: INSERT Resource
+        DbContext -> DB: SELECT ... FOR UPDATE
         activate DB
-        DB --> DbContext: Committed, or save failed (rolled back)
+        DB --> DbContext: Row locked
         deactivate DB
-        DbContext --> Service: Save result or persistence exception
+        DbContext --> OrgRepo: Done
         deactivate DbContext
-        alt Save succeeded
-            Service -> Mapper: Map resource to ResourceDto
+        OrgRepo --> Service: Done
+        deactivate OrgRepo
+        Service -> OrgRepo: GetByIdAsync(caller.OrganizationId)
+        activate OrgRepo
+        OrgRepo -> DbContext: Query organization with plan
+        activate DbContext
+        DbContext -> DB: SELECT Organization JOIN Plan
+        activate DB
+        DB --> DbContext: Query result
+        deactivate DB
+        DbContext --> OrgRepo: Materialized result
+        deactivate DbContext
+        OrgRepo --> Service: Organization (with Plan)
+        deactivate OrgRepo
+        Service -> ResourceRepo: CountByOrganizationAsync(caller.OrganizationId)
+        activate ResourceRepo
+        ResourceRepo -> DbContext: Count resources
+        activate DbContext
+        DbContext -> DB: SELECT COUNT(*) FROM Resources
+        activate DB
+        DB --> DbContext: Count
+        deactivate DB
+        DbContext --> ResourceRepo: Count
+        deactivate DbContext
+        ResourceRepo --> Service: Count
+        deactivate ResourceRepo
+        alt Count reached Plan.ResourceLimit
+            Service --> Controller: throw ConflictException (transaction rolled back)
+            Controller --> FE: 409 Conflict
+        else Below the limit
+            Service -> Mapper: ToResource(dto, caller.OrganizationId)
             activate Mapper
-            Mapper --> Service: ResourceDto
+            Mapper --> Service: new Resource (status Available)
             deactivate Mapper
-            Service --> Controller: ResourceDto
-            Controller --> FE: 201 Created (ResourceDto)
-        else Save failed
-            Service --> Controller: Persistence failure
-            Controller --> FE: 500 Internal Server Error
+            Service -> ResourceRepo: Add(resource)
+            activate ResourceRepo
+            ResourceRepo -> DbContext: Track resource as Added
+            activate DbContext
+            DbContext --> ResourceRepo: Tracked (no INSERT yet)
+            deactivate DbContext
+            ResourceRepo --> Service: Added to unit of work
+            deactivate ResourceRepo
+            Service -> DbContext: SaveChangesAsync(), then commit
+            activate DbContext
+            DbContext -> DB: INSERT Resource; COMMIT
+            activate DB
+            DB --> DbContext: Committed, or save failed (rolled back)
+            deactivate DB
+            DbContext --> Service: Save result or persistence exception
+            deactivate DbContext
+            alt Save succeeded
+                Service -> Mapper: ToDto(resource, type)
+                activate Mapper
+                Mapper --> Service: ResourceDto
+                deactivate Mapper
+                Service --> Controller: ResourceDto
+                Controller --> FE: 201 Created (ResourceDto)
+            else Save failed
+                Service --> Controller: Persistence failure
+                Controller --> FE: 500 Internal Server Error
+            end
         end
     end
 end

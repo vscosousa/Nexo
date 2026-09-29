@@ -18,7 +18,7 @@ Every [resource](../domain-models/README.md#resources) has a type. Organizations
 
 ## Decision
 
-One `ResourceTypes` table with a nullable `OrganizationId`. The system types `Room`, `Equipment`, `Vehicle`, and `Other` are seeded with fixed ids and a null `OrganizationId`. Its query filter (per [ADR-011](ADR-011-multi-tenancy.md)) shows system types plus the caller's organization's custom types, so a resource can only reference a type its organization can see.
+One `ResourceTypes` table with a nullable `OrganizationId`. The system types `Equipment`, `Utensil`, `Vehicle`, and `Other` are seeded with fixed ids and a null `OrganizationId`. Rooms are not a resource type: spaces are a separate concept (see the [domain model](../domain-models/README.md#spaces)). An earlier `Room` type was replaced by `Utensil` in the `ReplaceRoomWithUtensilResourceType` migration, which moved any resource of type `Room` to `Other`. Its query filter (per [ADR-011](ADR-011-multi-tenancy.md)) shows system types plus the caller's organization's custom types, so a resource can only reference a type its organization can see.
 
 Custom types are a plan feature: `Plans.HasCustomResourceTypes` is false on Free and true on Team and Enterprise. It is pricing data until the custom-type management story enforces it.
 

@@ -10,7 +10,7 @@ Nexo is a modular monolith: a single React SPA and a single ASP.NET Core Web API
 
 ## Components
 
-The layers below exist in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`), and in US-005 sign-in (`AuthController`, `AuthService`, `TokenService`, `ExternalLogin`; frontend `auth/`). US-001 (register) and US-003 (activate) also have a frontend, in `auth/` alongside sign-in; US-002 (invite a member) has no UI, only the API. Resource classes shown in story designs are proposed and not implemented.
+The layers below exist in the US-001 to US-003 backend (organizations, account invitations and activation, with `Organization`, `Account`, and `Plan`), and in US-005 sign-in (`AuthController`, `AuthService`, `TokenService`, `ExternalLogin`; frontend `auth/`). US-001 (register) and US-003 (activate) also have a frontend, in `auth/` alongside sign-in; US-002 (invite a member) has no UI, only the API. US-004 (register a resource) is implemented on both sides: `ResourcesController`, `ResourceTypesController`, `ResourceService`, and `IResourceRepository` in the API, and `features/resources/` under the signed-in app shell (`app/AppLayout`, `app/DashboardPage`) in the web app.
 
 | Component | Responsibility | Dependencies | Interface |
 | --- | --- | --- | --- |
@@ -47,7 +47,7 @@ Manual execution remains available through `npm run dev`, `dotnet run`, and a lo
 ## Risks and trade-offs
 
 - The presence-only route guard is UI scaffolding; the frontend does not yet attach the stored JWT to its own authorization decisions beyond navigation.
-- `NexoDbContext` holds `Plans`, `Organizations`, and `Accounts`; resource tables do not exist.
+- `NexoDbContext` holds `Plans`, `Organizations`, `Accounts`, `ExternalLogins`, `ResourceTypes`, and `Resources`. All organizations share one schema; `Resources` and `ResourceTypes` have EF query filters on the signed-in caller's organization (read from `IHttpContextAccessor`), while `Accounts` is still scoped by hand in each service ([ADR-011](../decisions/ADR-011-multi-tenancy.md)).
 - Story contracts have unresolved details, including registration sessions and plan-limit enforcement. See [design review gaps](../requirements/README.md#design-review-gaps) before implementation.
 - `api/Dockerfile` builds a production image (Release, non-root, migrations as a separate `efbundle` step; see [ADR-010](../decisions/ADR-010-account-security-hardening.md)), but hosting, backup/recovery, and measurable performance targets are not defined for this prototype.
 - Each authenticated request reads the account's `SessionVersion` so sign-out and lockout end sessions immediately; this costs one primary-key query per request.

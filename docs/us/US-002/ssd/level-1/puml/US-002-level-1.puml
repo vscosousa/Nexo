@@ -12,11 +12,11 @@ autonumber
 actor "Admin" as Admin
 participant "Nexo" as System
 
-Admin -> System: Register member email (email)
+Admin -> System: Register member email (email, role: Member or Staff)
 activate System
 alt Request accepted
     System --> Admin: Pending member account created; no credentials yet
-else Invalid email
+else Invalid email or role
     System --> Admin: Validation error; nothing created
 else Caller not authorized
     System --> Admin: Authorization error; nothing created

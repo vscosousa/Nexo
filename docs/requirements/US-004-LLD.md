@@ -2,7 +2,7 @@
 
 [Requirements](README.md) · [US-004](US-004-register-resource.md) · [HLD](US-004-HLD.md)
 
-**Status:** backend implemented; frontend not implemented.
+**Status:** implemented (backend and frontend).
 
 Full technical detail, building on the [HLD](US-004-HLD.md)'s contract and structure. See the [level 3 sequence diagram](../us/US-004/README.md#level-3---backend) for the call sequence.
 
@@ -40,6 +40,10 @@ Both entities have an EF global query filter on the caller's organization ([ADR-
 5. Add via `IResourceRepository.Add`.
 6. Call `NexoDbContext.SaveChangesAsync()` and commit.
 7. Map the persisted `Resource` and its type to `ResourceDto` and return it (→ 201).
+
+## Service logic (`ResourceService.GetTypes`)
+
+`ResourceTypesController` requires a valid session (→ 401 otherwise). `IResourceRepository.GetTypesAsync` reads `ResourceTypes` ordered by name; the query filter limits it to system types and the caller's organization's custom types. Each is mapped to `ResourceTypeDto` (→ 200). The frontend translates system type names and sorts by the translated name.
 
 ## Error handling
 

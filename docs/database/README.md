@@ -6,7 +6,7 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, `ExternalLogins` (US-005) in `AddExternalLogins`, `Plans.ResourceLimit` plus the `Team`/`Enterprise` seed rows (US-006) in `AddPlanResourceLimitAndTiers`, `Plans.MonthlyPrice` and its five feature flags (US-006) in `AddPlanPricingAndFeatures`, and the account security columns `InvitationFailedAttempts`, `FailedSignInAttempts`, `UnlockTokenHash`, and `SessionVersion` ([ADR-010](../decisions/ADR-010-account-security-hardening.md)) in `AddAccountSecurity`, and `UnlockExpiresAt` in `AddUnlockExpiry`; resource tables and the tables of other stories are not.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, `ExternalLogins` (US-005) in `AddExternalLogins`, `Plans.ResourceLimit` plus the `Team`/`Enterprise` seed rows (US-006) in `AddPlanResourceLimitAndTiers`, `Plans.MonthlyPrice` and its five feature flags (US-006) in `AddPlanPricingAndFeatures`, and the account security columns `InvitationFailedAttempts`, `FailedSignInAttempts`, `UnlockTokenHash`, and `SessionVersion` ([ADR-010](../decisions/ADR-010-account-security-hardening.md)) in `AddAccountSecurity`, and `UnlockExpiresAt` in `AddUnlockExpiry`, and `ResourceTypes`, `Resources`, and `Plans.HasCustomResourceTypes` (US-004, [ADR-011](../decisions/ADR-011-multi-tenancy.md), [ADR-012](../decisions/ADR-012-resource-types.md)) in `AddResourcesAndResourceTypes`; the tables of other stories are not.
 
 Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
 
@@ -22,6 +22,7 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | | `HasDecisionHistory` | boolean | Not null |
 | | `HasAiInsights` | boolean | Not null |
 | | `HasPrioritySupport` | boolean | Not null |
+| | `HasCustomResourceTypes` | boolean | Not null; whether the organization may define custom resource types (not enforced until custom-type management exists) |
 | `Organizations` | `Id` | uuid | Primary key |
 | | `Name` | varchar(200) | Not null |
 | | `PlanId` | uuid | Not null, foreign key to `Plans`, on delete restrict, indexed |
@@ -36,7 +37,7 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | | `UnlockExpiresAt` | timestamptz | Nullable; when the unlock link stops working (24 hours after sending); a later sign-in attempt replaces it |
 | | `SessionVersion` | integer | Not null, default 0; carried in session tokens as `sv`, incremented to end all the account's sessions |
 | | `xmin` | xid | PostgreSQL system column used as the EF concurrency token; not created by a migration |
-| | `Role` | varchar(20) | Not null (`Admin`, `Member`) |
+| | `Role` | varchar(20) | Not null (`Admin`, `Member`, `Staff`) |
 | | `Status` | varchar(20) | Not null (`Invited`, `Active`, `Unverified`) |
 | | `OrganizationId` | uuid | Not null, foreign key to `Organizations`, on delete restrict, indexed |
 
@@ -44,8 +45,21 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | | `AccountId` | uuid | Not null, foreign key to `Accounts`, on delete cascade, indexed |
 | | `Provider` | varchar(20) | Not null; lowercase provider name (`google`, `microsoft`) |
 | | `ProviderKey` | varchar(200) | Not null; the account's stable id at the provider; unique together with `Provider` |
+| `ResourceTypes` | `Id` | uuid | Primary key; fixed ids for the seeded system types |
+| | `Name` | varchar(50) | Not null; unique among system types (partial index where `OrganizationId` is null), and unique per organization among custom types (partial index on `OrganizationId`, `Name`) |
+| | `OrganizationId` | uuid | Nullable; null for a system type, else foreign key to `Organizations`, on delete restrict |
+| `Resources` | `Id` | uuid | Primary key |
+| | `Name` | varchar(200) | Not null; stored trimmed |
+| | `TypeId` | uuid | Not null, foreign key to `ResourceTypes`, on delete restrict, indexed |
+| | `Description` | varchar(2000) | Nullable; blank is stored as null |
+| | `Status` | varchar(20) | Not null (`Available`) |
+| | `OrganizationId` | uuid | Not null, foreign key to `Organizations`, on delete restrict, indexed |
 
-Plan rules live in `Plans` rather than on each organization. Migrations seed three tiers with fixed ids: `Free` (member limit 20, resource limit 10, €0, no feature flags), `Team` (member limit 100, resource limit 100, €29/month, incident tracking + expense tracking + decision history), `Enterprise` (both limits unlimited, no fixed price, every feature flag). The five feature flags mark functionality areas the app does not implement yet (see [domain model](../domain-models/README.md#accounts-and-organizations)); they are pricing-page data, not an enforced entitlement check.
+Plan rules live in `Plans` rather than on each organization. Migrations seed three tiers with fixed ids: `Free` (member limit 20, resource limit 10, €0, no feature flags), `Team` (member limit 100, resource limit 100, €29/month, incident tracking + expense tracking + decision history), `Enterprise` (both limits unlimited, no fixed price, every feature flag). The five feature flags mark functionality areas the app does not implement yet (see [domain model](../domain-models/README.md#accounts-and-organizations)); they are pricing-page data, not an enforced entitlement check. A sixth flag, `HasCustomResourceTypes`, is true on `Team` and `Enterprise`. The migrations seed the system resource types `Equipment`, `Utensil`, `Vehicle`, and `Other` (`ReplaceRoomWithUtensilResourceType` replaced an earlier `Room` type and moved any resource of that type to `Other`, since spaces are a separate concept).
+
+## Tenancy
+
+All organizations share one schema ([ADR-011](../decisions/ADR-011-multi-tenancy.md)). `Resources` and `ResourceTypes` have EF Core global query filters on the signed-in caller's organization (the session token's `orgId` claim), and `ResourceTypes` also shows the system types. Without a signed-in caller, those sets return no organization rows; code that needs every organization's rows calls `IgnoreQueryFilters()`. The US-004 resource limit is checked while the organization's row is locked (`SELECT ... FOR UPDATE`), so concurrent registrations cannot overshoot it.
 
 ## Schema template
 

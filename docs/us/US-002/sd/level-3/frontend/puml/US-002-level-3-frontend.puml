@@ -20,11 +20,11 @@ note over View, API
   Limit counting (members vs all active accounts) and concurrent\nactivation enforcement remain open.
 end note
 
-Admin -> View: Submit member email
+Admin -> View: Submit member email and role
 activate View
-View -> Component: handleSubmit(email)
+View -> Component: handleSubmit(email, role)
 activate Component
-Component -> Service: invite(organizationId, email)
+Component -> Service: invite(organizationId, email, role)
 activate Service
 Service -> Http: POST /organizations/{organizationId}/invitations (InviteMemberDto)
 activate Http

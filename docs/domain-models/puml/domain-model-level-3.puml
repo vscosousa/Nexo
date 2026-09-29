@@ -37,9 +37,18 @@ package "ExternalLogin\n(proposed aggregate)" as ExternalLoginAggregate {
 package "Resource\n(proposed aggregate)" as ResourceAggregate {
     entity Resource <<entity>> <<root>> {}
     class "Name" as ResourceName <<valueObject>> {}
-    class "Type" as ResourceType <<valueObject>> {}
     class "Description" as ResourceDescription <<valueObject>> {}
     class "Status" as ResourceStatus <<valueObject>> {}
+}
+
+package "Space\n(proposed aggregate)" as SpaceAggregate {
+    entity Space <<entity>> <<root>> {}
+    class "Name" as SpaceName <<valueObject>> {}
+}
+
+package "ResourceType\n(proposed aggregate)" as ResourceTypeAggregate {
+    entity ResourceType <<entity>> <<root>> {}
+    class "Name" as ResourceTypeName <<valueObject>> {}
 }
 
 package "Reservation\n(proposed aggregate)" as ReservationAggregate {
@@ -80,15 +89,18 @@ package "Notification\n(proposed aggregate)" as NotificationAggregate {
 
 Organization "1" --> "1..*" Account : has
 Organization "1" --> "0..*" Resource : owns
+Organization "1" --> "0..*" Space : owns
 Account "1" --> "0..*" ExternalLogin : links
 Account "1" --> "0..*" Reservation : requests
 Account "1" --> "0..*" Loan : requests
 Account "1" --> "0..*" Incident : reports
 Account "0..1" --> "0..*" HistoryEntry : attributed changes
 Account "1" --> "0..*" Notification : receives
-Resource "1" --> "0..*" Reservation : is reserved via
+Space "1" --> "0..*" Reservation : is reserved via
 Resource "1" --> "0..*" Loan : is loaned via
 Resource "0..1" --> "0..*" Incident : is affected by
+Space "0..1" --> "0..*" Incident : is affected by
+Space "1" --> "1" SpaceName : has
 
 Organization "1" --> "1" OrganizationName : has
 Organization "0..*" --> "1" Plan : is on
@@ -102,7 +114,9 @@ Account "1" --> "1" AccountStatus : has
 ExternalLogin "1" --> "1" ExternalLoginProvider : has
 ExternalLogin "1" --> "1" ExternalLoginProviderKey : has
 Resource "1" --> "1" ResourceName : has
-Resource "1" --> "1" ResourceType : has
+Resource "0..*" --> "1" ResourceType : is of
+Organization "0..1" --> "0..*" ResourceType : defines
+ResourceType "1" --> "1" ResourceTypeName : has
 Resource "1" --> "0..1" ResourceDescription : has
 Resource "1" --> "1" ResourceStatus : has
 Reservation "1" --> "1" ReservationStartAt : has

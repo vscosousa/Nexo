@@ -9,39 +9,32 @@
 1. [Requirement](../../requirements/US-004-register-resource.md)
 2. [LLD](../../requirements/US-004-LLD.md)
 3. This file (diagrams and levels 1-3)
-4. [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md)
+4. [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md), [ADR-011](../../decisions/ADR-011-multi-tenancy.md), [ADR-012](../../decisions/ADR-012-resource-types.md)
 5. [Domain model - resources](../../domain-models/README.md#resources)
-6. [US-003](../../requirements/US-003-create-member-account.md) (precondition: signed-in account with permission)
+6. [US-002](../../requirements/US-002-register-member-email.md) (staff accounts are invited with the `Staff` role)
 
 **Do not read unless needed:** the full domain model, unrelated user stories, other ADRs, global sequence diagrams.
 
-**Open decisions** (see [design-review gaps](../../requirements/README.md#design-review-gaps)):
-
-- The permitted role is not defined; "Staff" is not a modeled role.
-- The recognized resource-type vocabulary is not defined.
-
-Implementation must not assume answers to these; do not introduce a Staff role or invent resource types.
-
-**Status:** proposed design; not implemented. Review the [open contract details](../../requirements/README.md#design-review-gaps) alongside these diagrams.
+**Status:** implemented (backend and frontend).
 
 ## Diagram scope
 
-OrganizationId comes from the caller. The diagram does not introduce a Staff role; see the [resource-permissions gap](../../requirements/README.md#design-review-gaps) for what remains open.
+The organization comes from the caller's session, never from the request. Admins and staff may register resources; members may not. The permission check runs before input validation, so a caller without permission learns nothing about the field rules. Type validation reads the database, because a type must be a system type or one of the organization's custom types ([ADR-012](../../decisions/ADR-012-resource-types.md)).
 
-All diagrams are numbered and use explicit outcome branches. Backend SDs show input validation before reads, EF tracking separately from save, and persistence failure responses where the LLD defines them. Operation tables summarize the collaboration; their row numbers are not diagram message numbers.
+All diagrams are numbered and use explicit outcome branches. Backend SDs show repository reads through the context and database, EF tracking separately from save, and persistence failure responses where the LLD defines them. Operation tables summarize the collaboration; their row numbers are not diagram message numbers.
 
 ## Level 1 - SSD
 
-**Actor:** Association staff (signed-in account with permission to manage resources).
-**Preconditions:** The user has an account (per [US-003](../../requirements/US-003-create-member-account.md)) with permission to manage resources.
-**Trigger:** The staff member submits resource details.
+**Actor:** Admin or staff (a signed-in `Active` account with role `Admin` or `Staff`).
+**Preconditions:** The account belongs to an organization; staff accounts were invited with the `Staff` role (per [US-002](../../requirements/US-002-register-member-email.md)).
+**Trigger:** The admin or staff member submits resource details.
 
 | Step | Actor input | System response |
 | --- | --- | --- |
-| 1 | Name, type, optional description | Available resource created, or validation/authorization error |
+| 1 | Name, type, optional description | Available resource created, or authorization/validation/limit error |
 
-**Alternative and failure flows:** Missing/invalid fields, or unauthorized caller, reject with no resource created.
-**Postconditions:** The resource exists with status "Available" and appears in the resource list.
+**Alternative and failure flows:** An unauthorized caller, missing/invalid fields, a type the organization cannot use, or a reached plan resource limit reject with no resource created.
+**Postconditions:** The resource exists in the caller's organization with status "Available".
 **Diagram:** [![SSD](ssd/level-1/svg/US-004-level-1.svg)](ssd/level-1/puml/US-004-level-1.puml)
 
 ## Level 2 - SD (coarse)
@@ -51,29 +44,32 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 ## Level 3 - Backend
 
-**Participants:** `Web App` (the frontend, as a whole), `ResourcesController`, `ResourceService`, `IAccountRepository`, `ResourceMapper`, `IResourceRepository`, `NexoDbContext`, `Database`.
+**Participants:** `Web App` (the frontend, as a whole), `ResourcesController`, `ResourceService`, `IAccountRepository`, `IResourceRepository`, `IOrganizationRepository`, `ResourceMapper`, `NexoDbContext`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-004-level-3-backend.svg)](sd/level-3/backend/puml/US-004-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation |
 | --- | --- | --- |
 | 1 | Web App → Controller | `POST /resources` |
-| 2 | Service → AccountRepository | `GetByIdAsync` |
-| 3 | Service → Mapper | `ToResource` |
-| 4 | Service → repository → DbContext → Database | `Add`, `SaveChangesAsync` |
+| 2 | Service → AccountRepository | `GetByIdAsync` (permission check) |
+| 3 | Service → ResourceRepository | `FindTypeAsync` (validation) |
+| 4 | Service → OrganizationRepository, ResourceRepository | `LockAsync`, `GetByIdAsync`, `CountByOrganizationAsync` (plan limit) |
+| 5 | Service → Mapper | `ToResource` |
+| 6 | Service → repository → DbContext → Database | `Add`, `SaveChangesAsync`, commit |
 
-See the [LLD service logic](../../requirements/US-004-LLD.md#service-logic-resourceserviceregister) for what each step does and its [error handling](../../requirements/US-004-LLD.md#error-handling) for failure responses. The diagrams show response mapping only after a successful save.
+See the [LLD service logic](../../requirements/US-004-LLD.md#service-logic-resourceserviceregister) for what each step does and its [error handling](../../requirements/US-004-LLD.md#error-handling) for failure responses.
 
 ## Level 3 - Frontend
 
-**Participants:** `RegisterResourcePage`, `RegisterResourceForm`, `resourcesService`, `HttpClient`, `Nexo API` (the backend, as a whole).
+**Participants:** `ResourcesPage`, `RegisterResourceForm` (a modal dialog), `resourcesService`, `HttpClient`, `Nexo API` (the backend, as a whole). Files are in `web/src/features/resources/`.
 **Diagram:** [![SD level 3 frontend](sd/level-3/frontend/svg/US-004-level-3-frontend.svg)](sd/level-3/frontend/puml/US-004-level-3-frontend.puml)
 
 | Step | Sender → receiver | Operation | Outcome |
 | --- | --- | --- | --- |
-| 1 | Actor → View → Component | Submit name, type, and description | View forwards the actor's input to the form component |
-| 2 | Component → Service | `resourcesService.register(name, type, description)` | Feature module builds the request |
-| 3 | Service → HttpClient | `POST /resources` | Shared Axios instance sends the request with the caller's token |
-| 4 | HttpClient → Nexo API | HTTP request | Reaches the backend (detailed in [Level 3 - Backend](#level-3---backend)) |
+| 1 | Actor → View → Component | Open the dialog (button, or `/app/resources?new=1` from the dashboard) | The form mounts and calls `dialog.showModal()` |
+| 2 | Component → Service → HttpClient | `resourcesService.listTypes()`, `GET /resource-types` | The type select lists the system types (translated) and the organization's own |
+| 3 | Actor → View → Component | Submit name, type, and description | Missing name or type is marked on the field without a request |
+| 4 | Component → Service → HttpClient | `resourcesService.register(...)`, `POST /resources` | The shared Axios instance sends the session cookie and anti-forgery header |
+| 5 | Component → View | `onRegistered(resource)` | The dialog closes and the page shows a success notice |
 
-**Failure handling:** A thrown 403 propagates back through the service to the form, which renders the authorization message.
-**Related design:** [Architecture](../../architecture/README.md), [Domain model](../../domain-models/README.md#resources), [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md).
+**Failure handling:** a 400 puts each server message under its field; 403, 409, and 500 show as a message inside the dialog, which stays open. Members see no register button, only a note that admin and staff register resources.
+**Related design:** [Architecture](../../architecture/README.md), [Interface design](../../design/README.md), [Domain model](../../domain-models/README.md#resources), [ADR-002](../../decisions/ADR-002-modular-monolith-architecture.md), [ADR-004](../../decisions/ADR-004-frontend-architecture.md).

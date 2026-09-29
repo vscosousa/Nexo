@@ -15,9 +15,10 @@ There is no complete business workflow or published demo yet. Running the fronte
 | Area | Intended capability | Status |
 | --- | --- | --- |
 | Access | Organization/admin registration, member invitations and activation, password or Google/Microsoft sign-in | [US-001–US-005 designs](docs/requirements/README.md#user-stories); US-001 to US-003 backend endpoints implemented for the password path (no frontend yet); US-005 sign-in (password and Google) implemented on backend and frontend; Microsoft sign-in and SSO registration not implemented |
-| Resources | Register, browse, and update rooms and equipment | Registration designed in US-004; not implemented |
-| Search and availability | Find resources and available periods | Planned |
-| Reservations | Reserve and cancel a resource for a period | Planned |
+| Resources | Register, browse, and update equipment, utensils, and vehicles that are lent | Registration implemented (US-004); browsing and updating not designed |
+| Spaces | Register rooms, halls, and fields that are reserved | Draft story (US-007) |
+| Search and availability | Find spaces, resources, and available periods | Planned |
+| Reservations | Reserve and cancel a space for a period | Planned |
 | Loans | Request, deliver, and return resources | Planned |
 | Incidents | Report, handle, close, and reopen incidents | Planned |
 | Automation and history | One scheduled job, a simulated notification, and a record of relevant changes | Planned |

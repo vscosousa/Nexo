@@ -9,17 +9,19 @@ skinparam ActorBackgroundColor #FEF9E7
 skinparam NoteBackgroundColor #FFF8DC
 autonumber
 
-actor "Association Staff" as Staff
+actor "Admin or Staff" as Staff
 participant "Nexo" as System
 
 Staff -> System: Register resource (name, type, optional description)
 activate System
-alt Request accepted
-    System --> Staff: Resource created as Available; appears in resource list
-else Invalid required details
-    System --> Staff: Validation errors; nothing created
-else Caller cannot manage resources
+alt Caller cannot manage resources
     System --> Staff: Authorization error; nothing created
+else Invalid details or type not available to the organization
+    System --> Staff: Validation errors; nothing created
+else Plan resource limit reached
+    System --> Staff: Limit-reached error; nothing created
+else Request accepted
+    System --> Staff: Resource created as Available
 end
 deactivate System
 @enduml

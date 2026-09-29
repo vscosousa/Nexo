@@ -15,11 +15,12 @@
 - Given a pending invitation, when the person themselves asks for it to be resent (`POST /accounts/activation/resend`, not the admin re-inviting), then only the code and expiry are refreshed. The link token is left as is, so an activation page the person already has open (with the original token in its URL) keeps working once they enter the new code. The resend email contains only the code, no link.
 - Given the organization's plan limit is reached (e.g., 20 accounts on the Free plan, counting both active and pending ones), when the admin tries to register another email, then the system rejects it with a limit-reached error. Re-inviting an email that is already pending is still allowed, since it adds no account ([ADR-010](../decisions/ADR-010-account-security-hardening.md)).
 - Given an email already registered to this or another organization, whether pending or already active, when the admin submits it, then the system rejects it with a conflict error.
+- Given a role, when the admin submits the email, then the pending account gets that role: `Member` or `Staff` ([US-004](US-004-register-resource.md)). The role is required; `Admin` or a missing role is rejected with a validation error. Re-inviting a pending email applies the newly submitted role. Changing an active account's role is a separate, not yet written story.
 - Given a user without the admin role, when they attempt to register an email, then the system rejects the request with an authorization error.
 
 **Exceptions:**
 
-- Invalid email format.
+- Invalid email format, or a missing or non-invitable role.
 - Organization plan limit reached.
 - Email already registered elsewhere.
 - Unauthorized user attempting the action.
