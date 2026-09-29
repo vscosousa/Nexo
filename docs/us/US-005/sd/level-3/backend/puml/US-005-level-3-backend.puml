@@ -15,11 +15,12 @@ participant "AuthService" as Service
 participant "IAccountRepository" as AccountRepo
 participant "PasswordHasher<Account>" as Hasher
 participant "ITokenService" as TokenService
-participant "NexoDbContext" as DbContext
+participant "IEmailSender" as Email
 participant "Database" as DB
 
 note over Controller, DB
-  Password flow only. Explicit Active-status checks, OAuth linking,\nand sign-in 401 handling in HttpClient remain open.
+  Password flow only. The "sign-in" rate limiter runs before the controller (429).
+  Every 401 has the same body, so the cause is not revealed.
 end note
 
 activate FE
@@ -31,37 +32,61 @@ alt Missing or invalid required fields
     Service --> Controller: Validation failure
     Controller --> FE: 400 Bad Request
 else Valid input
-    Service -> AccountRepo: FindByEmailAsync(dto.Email)
+    Service -> AccountRepo: FindByEmailAsync(normalized email)
     activate AccountRepo
-    AccountRepo -> DbContext: Query Account by Email (dto.Email)
-    activate DbContext
-    DbContext -> DB: SELECT Account by Email
+    AccountRepo -> DB: SELECT Account by Email
     activate DB
-    DB --> DbContext: Query result
+    DB --> AccountRepo: Query result
     deactivate DB
-    DbContext --> AccountRepo: Materialized result
-    deactivate DbContext
     AccountRepo --> Service: existing Account or null
     deactivate AccountRepo
-    alt No account, or account has no password set
+    Service -> Hasher: VerifyHashedPassword(account hash, or a dummy hash when no eligible account)
+    activate Hasher
+    Hasher --> Service: match or mismatch
+    deactivate Hasher
+    alt No account, not Active, no password set, or locked
+        opt Locked and the unlock link has expired
+            Service -> DB: Replace the expired link (new hash, expires in 24 hours)
+            activate DB
+            DB --> Service: Replaced (0 or 1)
+            deactivate DB
+            Service -> Email: SendAsync(fresh unlock link)
+            activate Email
+            Email --> Service: Sent
+            deactivate Email
+        end
         Service --> Controller: throw UnauthorizedException (generic)
         Controller --> FE: 401 Unauthorized
-    else Account has a password
-        Service -> Hasher: VerifyHashedPassword(account, account.PasswordHash, dto.Password)
-        activate Hasher
-        Hasher --> Service: match or mismatch
-        deactivate Hasher
-        alt Password does not match
-            Service --> Controller: throw UnauthorizedException (generic)
-            Controller --> FE: 401 Unauthorized
-        else Password matches
-            Service -> TokenService: GenerateToken(account)
-            activate TokenService
-            TokenService --> Service: JWT
-            deactivate TokenService
-            Service --> Controller: SessionDto
-            Controller --> FE: 204 No Content (Set-Cookie: nexo_session)
+    else Password does not match
+        Service -> DB: FailedSignInAttempts + 1
+        activate DB
+        DB --> Service: Updated
+        deactivate DB
+        Service -> DB: Lock if attempts >= 5 and not locked\n(UnlockTokenHash, SessionVersion + 1)
+        activate DB
+        DB --> Service: Rows locked (0 or 1)
+        deactivate DB
+        opt Just locked
+            Service -> Email: SendAsync(Unlock link /unlock?email&token)
+            activate Email
+            Email --> Service: Sent (on failure the lock is undone)
+            deactivate Email
         end
+        Service --> Controller: throw UnauthorizedException (generic)
+        Controller --> FE: 401 Unauthorized
+    else Password matches
+        opt Earlier failed attempts
+            Service -> DB: FailedSignInAttempts = 0
+            activate DB
+            DB --> Service: Updated
+            deactivate DB
+        end
+        Service -> TokenService: GenerateToken(account)
+        activate TokenService
+        TokenService --> Service: JWT (sub, orgId, role, sv; iss/aud)
+        deactivate TokenService
+        Service --> Controller: SessionDto
+        Controller --> FE: 204 No Content (Set-Cookie: nexo_session)
     end
 end
 deactivate Service

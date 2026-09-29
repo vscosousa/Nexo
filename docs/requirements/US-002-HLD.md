@@ -52,12 +52,12 @@ Responses:
 | 400 Bad Request | Validation errors | Missing or invalid email, or longer than 320 characters |
 | 401 Unauthorized | none | The bearer token is missing, invalid, or expired |
 | 403 Forbidden | Error detail | Caller is not the admin of `organizationId` |
-| 409 Conflict | Error detail | Organization's `MemberLimit` reached (counting `Active` accounts only), or the email already has an `Active` account, or an `Invited` one in a *different* organization |
+| 409 Conflict | Error detail | Organization's `MemberLimit` reached (counting `Active` and pending `Invited` accounts, except when re-inviting a pending email), or the email already has an `Active` or `Unverified` account, or an `Invited` one in a *different* organization |
 | 500 Internal Server Error | `ProblemDetails` | The invitation email could not be sent; a new pending account is removed again so the invitation can be retried, a re-invited one is left as is |
 
 **`POST /accounts/activation/resend`**
 
-Lets the invited person themselves ask for a fresh code. No authentication, and distinct from the admin re-inviting above: only the code is rotated, never the link token, so an activation page the person already has open (with the original link's token in its URL) keeps working once they enter the new code.
+Lets the invited person themselves ask for a fresh code. No authentication, and distinct from the admin re-inviting above: only the code is rotated, never the link token or the expiry, so an activation page the person already has open (with the original link's token in its URL) keeps working once they enter the new code.
 
 Request body (`ResendInvitationDto`):
 
@@ -71,7 +71,8 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 202 Accepted | none | Always, whether or not the email has a pending invitation. An email with a fresh code (no link) is sent if, and only if, one does; this response never reveals which |
+| 202 Accepted | none | Always, whether or not the email has a pending invitation. An email with a fresh code (no link) is sent if, and only if, one exists and has not expired; this response never reveals which |
+| 429 Too Many Requests | none | More than `RateLimit:PublicPermitLimit` requests per minute from the address |
 
 ## Related artifacts
 

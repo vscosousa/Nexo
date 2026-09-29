@@ -47,8 +47,9 @@ Responses:
 | --- | --- | --- |
 | 200 OK | `AccountDto` (id, email, name, role, status: Active, organizationId) | Pending account activated |
 | 400 Bad Request | Validation errors | Missing or invalid fields, over-long fields, or a password that breaks the [password rules](US-003-LLD.md#password-rules) |
-| 403 Forbidden | Error detail | No account exists for `email`, or `invitationToken` does not match (same message for both, so it does not reveal which) |
-| 409 Conflict | Error detail | The account for `email` is already `Active` (also when another request activated it first), or the organization's `MemberLimit` of active accounts is reached |
+| 403 Forbidden | Error detail | No pending invitation matches: no account for `email`, the account is not `Invited` (for example, already `Active`), the link token or code does not match, the invitation expired, or 5 wrong codes were already tried (the same message for every cause) |
+| 409 Conflict | Error detail | Another request activated the account first, or the organization's `MemberLimit` of active accounts is reached |
+| 429 Too Many Requests | None | More than `RateLimit:PublicPermitLimit` requests per minute from the address |
 
 ## Related artifacts
 

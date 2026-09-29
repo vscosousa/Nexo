@@ -12,14 +12,15 @@ autonumber
 actor "Prospective Admin" as Admin
 participant "RegisterPage" as View
 participant "RegisterForm" as Component
+participant "ConfirmEmailPage" as Confirm
 participant "authService" as Service
 participant "HttpClient" as Http
 participant "Nexo API" as API
 
 note over View, API
   RegisterForm is a two-step wizard (organization name, then admin details and
-  password); only the final step submits. Credential/session delivery is not
-  yet specified: a 201 redirects to /login instead of signing the admin in.
+  password); only the final step submits. A 202 means "check your email" for
+  a new and an already registered email alike.
 end note
 
 Admin -> View: Submit organization, admin details, and password
@@ -33,21 +34,46 @@ activate Http
 Http -> API: HTTP request
 activate API
 alt Request accepted
-    API --> Http: 201 Created (OrganizationDto)
+    API --> Http: 202 Accepted
 else Request rejected
-    API --> Http: 400/409/500
+    API --> Http: 400/409/429/500
 end
 deactivate API
-Http --> Service: Response data or rejected request
+Http --> Service: Response or rejected request
 deactivate Http
 Service --> Component: void, or thrown error
 deactivate Service
 alt Successful response
-    Component --> View: Navigate to /login?registered=1
+    Component --> View: Navigate to /login?registered=1 ("check your email")
 else Failed response
     Component --> View: Error state (validation / operation failure)
 end
 deactivate Component
 View --> Admin: Render the resulting state
 deactivate View
+
+Admin -> Confirm: Open /confirm-email?email&token (from the email)
+activate Confirm
+Confirm -> Service: confirmEmail(email, token), sent once on open
+activate Service
+Service -> Http: POST /accounts/activation/confirm-email
+activate Http
+Http -> API: HTTP request
+activate API
+alt Confirmed
+    API --> Http: 200 OK
+else Link not valid
+    API --> Http: 403 Forbidden
+end
+deactivate API
+Http --> Service: Response or rejected request
+deactivate Http
+Service --> Confirm: void, or thrown error
+deactivate Service
+alt Confirmed
+    Confirm --> Admin: Navigate to /login?confirmed=1
+else Not valid
+    Confirm --> Admin: Explain the link is not valid; link back to sign-in
+end
+deactivate Confirm
 @enduml

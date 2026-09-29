@@ -55,9 +55,10 @@ Responses:
 | --- | --- | --- |
 | 204 No Content | none; sets the `nexo_session` cookie | Credentials correct; session issued |
 | 400 Bad Request | Validation errors | Missing email or password |
-| 401 Unauthorized | Generic error detail | No account for the email, account not `Active`, account has no password set, or password incorrect (same response in every case, so as not to reveal which) |
+| 401 Unauthorized | Generic error detail | No account for the email, account not `Active`, account has no password set, account locked, or password incorrect (same response in every case, so as not to reveal which). The 5th wrong password in a row locks the account and emails the owner an unlock link |
+| 429 Too Many Requests | None | More than `RateLimit:SignInPermitLimit` attempts per minute from the address |
 
-The cookie holds an HS256 JWT valid for 8 hours with `sub` (account id), `orgId`, and `role` claims, signed with the `Jwt:Key` setting. It is `HttpOnly`, `Secure`, `SameSite=None`, and expires with the token, per [ADR-009](../decisions/ADR-009-session-cookie.md).
+The cookie holds an HS256 JWT valid for 8 hours with `sub` (account id), `orgId`, `role`, and `sv` (session version) claims, issued for `Jwt:Issuer`/`Jwt:Audience` and signed with the `Jwt:Key` setting. `POST /auth/sign-out` ends every session of the account; `POST /auth/unlock` (`{ email, token }` → 200, or 403) lifts a lock ([ADR-010](../decisions/ADR-010-account-security-hardening.md)). It is `HttpOnly`, `Secure`, `SameSite=None`, and expires with the token, per [ADR-009](../decisions/ADR-009-session-cookie.md).
 
 **`GET /auth/external/{provider}`** (`google` or `microsoft`): redirects the browser to the provider (`302`) with `prompt=select_account`, so the provider always shows its account chooser; `404` if the provider is unknown or not configured.
 

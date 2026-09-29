@@ -12,11 +12,12 @@
 
 - Given a pending account for an email registered to an organization, when the person completes account creation with that email, the invitation link token and the 6-character invitation code emailed to them ([US-002](US-002-register-member-email.md)), and a password that satisfies the [password rules](US-003-LLD.md#password-rules), then the system activates the account with the member role scoped to that organization and signs them in.
 - Given a pending account but a missing or wrong link token or invitation code, when someone tries to create the account, then the system rejects it, so knowing the email alone is not enough, and neither is the link alone.
-- Given a pending account whose invitation code has expired (7 days after it was sent, per [US-002](US-002-register-member-email.md)), when someone tries to activate with it, then the system rejects it the same way as a wrong code. The person can ask for a fresh code themselves (`POST /accounts/activation/resend`), which always responds the same way whether or not the email has a pending invitation, so it cannot be used to check which emails are registered.
+- Given a pending account whose invitation code has expired (7 days after it was sent, per [US-002](US-002-register-member-email.md)), when someone tries to activate with it, then the system rejects it the same way as a wrong code, and the admin must invite the email again. Before it expires, the person can ask for a fresh code themselves (`POST /accounts/activation/resend`); this replaces only the code, never the link or the expiry, and always responds the same way whether or not the email has a pending invitation, so it cannot be used to check which emails are registered.
+- Given the right link token but a wrong code, when someone verifies or activates, then the attempt is counted; after 5 wrong codes the invitation stops working (even with the right code) until a fresh code is resent ([ADR-010](../decisions/ADR-010-account-security-hardening.md)).
 - Given the frontend `/activate` page, when it is opened, then it only renders with `token` and `email` query parameters present (otherwise it redirects home); the email is never asked for again, and the code is entered masked, one character per box. The link token from the URL is sent automatically and never shown; the code is a separate secret the person types in from the email body, so having the link alone (which can leak through browser history or a forwarded URL) is not enough. The page checks both against `POST /accounts/activation/resend`'s sibling read-only endpoint, `POST /accounts/activation/verify`, and only once the API confirms them does the code entry give way to the name/password fields.
 - Given the organization already has the maximum number of active accounts for its plan, when a pending account tries to activate, then the system rejects it with a limit-reached error.
 - Given an email not registered to any organization, when someone tries to create an account with it, then the system rejects it, since there is no pending account to activate.
-- Given an email whose account is already active, when someone tries to create another account with it, then the system rejects it with a conflict error.
+- Given an email whose account is already active, when someone tries to create another account with it, then the system rejects it exactly like a wrong link or code (`403`), so the response does not reveal which emails have active accounts.
 - Given a Google or Microsoft account whose verified email has a pending, not-yet-activated account, when the person completes the OAuth flow, then the system activates that account linked to the verified email, with no password set.
 - Given a Google or Microsoft account whose verified email is not registered to any organization, when the person completes the OAuth flow, then the system rejects it, same as the password path.
 
@@ -24,7 +25,8 @@
 
 - Email not registered to any organization (no pending account exists).
 - Email already has an active account.
-- Link token or invitation code missing, wrong, or expired.
+- Link token or invitation code missing, wrong, or expired, or too many wrong codes.
+- More than `RateLimit:PublicPermitLimit` requests per minute from one address (`429`).
 - Organization plan limit reached.
 - Weak password, or fields longer than the stored limits.
 

@@ -13,16 +13,22 @@ actor "Prospective Admin" as Admin
 participant "Nexo" as System
 
 note over System
-  Registration outcome only; credential/provider interaction\n  needs a separate contract before implementation.
+  Password registration. The response is the same whether or not\n  the email is registered, so it cannot be used to find accounts.
 end note
 Admin -> System: Register organization and admin account
 activate System
 alt Request accepted
-    System --> Admin: Organization and admin account created; signed in
+    System --> Admin: Check your email (confirmation link sent,\nor a notice if the email already has an account)
 else Invalid required details
     System --> Admin: Validation errors; nothing created
-else Email already registered
-    System --> Admin: Conflict; nothing created
+end
+deactivate System
+Admin -> System: Open the emailed confirmation link
+activate System
+alt Link valid and not expired
+    System --> Admin: Email confirmed; sign in
+else Link wrong or expired
+    System --> Admin: Link not valid; register again
 end
 deactivate System
 @enduml

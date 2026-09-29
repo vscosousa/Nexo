@@ -26,7 +26,7 @@ Implementation must not assume answers to these; the diagrams check the Active c
 
 ## Diagram scope
 
-The invitation design checks the current Active count before creating an Invited account; see the [plan-limit gap](../../requirements/README.md#design-review-gaps) for what remains open.
+The invitation design checks the Active count, plus pending Invited accounts for a new email ([ADR-010](../../decisions/ADR-010-account-security-hardening.md)), before creating an Invited account; see the [plan-limit gap](../../requirements/README.md#design-review-gaps) for what remains open.
 
 All diagrams are numbered and use explicit outcome branches. Backend SDs show input validation before reads, EF tracking separately from save, and persistence failure responses where the LLD defines them. Operation tables summarize the collaboration; their row numbers are not diagram message numbers.
 
@@ -40,7 +40,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 | --- | --- | --- |
 | 1 | Member email | Pending member account created, or validation/authorization/limit/conflict error |
 
-**Alternative and failure flows:** Invalid email, unauthorized caller, active-member limit reached, or email already registered elsewhere, reject with no change made.
+**Alternative and failure flows:** Invalid email, unauthorized caller, member limit reached (counting pending invitations), or email already registered elsewhere, reject with no change made.
 **Postconditions:** A pending (`Invited`) account exists for the email, scoped to the organization, without credentials.
 **Diagram:** [![SSD](ssd/level-1/svg/US-002-level-1.svg)](ssd/level-1/puml/US-002-level-1.puml)
 

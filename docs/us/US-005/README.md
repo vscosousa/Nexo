@@ -20,7 +20,7 @@
 - Microsoft logins are rejected because Microsoft does not attest email verification.
 - The Google flow (`GET /auth/external/{provider}` and its callback) has no sequence diagrams yet; the diagrams below show the password flow.
 
-Resolved: invited accounts (null hash, not `Active`) get the same generic 401 as any credential failure and are never linked to a provider; any 401 marks the session signed out in `AuthProvider` (the route guard then shows `/login` without a page reload), and a failed sign-in still reaches the form.
+Resolved: invited and unconfirmed accounts (not `Active`) and locked accounts get the same generic 401 as any credential failure and are never linked to a provider; 5 wrong passwords in a row lock the account and email an unlock link, and sign-out ends the account's sessions on every device ([ADR-010](../../decisions/ADR-010-account-security-hardening.md)); any 401 marks the session signed out in `AuthProvider` (the route guard then shows `/login` without a page reload), and a failed sign-in still reaches the form.
 
 **Status:** implemented on backend and frontend (password and Google). The diagrams cover the password flow; see the [open contract details](../../requirements/README.md#design-review-gaps).
 
@@ -40,7 +40,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 | --- | --- | --- |
 | 1 | Email and password | Session issued, or validation/generic sign-in error |
 
-**Alternative and failure flows:** Incorrect password, or no matching account, reject without revealing which.
+**Alternative and failure flows:** Incorrect password, no matching account, or a locked account, reject without revealing which. The 5th wrong password in a row locks the account and emails the owner an unlock link.
 **Postconditions:** The user holds a valid session.
 **Diagram:** [![SSD](ssd/level-1/svg/US-005-level-1.svg)](ssd/level-1/puml/US-005-level-1.puml)
 
@@ -51,17 +51,18 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 
 ## Level 3 - Backend
 
-**Participants:** `Web App` (the frontend, as a whole), `AuthController`, `AuthService`, `IAccountRepository`, `NexoDbContext`, `Database`, `PasswordHasher<Account>`, `ITokenService`.
+**Participants:** `Web App` (the frontend, as a whole), `AuthController`, `AuthService`, `IAccountRepository`, `PasswordHasher<Account>`, `ITokenService`, `IEmailSender`, `Database`.
 **Diagram:** [![SD level 3 backend](sd/level-3/backend/svg/US-005-level-3-backend.svg)](sd/level-3/backend/puml/US-005-level-3-backend.puml)
 
 | Step | Sender → receiver | Operation |
 | --- | --- | --- |
 | 1 | Web App → Controller | `POST /auth/sign-in` |
-| 2 | Service → AccountRepository → DbContext → Database | `FindByEmailAsync` |
-| 3 | Service → PasswordHasher | `VerifyHashedPassword` |
-| 4 | Service → TokenService | `GenerateToken` |
+| 2 | Service → AccountRepository → Database | `FindByEmailAsync` |
+| 3 | Service → PasswordHasher | `VerifyHashedPassword` (a dummy hash when no eligible account, so timing is the same) |
+| 4 | Service → Database → EmailSender | On a wrong password: count it; at 5, lock the account, end its sessions, and email an unlock link |
+| 5 | Service → TokenService | `GenerateToken` (with the `sv` session version) |
 
-See the [LLD service logic](../../requirements/US-005-LLD.md#service-logic-authservicesignin) for what each step does and its [error handling](../../requirements/US-005-LLD.md#error-handling) for failure responses. Read-only; no persistence changes.
+See the [LLD service logic](../../requirements/US-005-LLD.md#service-logic-authservicesignin) for what each step does and its [error handling](../../requirements/US-005-LLD.md#error-handling) for failure responses. Only the failed-attempt count and the lock are written.
 
 ## Level 3 - Frontend
 

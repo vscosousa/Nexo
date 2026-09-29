@@ -55,9 +55,12 @@ Responses:
 
 | Status | Body | Condition |
 | --- | --- | --- |
-| 201 Created | `OrganizationDto` (id, name, plan name) | Organization and admin account created |
+| 202 Accepted | None | Organization and unconfirmed admin account created and a confirmation link emailed; or `adminEmail` already has an account (compared trimmed and case-insensitively), in which case nothing is created and the owner is emailed a notice. Both look the same to the caller. |
 | 400 Bad Request | `ValidationProblemDetails` (field errors) | Missing or invalid fields, over-long fields, or a password that breaks the [password rules](US-003-LLD.md#password-rules) |
-| 409 Conflict | `ProblemDetails` | `adminEmail` already has an account (compared trimmed and case-insensitively) |
+| 409 Conflict | `ProblemDetails` | The same email was registered by another request at the same moment |
+| 429 Too Many Requests | None | More than `RateLimit:PublicPermitLimit` requests per minute from the address |
+
+`POST /accounts/activation/confirm-email` with `{ "email", "token" }` confirms the address: 200 when the account is now `Active`, 403 (the same for every cause) when the email, token, or expiry does not match an unconfirmed registration.
 
 ## Related artifacts
 

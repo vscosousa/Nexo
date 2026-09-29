@@ -6,7 +6,7 @@ PostgreSQL 17 is accessed through EF Core and Npgsql, as selected in [ADR-003](.
 
 ## Data model
 
-**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, `ExternalLogins` (US-005) in `AddExternalLogins`, `Plans.ResourceLimit` plus the `Team`/`Enterprise` seed rows (US-006) in `AddPlanResourceLimitAndTiers`, and `Plans.MonthlyPrice` and its five feature flags (US-006) in `AddPlanPricingAndFeatures`; resource tables and the tables of other stories are not. The weather sample generates values in memory and does not use PostgreSQL.
+**Status:** the [US-001](../requirements/US-001-create-organization-admin.md) tables (also used by [US-002](../requirements/US-002-register-member-email.md), which needs no schema change: an invited member is an `Accounts` row with `Status = Invited` and null `Name`) (`Plans`, `Organizations`, `Accounts`) are implemented in the `AddOrganizationsAndAccounts` migration, plus `Accounts.PasswordHash` (US-001, US-003) and `Accounts.InvitationTokenHash` (US-002, US-003) in `AddAccountCredentials`, `ExternalLogins` (US-005) in `AddExternalLogins`, `Plans.ResourceLimit` plus the `Team`/`Enterprise` seed rows (US-006) in `AddPlanResourceLimitAndTiers`, `Plans.MonthlyPrice` and its five feature flags (US-006) in `AddPlanPricingAndFeatures`, and the account security columns `InvitationFailedAttempts`, `FailedSignInAttempts`, `UnlockTokenHash`, and `SessionVersion` ([ADR-010](../decisions/ADR-010-account-security-hardening.md)) in `AddAccountSecurity`, and `UnlockExpiresAt` in `AddUnlockExpiry`; resource tables and the tables of other stories are not.
 
 Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistence/NexoDbContext.cs). Enums are stored as their names (text) so rows stay readable and survive reordering.
 
@@ -29,10 +29,15 @@ Entities are configured in [`NexoDbContext`](../../api/Infrastructure/Persistenc
 | | `Email` | varchar(320) | Not null, unique; stored trimmed and lowercased |
 | | `Name` | varchar(200) | Nullable |
 | | `PasswordHash` | varchar(200) | Nullable; set at registration (US-001) or activation (US-003), null for invited accounts |
-| | `InvitationTokenHash` | varchar(64) | Nullable; SHA-256 (hex) of the one-time invitation token, set while `Invited` and cleared on activation |
+| | `InvitationTokenHash` | varchar(64) | Nullable; SHA-256 (hex) of the emailed link's token: the invitation link while `Invited`, the email confirmation link while `Unverified`; cleared on activation |
+| | `InvitationFailedAttempts` | integer | Not null, default 0; wrong invitation codes tried with the right link token (at 5 the invitation stops working until a resend) |
+| | `FailedSignInAttempts` | integer | Not null, default 0; wrong passwords in a row, reset by a correct one |
+| | `UnlockTokenHash` | varchar(64) | Nullable; SHA-256 (hex) of the emailed unlock link's token; non-null means the account is locked |
+| | `UnlockExpiresAt` | timestamptz | Nullable; when the unlock link stops working (24 hours after sending); a later sign-in attempt replaces it |
+| | `SessionVersion` | integer | Not null, default 0; carried in session tokens as `sv`, incremented to end all the account's sessions |
 | | `xmin` | xid | PostgreSQL system column used as the EF concurrency token; not created by a migration |
 | | `Role` | varchar(20) | Not null (`Admin`, `Member`) |
-| | `Status` | varchar(20) | Not null (`Invited`, `Active`) |
+| | `Status` | varchar(20) | Not null (`Invited`, `Active`, `Unverified`) |
 | | `OrganizationId` | uuid | Not null, foreign key to `Organizations`, on delete restrict, indexed |
 
 | `ExternalLogins` | `Id` | uuid | Primary key |

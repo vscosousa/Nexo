@@ -39,7 +39,7 @@ All diagrams are numbered and use explicit outcome branches. Backend SDs show in
 | --- | --- | --- |
 | 1 | Email, invitation token, name, password | Existing account activated and signed in, or activation rejected |
 
-**Alternative and failure flows:** No account exists for the email, the invitation token is wrong, it is already active, the organization's member limit is reached, or the password breaks the rules: reject with no change made.
+**Alternative and failure flows:** No pending invitation matches (unknown or already active email, wrong link token or code, expired, or 5 wrong codes already tried; all the same 403), the organization's member limit is reached, or the password breaks the rules: reject with no change made, except that a wrong code with the right link token is counted.
 **Postconditions:** The account is `Active`, scoped to the organization with the `Member` role; the person is signed in.
 **Diagram:** [![SSD](ssd/level-1/svg/US-003-level-1.svg)](ssd/level-1/puml/US-003-level-1.puml)
 

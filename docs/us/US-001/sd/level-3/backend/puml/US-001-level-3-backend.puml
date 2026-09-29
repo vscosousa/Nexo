@@ -12,16 +12,18 @@ autonumber
 participant "Web App" as FE
 participant "OrganizationsController" as Controller
 participant "OrganizationService" as Service
-participant "IAccountRepository" as AccountRepo
 participant "IPlanRepository" as PlanRepo
-participant "IOrganizationRepository" as OrgRepo
 participant "OrganizationMapper" as Mapper
 participant "PasswordHasher<Account>" as Hasher
+participant "IAccountRepository" as AccountRepo
+participant "IOrganizationRepository" as OrgRepo
 participant "NexoDbContext" as DbContext
+participant "IEmailSender" as Email
 participant "Database" as DB
 
 note over Controller, DB
-  Credential input and session delivery are not yet specified.\nThis diagram shows the current draft contract only.
+  Password path. The rate limiter ("public" policy) runs before the
+  controller and answers 429 when the address exceeds its limit.
 end note
 
 activate FE
@@ -33,83 +35,88 @@ alt Missing or invalid required fields
     Service --> Controller: Validation failure
     Controller --> FE: 400 Bad Request
 else Valid input
-    Service -> AccountRepo: FindByEmailAsync(normalized email)
-    activate AccountRepo
-    AccountRepo -> DbContext: Query Account by Email (normalized)
-    activate DbContext
-    DbContext -> DB: SELECT Account by Email
+    Service -> PlanRepo: GetByIdAsync(dto.PlanId)
+    activate PlanRepo
+    PlanRepo -> DB: SELECT Plan by Id
     activate DB
-    DB --> DbContext: Query result
+    DB --> PlanRepo: Plan or none
     deactivate DB
-    DbContext --> AccountRepo: Materialized result
-    deactivate DbContext
-    AccountRepo --> Service: existing Account or null
-    deactivate AccountRepo
-    alt Email already has an account
-        Service --> Controller: throw ConflictException
-        Controller --> FE: 409 Conflict
-    else Email available
-        Service -> PlanRepo: FindByNameAsync("Free")
-        activate PlanRepo
-        PlanRepo -> DbContext: Query Plan by Name
-        activate DbContext
-        DbContext -> DB: SELECT Plan by Name
-        activate DB
-        DB --> DbContext: Query result
-        deactivate DB
-        DbContext --> PlanRepo: Materialized result
-        deactivate DbContext
-        PlanRepo --> Service: Free Plan
-        deactivate PlanRepo
+    PlanRepo --> Service: Plan or null
+    deactivate PlanRepo
+    alt Unknown plan
+        Service --> Controller: Validation failure (PlanId)
+        Controller --> FE: 400 Bad Request
+    else Plan found
         Service -> Mapper: ToOrganization(dto, plan)
         activate Mapper
-        Mapper --> Service: new Organization(name, plan)
+        Mapper --> Service: new Organization
         deactivate Mapper
-        Service -> Mapper: ToAdminAccount(dto, organization)
+        Service -> Mapper: ToAdminAccount(dto, organization, confirmation token hash, expiry)
         activate Mapper
         Mapper -> Hasher: HashPassword(account, dto.Password)
         activate Hasher
         Hasher --> Mapper: Password hash
         deactivate Hasher
-        Mapper --> Service: new Account(normalized email, role: Admin, status: Active, PasswordHash, organization)
+        Mapper --> Service: new Account(role: Admin, status: Unverified)
         deactivate Mapper
-        Service -> OrgRepo: Add(organization)
-        activate OrgRepo
-        OrgRepo -> DbContext: Track organization as Added
-        activate DbContext
-        DbContext --> OrgRepo: Tracked (no INSERT yet)
-        deactivate DbContext
-        OrgRepo --> Service: Added to unit of work
-        deactivate OrgRepo
-        Service -> AccountRepo: Add(account)
+        Service -> AccountRepo: FindByEmailAsync(normalized email)
         activate AccountRepo
-        AccountRepo -> DbContext: Track account as Added
-        activate DbContext
-        DbContext --> AccountRepo: Tracked (no INSERT yet)
-        deactivate DbContext
-        AccountRepo --> Service: Added to unit of work
-        deactivate AccountRepo
-        Service -> DbContext: SaveChangesAsync()
-        activate DbContext
-        DbContext -> DB: INSERT Organization, Account
+        AccountRepo -> DB: SELECT Account by Email
         activate DB
-        DB --> DbContext: Committed, or save failed (rolled back)
+        DB --> AccountRepo: Query result
         deactivate DB
-        DbContext --> Service: Save result or persistence exception
-        deactivate DbContext
-        alt Save succeeded
-            Service -> Mapper: Map organization to OrganizationDto
-            activate Mapper
-            Mapper --> Service: OrganizationDto
-            deactivate Mapper
-            Service --> Controller: OrganizationDto
-            Controller --> FE: 201 Created (OrganizationDto)
-        else Same email registered concurrently (unique violation)
-            Service --> Controller: throw ConflictException
-            Controller --> FE: 409 Conflict
-        else Save failed
-            Service --> Controller: Persistence failure
-            Controller --> FE: 500 Internal Server Error
+        AccountRepo --> Service: existing Account or null
+        deactivate AccountRepo
+        alt Email has an account that is not an expired unconfirmed registration
+            Service -> Email: SendAsync(AlreadyRegistered notice)
+            activate Email
+            Email --> Service: Sent
+            deactivate Email
+            Service --> Controller: Done (nothing written)
+            Controller --> FE: 202 Accepted
+        else Email free, or its unconfirmed registration expired
+            opt Expired unconfirmed registration
+                Service -> DbContext: Remove old account and organization
+                activate DbContext
+                DbContext --> Service: Tracked as Deleted
+                deactivate DbContext
+            end
+            Service -> OrgRepo: Add(organization)
+            activate OrgRepo
+            OrgRepo --> Service: Tracked as Added
+            deactivate OrgRepo
+            Service -> AccountRepo: Add(account)
+            activate AccountRepo
+            AccountRepo --> Service: Tracked as Added
+            deactivate AccountRepo
+            Service -> DbContext: SaveChangesOrConflictAsync()
+            activate DbContext
+            DbContext -> DB: DELETE replaced rows, INSERT Organization, Account
+            activate DB
+            DB --> DbContext: Committed, or unique violation
+            deactivate DB
+            DbContext --> Service: Saved, or ConflictException
+            deactivate DbContext
+            alt Same email registered concurrently
+                Service --> Controller: throw ConflictException
+                Controller --> FE: 409 Conflict
+            else Saved
+                Service -> Email: SendAsync(Confirmation link)
+                activate Email
+                Email --> Service: Sent, or failure
+                deactivate Email
+                alt Sent
+                    Service --> Controller: Done
+                    Controller --> FE: 202 Accepted
+                else Email failed
+                    Service -> DbContext: Remove organization and account; save
+                    activate DbContext
+                    DbContext --> Service: Removed
+                    deactivate DbContext
+                    Service --> Controller: Failure
+                    Controller --> FE: 500 Internal Server Error
+                end
+            end
         end
     end
 end

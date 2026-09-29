@@ -40,6 +40,8 @@ Resource "0..1" --> "0..*" Incident : is affected by
 
 note top of Account
   Invited: no name or credentials yet.
+  Unverified: self-registered admin,
+  email not confirmed yet.
   Active: password and/or external login.
   Active is an account state, not a session.
   Email is unique across accounts.

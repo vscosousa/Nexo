@@ -35,19 +35,26 @@ Business rules (defaults, limits, status transitions) are defined once in the [d
 | `Name` | string, nullable | Required for this feature (at most 200 characters, stored trimmed); nullability rule per domain model (`Invited` accounts) |
 | `PasswordHash` | string, nullable | `PasswordHasher<Account>` hash of the submitted password; null for invited accounts and for accounts registered or activated with Google |
 | `Role` | enum (`Admin`, `Member`) | `Admin` when created via this feature |
-| `Status` | enum (`Invited`, `Active`) | `Active` immediately for an admin account (this feature); see domain model for the member lifecycle and limit counting |
+| `Status` | enum (`Invited`, `Active`, `Unverified`) | `Unverified` for an admin registered with a password until the emailed link confirms the address, then `Active`; `Active` immediately for an admin registered with Google. See the domain model for the member lifecycle and limit counting |
+| `InvitationTokenHash`, `InvitationExpiresAt` | string / timestamp, nullable | For an `Unverified` admin: SHA-256 of the email confirmation link's token and its expiry (24 hours); cleared on confirmation |
 | `OrganizationId` | Guid | Foreign key to `Organization` |
 
 ## Service logic (`OrganizationService.Register`)
 
 1. Validate `RegisterOrganizationDto`: `OrganizationName`, `AdminFirstName`, `AdminLastName` non-empty and at most 100 characters each; `AdminEmail` a valid email format of at most 320 characters; `Password` present and satisfying the [password rules](US-003-LLD.md#password-rules) with the organization and admin names as forbidden content. Fail with a validation error (→ 400) otherwise.
-2. Normalize the email (`Account.NormalizeEmail`: trim, lowercase) and call `IAccountRepository.FindByEmailAsync(email)`. If an account already exists, fail with a conflict error (→ 409); do not proceed.
-3. Call `IPlanRepository.GetByIdAsync(dto.PlanId)`. If no plan matches, fail with a validation error on `PlanId` (→ 400); a missing `PlanId` already failed step 1 ([US-006](US-006-LLD.md)).
-4. Map the DTO and the plan to a new `Organization` (`OrganizationMapper.ToOrganization`).
-5. Map the DTO and the new organization to a new `Account` (`OrganizationMapper.ToAdminAccount`), with the normalized email, trimmed names, the hashed password (`PasswordHasher<Account>`), `Role = Admin` and `Status = Active`.
-6. Add both via `IOrganizationRepository.Add` and `IAccountRepository.Add`.
-7. Call `NexoDbContext.SaveChangesAsync()` once, committing both inserts atomically.
-8. Map the persisted `Organization` to `OrganizationDto` and return it (→ 201).
+2. Call `IPlanRepository.GetByIdAsync(dto.PlanId)`. If no plan matches, fail with a validation error on `PlanId` (→ 400); a missing `PlanId` already failed step 1 ([US-006](US-006-LLD.md)).
+3. Create a confirmation link token (`InvitationTokens.CreateLinkToken`), then map the DTO and the plan to a new `Organization` (`OrganizationMapper.ToOrganization`) and a new `Account` (`OrganizationMapper.ToAdminAccount`), with the normalized email (`Account.NormalizeEmail`: trim, lowercase), trimmed names, the hashed password (`PasswordHasher<Account>`), `Role = Admin`, `Status = Unverified`, the token's hash, and an expiry of now + `InvitationTokens.ConfirmationLifetime` (24 hours). The password is hashed before the lookup below, so both outcomes take about the same time.
+4. Call `IAccountRepository.FindByEmailAsync(email)`. If an account exists and is not an `Unverified` one whose link has expired, email the owner `AccountEmails.AlreadyRegistered` and stop (→ 202, nothing written). If it is an expired `Unverified` registration, mark it and its organization for deletion; the new registration replaces it in the same save.
+5. Add the organization and account and call `NexoDbContext.SaveChangesOrConflictAsync` once, committing the inserts (and any replacement) atomically.
+6. Email the confirmation link (`AccountEmails.Confirmation`, `/confirm-email?email=…&token=…`). If sending fails, delete the organization and account again and fail (→ 500).
+7. Respond 202 with no body.
+
+## Service logic (`AccountActivationService.ConfirmEmail`)
+
+`POST /accounts/activation/confirm-email` with `{ email, token }`, sent by the web app's `/confirm-email` page as soon as it opens.
+
+1. Find the account by normalized email. If there is none, it is not `Unverified`, the token does not match `InvitationTokenHash` (constant-time comparison), or `InvitationExpiresAt` has passed, fail with a forbidden error (→ 403, the same for every cause).
+2. Set `Status = Active`, clear the token hash and expiry, and save (→ 200). The admin then signs in ([US-005](US-005-LLD.md)).
 
 ## Service logic (`OrganizationService.RegisterExternal`)
 
@@ -56,7 +63,7 @@ The web form sends the admin to `GET /auth/external/google?intent=register&planI
 1. Validate the organization name, both names, and `PlanId` as in `Register` (no email or password). Fail with a validation error (→ 400).
 2. Require a verified provider email (→ 403 otherwise; the callback already filters this).
 3. Resolve the plan by `PlanId` (→ 400 if unknown).
-4. If the normalized provider email already has an account, fail with a conflict error (→ 409).
+4. If the normalized provider email already has an account, fail with a conflict error (→ 409), unless it is `Unverified`: then mark it and its organization for deletion, since the verified provider email proves the ownership that the unconfirmed registration never did.
 5. Create the `Organization`, an `Active` admin `Account` with the provider email, the confirmed names and no `PasswordHash`, and an `ExternalLogin` for the provider identity; save. A unique violation on the email or the provider identity is a conflict (→ 409).
 6. Issue a session token; `AuthController` clears the `External` cookie, sets the session cookie, and answers 201 with `OrganizationDto`.
 
@@ -65,11 +72,13 @@ The web form sends the admin to `GET /auth/external/google?intent=register&planI
 | Case | Detection point | Response |
 | --- | --- | --- |
 | Missing/invalid fields | Step 1 (service validation) | 400, field-level errors |
-| Email already has an account | Step 2 (repository lookup) | 409, no write attempted; the same email in a different case counts as the same account |
-| Missing or unknown `PlanId` | Step 1 or 3 (validation, plan lookup) | 400, field error on `PlanId`, no write attempted |
-| Same email registered concurrently (unique-index violation on save) | Step 7 | 409, same as the step 2 conflict; no partial organization/account persisted |
-| Other database failure on save | Step 7 | 500; no partial organization/account persisted, since both inserts are in one `SaveChangesAsync` |
+| Email already has an account | Step 4 (repository lookup) | 202, no write attempted, the owner is emailed a notice; the same email in a different case counts as the same account |
+| Missing or unknown `PlanId` | Step 1 or 2 (validation, plan lookup) | 400, field error on `PlanId`, no write attempted |
+| Same email registered concurrently (unique-index violation on save) | Step 5 | 409; no partial organization/account persisted |
+| Other database failure on save | Step 5 | 500; no partial organization/account persisted, since both inserts are in one save |
+| Confirmation email cannot be sent | Step 6 | 500; the organization and account are deleted again |
+| Too many requests from one address | Rate limiter, before the action | 429 (`RateLimit:PublicPermitLimit` per minute, default 10) |
 
 ## Related artifacts
 
-[HLD](US-001-HLD.md), [SSD/SD diagrams](../us/US-001/README.md), [Domain model](../domain-models/README.md#accounts-and-organizations), tests ([`OrganizationMapperTests`](../../api/tests/Mappers/OrganizationMapperTests.cs), [`OrganizationsEndpointTests`](../../api/tests/Controllers/OrganizationsEndpointTests.cs)).
+[HLD](US-001-HLD.md), [SSD/SD diagrams](../us/US-001/README.md), [Domain model](../domain-models/README.md#accounts-and-organizations), [ADR-010](../decisions/ADR-010-account-security-hardening.md), tests ([`OrganizationMapperTests`](../../api/tests/Mappers/OrganizationMapperTests.cs), [`OrganizationsEndpointTests`](../../api/tests/Controllers/OrganizationsEndpointTests.cs)).

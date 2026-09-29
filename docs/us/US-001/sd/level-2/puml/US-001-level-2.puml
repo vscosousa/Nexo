@@ -12,28 +12,48 @@ autonumber
 actor "Prospective Admin" as Admin
 participant "Web UI" as UI
 participant "Nexo API" as API
+participant "Mail" as Mail
 
-note over UI, API
-  Credential input and session delivery are not yet specified.\nThis diagram shows the current draft contract only.
+note over UI, Mail
+  Password path. Registration delivers no session: the admin
+  confirms the email, then signs in (US-005).
 end note
 Admin -> UI: Register organization and admin account
 activate UI
 UI -> API: POST /organizations (RegisterOrganizationDto)
 activate API
-alt Request accepted
-    API --> UI: 201 Created (OrganizationDto)
+alt New email
+    API -> Mail: Confirmation link (/confirm-email?email&token)
+    API --> UI: 202 Accepted
+else Email already has an account
+    API -> Mail: "You already have an account" notice
+    API --> UI: 202 Accepted
 else Invalid required details
     API --> UI: 400 Bad Request
-else Email already registered
-    API --> UI: 409 Conflict
-else Persistence failure
+else Too many requests from this address
+    API --> UI: 429 Too Many Requests
+else Persistence or email failure
     API --> UI: 500 Internal Server Error
 end
 deactivate API
 alt Successful response
-    UI --> Admin: Organization and admin account created
+    UI --> Admin: Check your email to confirm, then sign in
 else Error response
-    UI --> Admin: Show validation, authorization, or operation error
+    UI --> Admin: Show validation or operation error
 end
+deactivate UI
+
+Admin -> UI: Open /confirm-email link
+activate UI
+UI -> API: POST /accounts/activation/confirm-email (email, token)
+activate API
+alt Unconfirmed registration, token matches, not expired
+    API --> UI: 200 OK (account Active)
+    UI --> Admin: Sign-in page: email confirmed
+else Otherwise
+    API --> UI: 403 Forbidden
+    UI --> Admin: Link not valid or expired
+end
+deactivate API
 deactivate UI
 @enduml

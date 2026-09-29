@@ -14,9 +14,9 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 
 1. Validate `InviteMemberDto`: `Email` non-empty, a valid email format, and at most 320 characters. Fail with a validation error (→ 400) otherwise.
 2. `AccountInvitationsController` requires a valid bearer token (`[Authorize]`, → 401 otherwise) and reads the caller's account id from its `sub` claim. Call `IAccountRepository.GetByIdAsync(callerAccountId)`; a missing or unknown caller id is also an authorization error. If the caller's `Role` is not `Admin` or their `OrganizationId` does not match the route's `organizationId`, fail with an authorization error (→ 403).
-3. Call `IOrganizationRepository.GetByIdAsync(organizationId)` for `MemberLimit`, and `IAccountRepository.CountByOrganizationAndStatusAsync(organizationId, Status.Active)` for the current **active** account count. If the count has reached `MemberLimit`, fail with a conflict error (→ 409); do not proceed. `Invited` accounts do not count toward this limit.
-4. Call `IAccountRepository.FindByEmailAsync(dto.Email)`. If a match exists and either its `Status` is `Active`, or it is `Invited` in a *different* organization, fail with a conflict error (→ 409); do not proceed. If a match exists, is `Invited`, and belongs to the *same* organization (`organizationId`), this is a re-invite (step 5 mutates it in place instead of inserting).
-5. Create a fresh link token and code (`InvitationTokens.CreateLinkToken`, `InvitationTokens.CreateCode`) and an expiry (now + `InvitationTokens.Lifetime`). For a re-invite (step 4), overwrite `InvitationTokenHash`, `InvitationCodeHash`, and `InvitationExpiresAt` on the existing tracked `Account`. Otherwise map the DTO, `organizationId`, and both hashes to a new `Account` (`AccountMapper.ToInvitedAccount`), with `Role = Member` and `Status = Invited`, and add it via `IAccountRepository.Add`.
+3. Call `IOrganizationRepository.GetByIdAsync(organizationId)` for `MemberLimit`, and `IAccountRepository.FindByEmailAsync(dto.Email)`: a match that is `Invited` in the *same* organization (`organizationId`) makes this a re-invite (step 5 mutates it in place instead of inserting). Count the organization's `Active` and `Invited` accounts (`CountByOrganizationAndStatusAsync`). If the active count has reached `MemberLimit`, or this is not a re-invite and active plus pending has reached it, fail with a conflict error (→ 409); do not proceed. Counting pending invitations stops an admin from sending unlimited invitation emails ([ADR-010](../decisions/ADR-010-account-security-hardening.md)).
+4. If the match from step 3 is `Active`, `Unverified`, or `Invited` in a *different* organization, fail with a conflict error (→ 409); do not proceed.
+5. Create a fresh link token and code (`InvitationTokens.CreateLinkToken`, `InvitationTokens.CreateCode`) and an expiry (now + `InvitationTokens.Lifetime`). For a re-invite (step 3), overwrite `InvitationTokenHash`, `InvitationCodeHash`, and `InvitationExpiresAt` and reset `InvitationFailedAttempts` on the existing tracked `Account`. Otherwise map the DTO, `organizationId`, and both hashes to a new `Account` (`AccountMapper.ToInvitedAccount`), with `Role = Member` and `Status = Invited`, and add it via `IAccountRepository.Add`.
 6. Call `NexoDbContext.SaveChangesAsync()`.
 7. Build the invitation email (`InvitationEmail.Create`: organization name, inviter's `FullName` or, if blank, their email, the activation link carrying the link token, and the code as separate body text) and send it with `IEmailSender.SendAsync`. If sending fails: for a new invitation, remove the just-saved account (so the address can be invited again) and let the failure surface (→ 500); for a re-invite, leave the account as is (the previous, still-valid link token and code are untouched by the failed send) and let the failure surface (→ 500). The admin can simply re-invite again.
 8. Map the persisted `Account` to `AccountDto` and return it (→ 201).
@@ -28,21 +28,21 @@ Reuses the existing `Account` (per [US-001-LLD](US-001-LLD.md#domain)); no new e
 | Missing/invalid email | Step 1 (service validation) | 400, field-level errors |
 | Missing/invalid/expired bearer token | Step 2 (controller `[Authorize]`) | 401, no write attempted |
 | Caller is not the organization's admin | Step 2 (authorization check) | 403, no write attempted |
-| Organization's active-member limit reached | Step 3 (repository count, `Active` only) | 409, no write attempted |
-| Email already `Active`, or `Invited` in another organization | Step 4 (repository lookup) | 409, no write attempted |
-| Email already `Invited` in this organization | Step 4 (repository lookup) | Not an error: re-invited in place (step 5) |
+| Organization's member limit reached (active, plus pending for a new email) | Step 3 (repository counts) | 409, no write attempted |
+| Email already `Active` or `Unverified`, or `Invited` in another organization | Step 4 | 409, no write attempted |
+| Email already `Invited` in this organization | Step 3 (repository lookup) | Not an error: re-invited in place (step 5), even at the member limit |
 | Same email invited concurrently (unique-index violation on save) | Step 6 | 409, same as the step 4 conflict; no partial state persisted |
 | Other database failure on save | Step 6 | 500; no partial state persisted |
 | Invitation email cannot be sent | Step 7 | 500; a new invitation's pending account is removed so it can be retried, a re-invite's account is left as is |
 
 ## Service logic (`AccountInvitationService.Resend`)
 
-Lets the invited person themselves request a fresh code, distinct from the admin's `Invite` re-invite above: no caller/authorization step (the endpoint is unauthenticated), and only the code is rotated. The link token is left untouched, since the person likely already has the activation page open with the original link's token in its URL, and rotating it would strand that page.
+Lets the invited person themselves request a fresh code, distinct from the admin's `Invite` re-invite above: no caller/authorization step (the endpoint is unauthenticated), and only the code is rotated. The link token and the expiry are left untouched (resending cannot keep an invitation alive past its 7 days), since the person likely already has the activation page open with the original link's token in its URL, and rotating it would strand that page.
 
 1. If `email` is missing or blank, return without doing anything (→ 202, see below on why this is never an error).
-2. Call `IAccountRepository.FindByEmailAsync` with the normalized email. If no account is found, or it is not `Status = Invited`, return without doing anything.
+2. Call `IAccountRepository.FindByEmailAsync` with the normalized email. If no account is found, it is not `Status = Invited`, or its invitation has expired, return without doing anything (the admin must invite the email again).
 3. Call `IOrganizationRepository.GetByIdAsync(account.OrganizationId)`. If the organization is somehow missing, return without doing anything (defensive; should not happen for a persisted account).
-4. Create a fresh code (`InvitationTokens.CreateCode`) and set `InvitationCodeHash` to its hash and `InvitationExpiresAt` to now + `InvitationTokens.Lifetime`, leaving `InvitationTokenHash` unchanged. Call `NexoDbContext.SaveChangesAsync()`.
+4. Create a fresh code (`InvitationTokens.CreateCode`), set `InvitationCodeHash` to its hash and reset `InvitationFailedAttempts` to 0 (so a person who used up the wrong-code attempts can try again with the new code), leaving `InvitationTokenHash` and `InvitationExpiresAt` unchanged. Call `NexoDbContext.SaveChangesAsync()`.
 5. Build the resend email (`InvitationEmail.CreateCodeReminder`: organization name and the new code only, no link) and send it with `IEmailSender.SendAsync`, best-effort: a delivery failure here is swallowed, since the code is already saved and the person can simply ask again.
 6. Return (→ 202) in every case. Steps 1–3's early returns and a successful send all respond identically, so the endpoint never reveals whether the email has a pending invitation.
 
